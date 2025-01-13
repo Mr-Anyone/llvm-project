@@ -14,34 +14,12 @@
 
 include "llvm/Target/Target.td"
 
-//===----------------------------------------------------------------------===//
-// Subtarget Features. 
-//===----------------------------------------------------------------------===//
-def FeatureX
- : SubtargetFeature<"ext", "ExtendedInsts", "true",
-                    "Enable CPEN211-X extensions">;
-
-def FeatureHWMult16
- : SubtargetFeature<"hwmult16", "HWMultMode", "HWMult16",
-                    "Enable 16-bit hardware multiplier">;
-
-def FeatureHWMult32
- : SubtargetFeature<"hwmult32", "HWMultMode", "HWMult32",
-                    "Enable 32-bit hardware multiplier">;
-
-def FeatureHWMultF5
- : SubtargetFeature<"hwmultf5", "HWMultMode", "HWMultF5",
-                    "Enable F5 series hardware multiplier">;
-
-//===----------------------------------------------------------------------===//
 // CPEN211 supported processors.
 //===----------------------------------------------------------------------===//
 class Proc<string Name, list<SubtargetFeature> Features>
  : Processor<Name, NoItineraries, Features>;
 
-def : Proc<"generic",         []>;
-def : Proc<"msp430",          []>;
-def : Proc<"msp430x",         [FeatureX]>;
+def : Proc<"cpen211",          []>;
 
 //===----------------------------------------------------------------------===//
 // Register File Description
