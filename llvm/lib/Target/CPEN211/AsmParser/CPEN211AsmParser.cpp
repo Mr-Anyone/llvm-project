@@ -1,4 +1,5 @@
-//===- MSP430AsmParser.cpp - Parse MSP430 assembly to MCInst instructions -===//
+//===- CPEN211AsmParser.cpp - Parse CPEN211 assembly to MCInst instructions
+//-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,10 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "MCTargetDesc/MSP430MCTargetDesc.h"
-#include "MSP430.h"
-#include "MSP430RegisterInfo.h"
-#include "TargetInfo/MSP430TargetInfo.h"
+#include "CPEN211.h"
+#include "CPEN211RegisterInfo.h"
+#include "MCTargetDesc/CPEN211MCTargetDesc.h"
+#include "TargetInfo/CPEN211TargetInfo.h"
 
 #include "llvm/ADT/APInt.h"
 #include "llvm/MC/MCContext.h"
@@ -32,8 +33,8 @@ using namespace llvm;
 
 namespace {
 
-/// Parses MSP430 assembly from a stream.
-class MSP430AsmParser : public MCTargetAsmParser {
+/// Parses CPEN211 assembly from a stream.
+class CPEN211AsmParser : public MCTargetAsmParser {
   const MCSubtargetInfo &STI;
   MCAsmParser &Parser;
   const MCRegisterInfo *MRI;
@@ -70,13 +71,13 @@ class MSP430AsmParser : public MCTargetAsmParser {
   /// {
 
 #define GET_ASSEMBLER_HEADER
-#include "MSP430GenAsmMatcher.inc"
+#include "CPEN211GenAsmMatcher.inc"
 
   /// }
 
 public:
-  MSP430AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
-                  const MCInstrInfo &MII, const MCTargetOptions &Options)
+  CPEN211AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
+                   const MCInstrInfo &MII, const MCTargetOptions &Options)
       : MCTargetAsmParser(Options, STI, MII), STI(STI), Parser(Parser) {
     MCAsmParserExtension::Initialize(Parser);
     MRI = getContext().getRegisterInfo();
@@ -85,8 +86,8 @@ public:
   }
 };
 
-/// A parsed MSP430 assembly operand.
-class MSP430Operand : public MCParsedAsmOperand {
+/// A parsed CPEN211 assembly operand.
+class CPEN211Operand : public MCParsedAsmOperand {
   typedef MCParsedAsmOperand Base;
 
   enum KindTy { k_Imm, k_Reg, k_Tok, k_Mem, k_IndReg, k_PostIndReg } Kind;
@@ -105,14 +106,14 @@ class MSP430Operand : public MCParsedAsmOperand {
   SMLoc Start, End;
 
 public:
-  MSP430Operand(StringRef Tok, SMLoc const &S)
+  CPEN211Operand(StringRef Tok, SMLoc const &S)
       : Kind(k_Tok), Tok(Tok), Start(S), End(S) {}
-  MSP430Operand(KindTy Kind, MCRegister Reg, SMLoc const &S, SMLoc const &E)
+  CPEN211Operand(KindTy Kind, MCRegister Reg, SMLoc const &S, SMLoc const &E)
       : Kind(Kind), Reg(Reg), Start(S), End(E) {}
-  MSP430Operand(MCExpr const *Imm, SMLoc const &S, SMLoc const &E)
+  CPEN211Operand(MCExpr const *Imm, SMLoc const &S, SMLoc const &E)
       : Kind(k_Imm), Imm(Imm), Start(S), End(E) {}
-  MSP430Operand(MCRegister Reg, MCExpr const *Expr, SMLoc const &S,
-                SMLoc const &E)
+  CPEN211Operand(MCRegister Reg, MCExpr const *Expr, SMLoc const &S,
+                 SMLoc const &E)
       : Kind(k_Mem), Mem({Reg, Expr}), Start(S), End(E) {}
 
   void addRegOperands(MCInst &Inst, unsigned N) const {
@@ -184,33 +185,33 @@ public:
     Reg = RegNo;
   }
 
-  static std::unique_ptr<MSP430Operand> CreateToken(StringRef Str, SMLoc S) {
-    return std::make_unique<MSP430Operand>(Str, S);
+  static std::unique_ptr<CPEN211Operand> CreateToken(StringRef Str, SMLoc S) {
+    return std::make_unique<CPEN211Operand>(Str, S);
   }
 
-  static std::unique_ptr<MSP430Operand> CreateReg(MCRegister Reg, SMLoc S,
-                                                  SMLoc E) {
-    return std::make_unique<MSP430Operand>(k_Reg, Reg, S, E);
+  static std::unique_ptr<CPEN211Operand> CreateReg(MCRegister Reg, SMLoc S,
+                                                   SMLoc E) {
+    return std::make_unique<CPEN211Operand>(k_Reg, Reg, S, E);
   }
 
-  static std::unique_ptr<MSP430Operand> CreateImm(const MCExpr *Val, SMLoc S,
-                                                  SMLoc E) {
-    return std::make_unique<MSP430Operand>(Val, S, E);
+  static std::unique_ptr<CPEN211Operand> CreateImm(const MCExpr *Val, SMLoc S,
+                                                   SMLoc E) {
+    return std::make_unique<CPEN211Operand>(Val, S, E);
   }
 
-  static std::unique_ptr<MSP430Operand>
+  static std::unique_ptr<CPEN211Operand>
   CreateMem(MCRegister Reg, const MCExpr *Val, SMLoc S, SMLoc E) {
-    return std::make_unique<MSP430Operand>(Reg, Val, S, E);
+    return std::make_unique<CPEN211Operand>(Reg, Val, S, E);
   }
 
-  static std::unique_ptr<MSP430Operand> CreateIndReg(MCRegister Reg, SMLoc S,
-                                                     SMLoc E) {
-    return std::make_unique<MSP430Operand>(k_IndReg, Reg, S, E);
+  static std::unique_ptr<CPEN211Operand> CreateIndReg(MCRegister Reg, SMLoc S,
+                                                      SMLoc E) {
+    return std::make_unique<CPEN211Operand>(k_IndReg, Reg, S, E);
   }
 
-  static std::unique_ptr<MSP430Operand> CreatePostIndReg(MCRegister Reg,
-                                                         SMLoc S, SMLoc E) {
-    return std::make_unique<MSP430Operand>(k_PostIndReg, Reg, S, E);
+  static std::unique_ptr<CPEN211Operand> CreatePostIndReg(MCRegister Reg,
+                                                          SMLoc S, SMLoc E) {
+    return std::make_unique<CPEN211Operand>(k_PostIndReg, Reg, S, E);
   }
 
   SMLoc getStartLoc() const override { return Start; }
@@ -242,11 +243,11 @@ public:
 };
 } // end anonymous namespace
 
-bool MSP430AsmParser::matchAndEmitInstruction(SMLoc Loc, unsigned &Opcode,
-                                              OperandVector &Operands,
-                                              MCStreamer &Out,
-                                              uint64_t &ErrorInfo,
-                                              bool MatchingInlineAsm) {
+bool CPEN211AsmParser::matchAndEmitInstruction(SMLoc Loc, unsigned &Opcode,
+                                               OperandVector &Operands,
+                                               MCStreamer &Out,
+                                               uint64_t &ErrorInfo,
+                                               bool MatchingInlineAsm) {
   MCInst Inst;
   unsigned MatchResult =
       MatchInstructionImpl(Operands, Inst, ErrorInfo, MatchingInlineAsm);
@@ -264,7 +265,7 @@ bool MSP430AsmParser::matchAndEmitInstruction(SMLoc Loc, unsigned &Opcode,
       if (ErrorInfo >= Operands.size())
         return Error(ErrorLoc, "too few operands for instruction");
 
-      ErrorLoc = ((MSP430Operand &)*Operands[ErrorInfo]).getStartLoc();
+      ErrorLoc = ((CPEN211Operand &)*Operands[ErrorInfo]).getStartLoc();
       if (ErrorLoc == SMLoc())
         ErrorLoc = Loc;
     }
@@ -279,8 +280,8 @@ bool MSP430AsmParser::matchAndEmitInstruction(SMLoc Loc, unsigned &Opcode,
 static MCRegister MatchRegisterName(StringRef Name);
 static MCRegister MatchRegisterAltName(StringRef Name);
 
-bool MSP430AsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
-                                    SMLoc &EndLoc) {
+bool CPEN211AsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
+                                     SMLoc &EndLoc) {
   ParseStatus Res = tryParseRegister(Reg, StartLoc, EndLoc);
   if (Res.isFailure())
     return Error(StartLoc, "invalid register name");
@@ -292,14 +293,14 @@ bool MSP430AsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
   llvm_unreachable("unknown parse status");
 }
 
-ParseStatus MSP430AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
-                                              SMLoc &EndLoc) {
+ParseStatus CPEN211AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
+                                               SMLoc &EndLoc) {
   if (getLexer().getKind() == AsmToken::Identifier) {
     auto Name = getLexer().getTok().getIdentifier().lower();
     Reg = MatchRegisterName(Name);
-    if (Reg == MSP430::NoRegister) {
+    if (Reg == CPEN211::NoRegister) {
       Reg = MatchRegisterAltName(Name);
-      if (Reg == MSP430::NoRegister)
+      if (Reg == CPEN211::NoRegister)
         return ParseStatus::NoMatch;
     }
 
@@ -314,39 +315,39 @@ ParseStatus MSP430AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
   return ParseStatus::Failure;
 }
 
-bool MSP430AsmParser::parseJccInstruction(ParseInstructionInfo &Info,
-                                          StringRef Name, SMLoc NameLoc,
-                                          OperandVector &Operands) {
+bool CPEN211AsmParser::parseJccInstruction(ParseInstructionInfo &Info,
+                                           StringRef Name, SMLoc NameLoc,
+                                           OperandVector &Operands) {
   if (!Name.starts_with_insensitive("j"))
     return true;
 
   auto CC = Name.drop_front().lower();
   unsigned CondCode;
   if (CC == "ne" || CC == "nz")
-    CondCode = MSP430CC::COND_NE;
+    CondCode = CPEN211CC::COND_NE;
   else if (CC == "eq" || CC == "z")
-    CondCode = MSP430CC::COND_E;
+    CondCode = CPEN211CC::COND_E;
   else if (CC == "lo" || CC == "nc")
-    CondCode = MSP430CC::COND_LO;
+    CondCode = CPEN211CC::COND_LO;
   else if (CC == "hs" || CC == "c")
-    CondCode = MSP430CC::COND_HS;
+    CondCode = CPEN211CC::COND_HS;
   else if (CC == "n")
-    CondCode = MSP430CC::COND_N;
+    CondCode = CPEN211CC::COND_N;
   else if (CC == "ge")
-    CondCode = MSP430CC::COND_GE;
+    CondCode = CPEN211CC::COND_GE;
   else if (CC == "l")
-    CondCode = MSP430CC::COND_L;
+    CondCode = CPEN211CC::COND_L;
   else if (CC == "mp")
-    CondCode = MSP430CC::COND_NONE;
+    CondCode = CPEN211CC::COND_NONE;
   else
     return Error(NameLoc, "unknown instruction");
 
-  if (CondCode == (unsigned)MSP430CC::COND_NONE)
-    Operands.push_back(MSP430Operand::CreateToken("jmp", NameLoc));
+  if (CondCode == (unsigned)CPEN211CC::COND_NONE)
+    Operands.push_back(CPEN211Operand::CreateToken("jmp", NameLoc));
   else {
-    Operands.push_back(MSP430Operand::CreateToken("j", NameLoc));
+    Operands.push_back(CPEN211Operand::CreateToken("j", NameLoc));
     const MCExpr *CCode = MCConstantExpr::create(CondCode, getContext());
-    Operands.push_back(MSP430Operand::CreateImm(CCode, SMLoc(), SMLoc()));
+    Operands.push_back(CPEN211Operand::CreateImm(CCode, SMLoc(), SMLoc()));
   }
 
   // Skip optional '$' sign.
@@ -363,7 +364,7 @@ bool MSP430AsmParser::parseJccInstruction(ParseInstructionInfo &Info,
       return Error(ExprLoc, "invalid jump offset");
 
   Operands.push_back(
-      MSP430Operand::CreateImm(Val, ExprLoc, getLexer().getLoc()));
+      CPEN211Operand::CreateImm(Val, ExprLoc, getLexer().getLoc()));
 
   if (getLexer().isNot(AsmToken::EndOfStatement)) {
     SMLoc Loc = getLexer().getLoc();
@@ -375,9 +376,9 @@ bool MSP430AsmParser::parseJccInstruction(ParseInstructionInfo &Info,
   return false;
 }
 
-bool MSP430AsmParser::parseInstruction(ParseInstructionInfo &Info,
-                                       StringRef Name, SMLoc NameLoc,
-                                       OperandVector &Operands) {
+bool CPEN211AsmParser::parseInstruction(ParseInstructionInfo &Info,
+                                        StringRef Name, SMLoc NameLoc,
+                                        OperandVector &Operands) {
   // Drop .w suffix
   if (Name.ends_with_insensitive(".w"))
     Name = Name.drop_back(2);
@@ -386,7 +387,7 @@ bool MSP430AsmParser::parseInstruction(ParseInstructionInfo &Info,
     return false;
 
   // First operand is instruction mnemonic
-  Operands.push_back(MSP430Operand::CreateToken(Name, NameLoc));
+  Operands.push_back(CPEN211Operand::CreateToken(Name, NameLoc));
 
   // If there are no more operands, then finish
   if (getLexer().is(AsmToken::EndOfStatement))
@@ -410,7 +411,7 @@ bool MSP430AsmParser::parseInstruction(ParseInstructionInfo &Info,
   return false;
 }
 
-bool MSP430AsmParser::ParseDirectiveRefSym(AsmToken DirectiveID) {
+bool CPEN211AsmParser::ParseDirectiveRefSym(AsmToken DirectiveID) {
   StringRef Name;
   if (getParser().parseIdentifier(Name))
     return TokError("expected identifier in directive");
@@ -420,7 +421,7 @@ bool MSP430AsmParser::ParseDirectiveRefSym(AsmToken DirectiveID) {
   return parseEOL();
 }
 
-ParseStatus MSP430AsmParser::parseDirective(AsmToken DirectiveID) {
+ParseStatus CPEN211AsmParser::parseDirective(AsmToken DirectiveID) {
   StringRef IDVal = DirectiveID.getIdentifier();
   if (IDVal.lower() == ".long")
     return ParseLiteralValues(4, DirectiveID.getLoc());
@@ -433,7 +434,7 @@ ParseStatus MSP430AsmParser::parseDirective(AsmToken DirectiveID) {
   return ParseStatus::NoMatch;
 }
 
-bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
+bool CPEN211AsmParser::ParseOperand(OperandVector &Operands) {
   switch (getLexer().getKind()) {
   default:
     return true;
@@ -442,7 +443,7 @@ bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
     MCRegister RegNo;
     SMLoc StartLoc, EndLoc;
     if (!parseRegister(RegNo, StartLoc, EndLoc)) {
-      Operands.push_back(MSP430Operand::CreateReg(RegNo, StartLoc, EndLoc));
+      Operands.push_back(CPEN211Operand::CreateReg(RegNo, StartLoc, EndLoc));
       return false;
     }
     [[fallthrough]];
@@ -454,7 +455,7 @@ bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
     const MCExpr *Val;
     // Try constexpr[(rN)]
     if (!getParser().parseExpression(Val)) {
-      MCRegister RegNo = MSP430::PC;
+      MCRegister RegNo = CPEN211::PC;
       SMLoc EndLoc = getParser().getTok().getLoc();
       // Try (rN)
       if (parseOptionalToken(AsmToken::LParen)) {
@@ -466,7 +467,7 @@ bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
           return true;
       }
       Operands.push_back(
-          MSP430Operand::CreateMem(RegNo, Val, StartLoc, EndLoc));
+          CPEN211Operand::CreateMem(RegNo, Val, StartLoc, EndLoc));
       return false;
     }
     return true;
@@ -479,7 +480,7 @@ bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
     if (!getParser().parseExpression(Val)) {
       SMLoc EndLoc = getParser().getTok().getLoc();
       Operands.push_back(
-          MSP430Operand::CreateMem(MSP430::SR, Val, StartLoc, EndLoc));
+          CPEN211Operand::CreateMem(CPEN211::SR, Val, StartLoc, EndLoc));
       return false;
     }
     return true;
@@ -494,14 +495,14 @@ bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
       return true;
     if (parseOptionalToken(AsmToken::Plus)) {
       Operands.push_back(
-          MSP430Operand::CreatePostIndReg(RegNo, StartLoc, EndLoc));
+          CPEN211Operand::CreatePostIndReg(RegNo, StartLoc, EndLoc));
       return false;
     }
     if (Operands.size() > 1) // Emulate @rd in destination position as 0(rd)
-      Operands.push_back(MSP430Operand::CreateMem(
+      Operands.push_back(CPEN211Operand::CreateMem(
           RegNo, MCConstantExpr::create(0, getContext()), StartLoc, EndLoc));
     else
-      Operands.push_back(MSP430Operand::CreateIndReg(RegNo, StartLoc, EndLoc));
+      Operands.push_back(CPEN211Operand::CreateIndReg(RegNo, StartLoc, EndLoc));
     return false;
   }
   case AsmToken::Hash:
@@ -511,14 +512,14 @@ bool MSP430AsmParser::ParseOperand(OperandVector &Operands) {
     const MCExpr *Val;
     if (!getParser().parseExpression(Val)) {
       SMLoc EndLoc = getParser().getTok().getLoc();
-      Operands.push_back(MSP430Operand::CreateImm(Val, StartLoc, EndLoc));
+      Operands.push_back(CPEN211Operand::CreateImm(Val, StartLoc, EndLoc));
       return false;
     }
     return true;
   }
 }
 
-bool MSP430AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
+bool CPEN211AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
   auto parseOne = [&]() -> bool {
     const MCExpr *Value;
     if (getParser().parseExpression(Value))
@@ -529,62 +530,62 @@ bool MSP430AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
   return (parseMany(parseOne));
 }
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMSP430AsmParser() {
-  RegisterMCAsmParser<MSP430AsmParser> X(getTheMSP430Target());
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeCPEN211AsmParser() {
+  RegisterMCAsmParser<CPEN211AsmParser> X(getTheCPEN211Target());
 }
 
 #define GET_REGISTER_MATCHER
 #define GET_MATCHER_IMPLEMENTATION
-#include "MSP430GenAsmMatcher.inc"
+#include "CPEN211GenAsmMatcher.inc"
 
 static MCRegister convertGR16ToGR8(MCRegister Reg) {
   switch (Reg.id()) {
   default:
     llvm_unreachable("Unknown GR16 register");
-  case MSP430::PC:
-    return MSP430::PCB;
-  case MSP430::SP:
-    return MSP430::SPB;
-  case MSP430::SR:
-    return MSP430::SRB;
-  case MSP430::CG:
-    return MSP430::CGB;
-  case MSP430::R4:
-    return MSP430::R4B;
-  case MSP430::R5:
-    return MSP430::R5B;
-  case MSP430::R6:
-    return MSP430::R6B;
-  case MSP430::R7:
-    return MSP430::R7B;
-  case MSP430::R8:
-    return MSP430::R8B;
-  case MSP430::R9:
-    return MSP430::R9B;
-  case MSP430::R10:
-    return MSP430::R10B;
-  case MSP430::R11:
-    return MSP430::R11B;
-  case MSP430::R12:
-    return MSP430::R12B;
-  case MSP430::R13:
-    return MSP430::R13B;
-  case MSP430::R14:
-    return MSP430::R14B;
-  case MSP430::R15:
-    return MSP430::R15B;
+  case CPEN211::PC:
+    return CPEN211::PCB;
+  case CPEN211::SP:
+    return CPEN211::SPB;
+  case CPEN211::SR:
+    return CPEN211::SRB;
+  case CPEN211::CG:
+    return CPEN211::CGB;
+  case CPEN211::R4:
+    return CPEN211::R4B;
+  case CPEN211::R5:
+    return CPEN211::R5B;
+  case CPEN211::R6:
+    return CPEN211::R6B;
+  case CPEN211::R7:
+    return CPEN211::R7B;
+  case CPEN211::R8:
+    return CPEN211::R8B;
+  case CPEN211::R9:
+    return CPEN211::R9B;
+  case CPEN211::R10:
+    return CPEN211::R10B;
+  case CPEN211::R11:
+    return CPEN211::R11B;
+  case CPEN211::R12:
+    return CPEN211::R12B;
+  case CPEN211::R13:
+    return CPEN211::R13B;
+  case CPEN211::R14:
+    return CPEN211::R14B;
+  case CPEN211::R15:
+    return CPEN211::R15B;
   }
 }
 
-unsigned MSP430AsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
-                                                     unsigned Kind) {
-  MSP430Operand &Op = static_cast<MSP430Operand &>(AsmOp);
+unsigned CPEN211AsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
+                                                      unsigned Kind) {
+  CPEN211Operand &Op = static_cast<CPEN211Operand &>(AsmOp);
 
   if (!Op.isReg())
     return Match_InvalidOperand;
 
   MCRegister Reg = Op.getReg();
-  bool isGR16 = MSP430MCRegisterClasses[MSP430::GR16RegClassID].contains(Reg);
+  bool isGR16 = CPEN211MCRegisterClasses[CPEN211::GR16RegClassID].contains(Reg);
 
   if (isGR16 && (Kind == MCK_GR8)) {
     Op.setReg(convertGR16ToGR8(Reg));

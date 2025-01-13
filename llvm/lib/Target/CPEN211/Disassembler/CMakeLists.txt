@@ -1,12 +1,12 @@
 add_llvm_component_library(
     LLVMCPEN211Disassembler
-    #LLVMMSP430Disassembler
-  MSP430Disassembler.cpp
+    #LLVMCPEN211Disassembler
+    CPEN211Disassembler.cpp
 
   LINK_COMPONENTS
   MCDisassembler
   MC
-  MSP430Info
+  CPEN211Info
   Support
 
   ADD_TO_COMPONENT

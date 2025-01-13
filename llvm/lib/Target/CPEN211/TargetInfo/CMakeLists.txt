@@ -1,7 +1,7 @@
 add_llvm_component_library(
     LLVMCPEN211Info
-    #LLVMMSP430Info
-  MSP430TargetInfo.cpp
+    #LLVMCPEN211Info
+    CPEN211TargetInfo.cpp
 
   LINK_COMPONENTS
   MC
