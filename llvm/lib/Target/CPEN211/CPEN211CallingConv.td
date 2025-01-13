@@ -1,4 +1,4 @@
-//==- CPEN211CallingConv.td - Calling Conventions for MSP430 -*- tablegen -*-==//
+//==- CPEN211CallingConv.td - Calling Conventions for CPEN211 -*- tablegen -*-==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -12,11 +12,8 @@
 // CPEN211 Return Value Calling Convention
 //===----------------------------------------------------------------------===//
 def RetCC_CPEN211 : CallingConv<[
-  // i8 are returned in registers R12B, R13B, R14B, R15B
-  CCIfType<[i8], CCAssignToReg<[R12B, R13B, R14B, R15B]>>,
-
   // i16 are returned in registers R12, R13, R14, R15
-  CCIfType<[i16], CCAssignToReg<[R12, R13, R14, R15]>>
+  CCIfType<[i16], CCAssignToReg<[R0]>>
 ]>;
 
 //===----------------------------------------------------------------------===//

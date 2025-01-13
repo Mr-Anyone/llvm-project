@@ -228,7 +228,7 @@ bool CPEN211BSel::runOnMachineFunction(MachineFunction &mf) {
       static_cast<const CPEN211InstrInfo *>(MF->getSubtarget().getInstrInfo());
 
   // If the pass is disabled, just bail early.
-  //if (!BranchSelectEnabled)
+  // if (!BranchSelectEnabled)
   //  return false;
 
   LLVM_DEBUG(dbgs() << "\n********** " << getPassName() << " **********\n");
