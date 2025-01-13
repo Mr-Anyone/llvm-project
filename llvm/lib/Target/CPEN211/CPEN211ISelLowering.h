@@ -26,48 +26,6 @@ enum NodeType : unsigned {
 
   /// Return with a glue operand. Operand 0 is the chain operand.
   RET_GLUE,
-
-  /// Same as RET_GLUE, but used for returning from ISRs.
-  RETI_GLUE,
-
-  /// Y = R{R,L}A X, rotate right (left) arithmetically
-  RRA,
-  RLA,
-
-  /// Y = RRC X, rotate right via carry
-  RRC,
-
-  /// Rotate right via carry, carry gets cleared beforehand by clrc
-  RRCL,
-
-  /// CALL - These operations represent an abstract call
-  /// instruction, which includes a bunch of information.
-  CALL,
-
-  /// Wrapper - A wrapper node for TargetConstantPool, TargetExternalSymbol,
-  /// and TargetGlobalAddress.
-  Wrapper,
-
-  /// CMP - Compare instruction.
-  CMP,
-
-  /// SetCC - Operand 0 is condition code, and operand 1 is the flag
-  /// operand produced by a CMP instruction.
-  SETCC,
-
-  /// CPEN211 conditional branches. Operand 0 is the chain operand, operand 1
-  /// is the block to branch if condition is true, operand 2 is the
-  /// condition code, and operand 3 is the flag operand produced by a CMP
-  /// instruction.
-  BR_CC,
-
-  /// SELECT_CC - Operand 0 and operand 1 are selection variable, operand 3
-  /// is condition code and operand 4 is flag operand.
-  SELECT_CC,
-
-  /// DADD - Decimal addition with carry
-  /// TODO Nothing generates a node of this type yet.
-  DADD,
 };
 }
 
