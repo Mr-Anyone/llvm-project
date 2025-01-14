@@ -61,18 +61,20 @@ class IForm<bits<3> opcode, bits<2> op, int size, dag outs,
   let Inst{2-0}   = Rm; 
 }
 
-// Basic B types instruction
+// B Form instruction
 // See Table for cond, like BEQ, BNE, BLT, BLE, and B
-class BForm<bits<3> cond, int size, dag outs, 
+class BForm<int size, dag outs, 
             dag ins, string asmstr, list<dag> pattern>
     : CPEN211Inst<outs, ins, size, asmstr> {
   let Pattern = pattern;
+  
+  bits<3> cond;
+  bits<8> target;
 
   let Inst{15-13} = 0b001;
   let Inst{12-11} = 0b00;
   let Inst{10-8}  = cond;
-  // what is this?
-  // let Inst{7-0}  = imm;
+  let Inst{7-0}   = target;
 }
 
 // Pseudo instructions 

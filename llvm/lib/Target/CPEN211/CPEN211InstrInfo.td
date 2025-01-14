@@ -13,11 +13,20 @@
 include "CPEN211InstrFormats.td"
 
 //===----------------------------------------------------------------------===//
+// Type Profiles.
+//===----------------------------------------------------------------------===//
+def SDT_MSP430Cmp          : SDTypeProfile<0, 2, [SDTCisSameAs<0, 1>]>;
+// the output operand is cond (see below), and target which is an i8
+def SDT_MSP430BrCC         : SDTypeProfile<0, 2, [SDTCisVT<0, OtherVT>,
+                                                  SDTCisVT<1, i8>]>;
+//===----------------------------------------------------------------------===//
 // CPEN211 Specific Node Definitions.
 //===----------------------------------------------------------------------===//
-def MSP430retglue  : SDNode<"CPEN211ISD::RET_GLUE", SDTNone,
-                       [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
-
+def CPEN211retglue  :   SDNode<"CPEN211ISD::RET_GLUE", SDTNone,
+                            [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
+def MSP430cmp     :     SDNode<"CPEN211ISD::CMP",   SDT_MSP430Cmp, [SDNPOutGlue]>;
+def MSP430brcc    :     SDNode<"CPEN211ISD::BR_CC", SDT_MSP430BrCC,
+                            [SDNPHasChain, SDNPInGlue]>;
 //===----------------------------------------------------------------------===//
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
@@ -25,6 +34,11 @@ def MSP430retglue  : SDNode<"CPEN211ISD::RET_GLUE", SDTNone,
 def jmptarget : Operand<OtherVT> {
   // let PrintMethod = "printPCRelImmOperand";
   // let EncoderMethod = "getPCRelImmOpValue";
+}
+
+def cc : Operand<i8>{
+  // let PrintMethod = "printCCOperand";
+  // let EncoderMethod = "getCCOpValue";
 }
 
 //===----------------------------------------------------------------------===//
@@ -58,27 +72,13 @@ let isCommutable = true in {
 
 //===----------------------------------------------------------------------
 // Branch Type Instructions
-let isBarrier = 1 in{
+let isBarrier = 1, cond = 0b000 in {
     // Branch to instruction
-    def B   : BForm<0b000, 2, (outs), (ins jmptarget:$dst)
+    def B   : BForm<2, (outs), (ins jmptarget:$dst)
                     ,"B\t$dst",  [(br bb:$dst)]>;
 }
 
 
-// b types instruction?
-def BEQ : BForm<0b001, 2, (outs), (ins jmptarget:$dst)
-    ,"BEQ\t$dst",  []>;
-
-def BNE : BForm<0b010, 2, (outs), (ins jmptarget:$dst)
-    ,"BNE\t$dst",  []>;
-
-def BLT : BForm<0b011, 2, (outs), (ins jmptarget:$dst)
-    ,"BLT\t$dst",  []>;
-
-def BLE : BForm<0b100, 2, (outs), (ins jmptarget:$dst)
-    ,"BLE\t$dst",  []>;
-
-// let isBranch = 1, isTerminator = 1 in {
-// 
-// 
-// }
+// BCC are BEQ, BNE, BLT, and BLE
+def BCC : BForm<2, (outs), (ins jmptarget:$dst, cc:$cond),
+               "B$cond\t$dst", [(MSP430brcc bb:$dst, imm:$cond)]>;
