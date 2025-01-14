@@ -42,17 +42,37 @@ def cc : Operand<i16>{
     let EncoderMethod = "getCCOpValue";
 }
 
+// TODO (for Vincent): does there need two be two different operand?
+def mem : Operand<i16> {
+  let MIOperandInfo = (ops GR16, i16imm);
+  // let PrintMethod = "printSrcMemOperand";
+  // let ParserMatchClass = MemAsmOperand;
+  // let EncoderMethod = "getMemOpValue";
+  // let DecoderMethod = "DecodeMemOperand";
+}
+
 //===----------------------------------------------------------------------===//
 // Instruction list...
 //===----------------------------------------------------------------------===//
+
 //===----------------------------------------------------------------------
 //Move Instructions
 
 // TODO (for Vincent): we need let llvm know that we can do a shift as well!
-// TODO (for Vincent): is the size 16?
+// TODO (for Vincent): is the size 2?
 let Rn = 0b000 in {
     def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm), "MOV\t{$Rd,$Rm}", []>;
-}
+
+    // TODO (for Vincent): not all imm are valid? What should you do when imm is greater than 
+    // signed extended 8 bit
+    // TOOD (for Vincent): for greater than 8 bit, we must store this in the stack and 
+    // do a Pseudo instruction instead
+    // TOOD (for Vincent): find out why doesn't i8imm doesn't work?
+    let Rm=0b000 in {
+        def MOV16ri : IForm<0b110, 0b10, 2, (outs GR16:$Rd), (ins i16imm:$value), "MOV\t{$Rd,$value}", []>;
+    }
+} // Rn
+
 //===----------------------------------------------------------------------
 // ALU Instructions without cmp
 let isCommutable = true in {
@@ -82,6 +102,14 @@ let isBranch = 1, isTerminator=1 in {
                    "B$cond\t$dst", [(CPEN211brcc bb:$dst, imm:$cond)]>;
     }
 } // isBranch, isTerminator
+
+
+//===----------------------------------------------------------------------
+// Memory Type Instructions
+def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins GR16:$Rn)
+                    , "LDR\t{$Rd,[$Rn]}", []>;
+def STR16mr: MForm<0b100, 2, (outs), (ins GR16:$Rd, GR16:$Rn)
+                    , "STR\t{$Rd,[$Rn]}", []>;
 
 // TOOD (for Vincent): create a register alias both the stack pointer and the link register  
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?
