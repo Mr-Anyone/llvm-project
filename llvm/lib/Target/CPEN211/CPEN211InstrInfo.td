@@ -35,7 +35,9 @@ def jmptarget : Operand<OtherVT> {
     let EncoderMethod = "getPCRelImmOpValue";
 }
 
-def cc : Operand<i8>{
+// TODO (for Vincent): I am not quite sure if this is right or not!
+// is this i16 or i8? we might have to do something about this?
+def cc : Operand<i16>{
     let PrintMethod = "printCCOperand";
     let EncoderMethod = "getCCOpValue";
 }
