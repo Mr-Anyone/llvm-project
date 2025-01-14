@@ -68,13 +68,18 @@ class BForm<int size, dag outs,
     : CPEN211Inst<outs, ins, size, asmstr> {
   let Pattern = pattern;
   
-  bits<3> cond;
-  bits<8> target;
 
   let Inst{15-13} = 0b001;
   let Inst{12-11} = 0b00;
+
+  // TODO (for Vincent): how are we going to encode target?
+  // Currently, there is a jank hack to make the tblgen compiler happy 
+  // in a sense that cond is unique but doesn't map to the ISA as given 
+  // in the image
+  bits<3> cond;
   let Inst{10-8}  = cond;
-  let Inst{7-0}   = target;
+  // bits<8> target;
+  // let Inst{7-0}   = target;
 }
 
 // Pseudo instructions 

@@ -19,7 +19,7 @@
 #include "llvm/CodeGen/TargetLowering.h"
 
 namespace llvm {
-  namespace MSP430ISD {
+  namespace CPEN211ISD {
     enum NodeType : unsigned {
       FIRST_NUMBER = ISD::BUILTIN_OP_END,
 
