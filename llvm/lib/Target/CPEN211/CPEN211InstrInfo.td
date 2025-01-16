@@ -71,7 +71,7 @@ let Rn = 0b000 in {
     // TOOD (for Vincent): find out why doesn't i8imm doesn't work?
     let Rm=0b000 in {
         def MOV16ri : IForm<0b110, 0b10, 2, (outs GR16:$Rd), (ins i16imm:$value)
-                , "MOV\t{$Rd,$value}", [(set GR16:$rd, imm:$value)]>;
+                , "MOV\t{$Rd,$value}", [(set GR16:$Rd, imm:$value)]>;
     }
 } // Rn
 
