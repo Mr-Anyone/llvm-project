@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "CPEN211.h"
 #include "CPEN211InstPrinter.h"
+#include "CPEN211.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
@@ -74,7 +74,7 @@ void CPEN211InstPrinter::printSrcMemOperand(const MCInst *MI, unsigned OpNo,
   const MCOperand &Base = MI->getOperand(OpNo);
   const MCOperand &Disp = MI->getOperand(OpNo + 1);
 
-  // Print displacement first
+  llvm_unreachable("this is not yet implemented for cpen 211"); // Print displacement first
 
   // If the global address expression is a part of displacement field with a
   // register base, we should not emit any prefix symbol here, e.g.
@@ -82,19 +82,19 @@ void CPEN211InstPrinter::printSrcMemOperand(const MCInst *MI, unsigned OpNo,
   // vs
   //   mov.w glb(r1), r2
   // Otherwise (!) msp430-as will silently miscompile the output :(
-  if (Base.getReg() == CPEN211::SR)
-    O << '&';
+  // if (Base.getReg() == CPEN211::SR)
+  //   O << '&';
 
-  if (Disp.isExpr())
-    Disp.getExpr()->print(O, &MAI);
-  else {
-    assert(Disp.isImm() && "Expected immediate in displacement field");
-    O << Disp.getImm();
-  }
+  // if (Disp.isExpr())
+  //   Disp.getExpr()->print(O, &MAI);
+  // else {
+  //   assert(Disp.isImm() && "Expected immediate in displacement field");
+  //   O << Disp.getImm();
+  // }
 
-  // Print register base field
-  if ((Base.getReg() != CPEN211::SR) && (Base.getReg() != CPEN211::PC))
-    O << '(' << getRegisterName(Base.getReg()) << ')';
+  // // Print register base field
+  // if ((Base.getReg() != CPEN211::SR) && (Base.getReg() != CPEN211::PC))
+  //   O << '(' << getRegisterName(Base.getReg()) << ')';
 }
 
 void CPEN211InstPrinter::printIndRegOperand(const MCInst *MI, unsigned OpNo,
@@ -111,31 +111,32 @@ void CPEN211InstPrinter::printPostIndRegOperand(const MCInst *MI, unsigned OpNo,
 
 void CPEN211InstPrinter::printCCOperand(const MCInst *MI, unsigned OpNo,
                                         raw_ostream &O) {
-  unsigned CC = MI->getOperand(OpNo).getImm();
-
-  switch (CC) {
-  default:
-    llvm_unreachable("Unsupported CC code");
-  case CPEN211CC::COND_E:
-    O << "eq";
-    break;
-  case CPEN211CC::COND_NE:
-    O << "ne";
-    break;
-  case CPEN211CC::COND_HS:
-    O << "hs";
-    break;
-  case CPEN211CC::COND_LO:
-    O << "lo";
-    break;
-  case CPEN211CC::COND_GE:
-    O << "ge";
-    break;
-  case CPEN211CC::COND_L:
-    O << 'l';
-    break;
-  case CPEN211CC::COND_N:
-    O << 'n';
-    break;
-  }
+    llvm_unreachable("unimplemented");
+//  unsigned CC = MI->getOperand(OpNo).getImm();
+//
+//  switch (CC) {
+//  default:
+//    llvm_unreachable("Unsupported CC code");
+//  case CPEN211CC::COND_E:
+//    O << "eq";
+//    break;
+//  case CPEN211CC::COND_NE:
+//    O << "ne";
+//    break;
+//  case CPEN211CC::COND_HS:
+//    O << "hs";
+//    break;
+//  case CPEN211CC::COND_LO:
+//    O << "lo";
+//    break;
+//  case CPEN211CC::COND_GE:
+//    O << "ge";
+//    break;
+//  case CPEN211CC::COND_L:
+//    O << 'l';
+//    break;
+//  case CPEN211CC::COND_N:
+//    O << 'n';
+//    break;
+//  }
 }

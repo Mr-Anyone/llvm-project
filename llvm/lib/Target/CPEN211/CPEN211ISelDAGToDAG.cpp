@@ -25,7 +25,7 @@
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-#define DEBUG_TYPE "msp430-isel"
+#define DEBUG_TYPE "cpen211-isel"
 #define PASS_NAME "CPEN211 DAG->DAG Pattern Instruction Selection"
 
 namespace {
@@ -121,7 +121,7 @@ public:
 } // end anonymous namespace
 
 char CPEN211DAGToDAGISelLegacy::ID;
-
+//
 INITIALIZE_PASS(CPEN211DAGToDAGISelLegacy, DEBUG_TYPE, PASS_NAME, false, false)
 
 /// createCPEN211ISelDag - This pass converts a legalized DAG into a
@@ -133,7 +133,7 @@ FunctionPass *llvm::createCPEN211ISelDag(CPEN211TargetMachine &TM,
 }
 
 /// MatchWrapper - Try to match CPEN211ISD::Wrapper node into an addressing
-/// mode. These wrap things that will resolve down into a symbol reference.  If
+/// mode. These wrap things that will resolve down into a symbol reference.
 /// no match is possible, this returns true, otherwise it returns false.
 bool CPEN211DAGToDAGISel::MatchWrapper(SDValue N, CPEN211ISelAddressMode &AM) {
   // If the addressing mode already has a symbol as the displacement, we can
@@ -182,102 +182,105 @@ bool CPEN211DAGToDAGISel::MatchAddressBase(SDValue N,
 }
 
 bool CPEN211DAGToDAGISel::MatchAddress(SDValue N, CPEN211ISelAddressMode &AM) {
-  LLVM_DEBUG(errs() << "MatchAddress: "; AM.dump());
+  llvm_unreachable("this is not reachable");
+  // LLVM_DEBUG(errs() << "MatchAddress: "; AM.dump());
 
-  switch (N.getOpcode()) {
-  default:
-    break;
-  case ISD::Constant: {
-    uint64_t Val = cast<ConstantSDNode>(N)->getSExtValue();
-    AM.Disp += Val;
-    return false;
-  }
+  // switch (N.getOpcode()) {
+  // default:
+  //   break;
+  // case ISD::Constant: {
+  //   uint64_t Val = cast<ConstantSDNode>(N)->getSExtValue();
+  //   AM.Disp += Val;
+  //   return false;
+  // }
 
-  case CPEN211ISD::Wrapper:
-    if (!MatchWrapper(N, AM))
-      return false;
-    break;
+  // case CPEN211ISD::Wrapper:
+  //   if (!MatchWrapper(N, AM))
+  //     return false;
+  //   break;
 
-  case ISD::FrameIndex:
-    if (AM.BaseType == CPEN211ISelAddressMode::RegBase &&
-        AM.Base.Reg.getNode() == nullptr) {
-      AM.BaseType = CPEN211ISelAddressMode::FrameIndexBase;
-      AM.Base.FrameIndex = cast<FrameIndexSDNode>(N)->getIndex();
-      return false;
-    }
-    break;
+  // case ISD::FrameIndex:
+  //   if (AM.BaseType == CPEN211ISelAddressMode::RegBase &&
+  //       AM.Base.Reg.getNode() == nullptr) {
+  //     AM.BaseType = CPEN211ISelAddressMode::FrameIndexBase;
+  //     AM.Base.FrameIndex = cast<FrameIndexSDNode>(N)->getIndex();
+  //     return false;
+  //   }
+  //   break;
 
-  case ISD::ADD: {
-    CPEN211ISelAddressMode Backup = AM;
-    if (!MatchAddress(N.getNode()->getOperand(0), AM) &&
-        !MatchAddress(N.getNode()->getOperand(1), AM))
-      return false;
-    AM = Backup;
-    if (!MatchAddress(N.getNode()->getOperand(1), AM) &&
-        !MatchAddress(N.getNode()->getOperand(0), AM))
-      return false;
-    AM = Backup;
+  // case ISD::ADD: {
+  //   CPEN211ISelAddressMode Backup = AM;
+  //   if (!MatchAddress(N.getNode()->getOperand(0), AM) &&
+  //       !MatchAddress(N.getNode()->getOperand(1), AM))
+  //     return false;
+  //   AM = Backup;
+  //   if (!MatchAddress(N.getNode()->getOperand(1), AM) &&
+  //       !MatchAddress(N.getNode()->getOperand(0), AM))
+  //     return false;
+  //   AM = Backup;
 
-    break;
-  }
+  //  break;
+  //}
 
-  case ISD::OR:
-    // Handle "X | C" as "X + C" iff X is known to have C bits clear.
-    if (ConstantSDNode *CN = dyn_cast<ConstantSDNode>(N.getOperand(1))) {
-      CPEN211ISelAddressMode Backup = AM;
-      uint64_t Offset = CN->getSExtValue();
-      // Start with the LHS as an addr mode.
-      if (!MatchAddress(N.getOperand(0), AM) &&
-          // Address could not have picked a GV address for the displacement.
-          AM.GV == nullptr &&
-          // Check to see if the LHS & C is zero.
-          CurDAG->MaskedValueIsZero(N.getOperand(0), CN->getAPIntValue())) {
-        AM.Disp += Offset;
-        return false;
-      }
-      AM = Backup;
-    }
-    break;
-  }
+  // case ISD::OR:
+  //   // Handle "X | C" as "X + C" iff X is known to have C bits clear.
+  //   if (ConstantSDNode *CN = dyn_cast<ConstantSDNode>(N.getOperand(1))) {
+  //     CPEN211ISelAddressMode Backup = AM;
+  //     uint64_t Offset = CN->getSExtValue();
+  //     // Start with the LHS as an addr mode.
+  //     if (!MatchAddress(N.getOperand(0), AM) &&
+  //         // Address could not have picked a GV address for the displacement.
+  //         AM.GV == nullptr &&
+  //         // Check to see if the LHS & C is zero.
+  //         CurDAG->MaskedValueIsZero(N.getOperand(0), CN->getAPIntValue())) {
+  //       AM.Disp += Offset;
+  //       return false;
+  //     }
+  //     AM = Backup;
+  //   }
+  //   break;
+  // }
 
-  return MatchAddressBase(N, AM);
+  // return MatchAddressBase(N, AM);
 }
 
 /// SelectAddr - returns true if it is able pattern match an addressing mode.
 /// It returns the operands which make up the maximal addressing mode it can
 /// match by reference.
 bool CPEN211DAGToDAGISel::SelectAddr(SDValue N, SDValue &Base, SDValue &Disp) {
-  CPEN211ISelAddressMode AM;
+  llvm_unreachable("this is not doable");
+  // CPEN211ISelAddressMode AM;
 
-  if (MatchAddress(N, AM))
-    return false;
+  // if (MatchAddress(N, AM))
+  //   return false;
 
-  if (AM.BaseType == CPEN211ISelAddressMode::RegBase)
-    if (!AM.Base.Reg.getNode())
-      AM.Base.Reg = CurDAG->getRegister(CPEN211::SR, MVT::i16);
+  // if (AM.BaseType == CPEN211ISelAddressMode::RegBase)
+  //   if (!AM.Base.Reg.getNode())
+  //     AM.Base.Reg = CurDAG->getRegister(CPEN211::SR, MVT::i16);
 
-  Base = (AM.BaseType == CPEN211ISelAddressMode::FrameIndexBase)
-             ? CurDAG->getTargetFrameIndex(AM.Base.FrameIndex, N.getValueType())
-             : AM.Base.Reg;
+  // Base = (AM.BaseType == CPEN211ISelAddressMode::FrameIndexBase)
+  //            ? CurDAG->getTargetFrameIndex(AM.Base.FrameIndex,
+  //            N.getValueType()) : AM.Base.Reg;
 
-  if (AM.GV)
-    Disp = CurDAG->getTargetGlobalAddress(AM.GV, SDLoc(N), MVT::i16, AM.Disp,
-                                          0 /*AM.SymbolFlags*/);
-  else if (AM.CP)
-    Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16, AM.Alignment, AM.Disp,
-                                         0 /*AM.SymbolFlags*/);
-  else if (AM.ES)
-    Disp =
-        CurDAG->getTargetExternalSymbol(AM.ES, MVT::i16, 0 /*AM.SymbolFlags*/);
-  else if (AM.JT != -1)
-    Disp = CurDAG->getTargetJumpTable(AM.JT, MVT::i16, 0 /*AM.SymbolFlags*/);
-  else if (AM.BlockAddr)
-    Disp = CurDAG->getTargetBlockAddress(AM.BlockAddr, MVT::i32, 0,
-                                         0 /*AM.SymbolFlags*/);
-  else
-    Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
+  // if (AM.GV)
+  //   Disp = CurDAG->getTargetGlobalAddress(AM.GV, SDLoc(N), MVT::i16, AM.Disp,
+  //                                         0 /*AM.SymbolFlags*/);
+  // else if (AM.CP)
+  //   Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16, AM.Alignment,
+  //   AM.Disp,
+  //                                        0 /*AM.SymbolFlags*/);
+  // else if (AM.ES)
+  //   Disp = CurDAG->getTargetExternalSymbol(AM.ES, MVT::i16, 0
+  //                                          /*AM.SymbolFlags*/);
+  // else if (AM.JT != -1)
+  //   Disp = CurDAG->getTargetJumpTable(AM.JT, MVT::i16, 0 /*AM.SymbolFlags*/);
+  // else if (AM.BlockAddr)
+  //   Disp = CurDAG->getTargetBlockAddress(AM.BlockAddr, MVT::i32, 0,
+  //                                        0 /*AM.SymbolFlags*/);
+  // else
+  //   Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
 
-  return true;
+  // return true;
 }
 
 bool CPEN211DAGToDAGISel::SelectInlineAsmMemoryOperand(
@@ -324,28 +327,32 @@ static bool isValidIndexedLoad(const LoadSDNode *LD) {
 }
 
 bool CPEN211DAGToDAGISel::tryIndexedLoad(SDNode *N) {
-  LoadSDNode *LD = cast<LoadSDNode>(N);
-  if (!isValidIndexedLoad(LD))
-    return false;
-
-  MVT VT = LD->getMemoryVT().getSimpleVT();
-
-  unsigned Opcode = 0;
-  switch (VT.SimpleTy) {
-  case MVT::i8:
-    Opcode = CPEN211::MOV8rp;
-    break;
-  case MVT::i16:
-    Opcode = CPEN211::MOV16rp;
-    break;
-  default:
-    return false;
-  }
-
-  ReplaceNode(N,
-              CurDAG->getMachineNode(Opcode, SDLoc(N), VT, MVT::i16, MVT::Other,
-                                     LD->getBasePtr(), LD->getChain()));
+  llvm_unreachable("this is not doable");
   return true;
+
+  // LoadSDNode *LD = cast<LoadSDNode>(N);
+  // if (!isValidIndexedLoad(LD))
+  //   return false;
+
+  // MVT VT = LD->getMemoryVT().getSimpleVT();
+
+  // unsigned Opcode = 0;
+  // switch (VT.SimpleTy) {
+  // case MVT::i8:
+  //   Opcode = CPEN211::MOV8rp;
+  //   break;
+  // case MVT::i16:
+  //   Opcode = CPEN211::MOV16rp;
+  //   break;
+  // default:
+  //   return false;
+  // }
+
+  // ReplaceNode(N,
+  //             CurDAG->getMachineNode(Opcode, SDLoc(N), VT, MVT::i16,
+  //             MVT::Other,
+  //                                    LD->getBasePtr(), LD->getChain()));
+  // return true;
 }
 
 bool CPEN211DAGToDAGISel::tryIndexedBinOp(SDNode *Op, SDValue N1, SDValue N2,
@@ -377,83 +384,83 @@ void CPEN211DAGToDAGISel::Select(SDNode *Node) {
   SDLoc dl(Node);
 
   // If we have a custom node, we already have selected!
-  if (Node->isMachineOpcode()) {
-    LLVM_DEBUG(errs() << "== "; Node->dump(CurDAG); errs() << "\n");
-    Node->setNodeId(-1);
-    return;
-  }
+  // if (Node->isMachineOpcode()) {
+  //   LLVM_DEBUG(errs() << "== "; Node->dump(CurDAG); errs() << "\n");
+  //   Node->setNodeId(-1);
+  //   return;
+  // }
 
-  // Few custom selection stuff.
-  switch (Node->getOpcode()) {
-  default:
-    break;
-  case ISD::FrameIndex: {
-    assert(Node->getValueType(0) == MVT::i16);
-    int FI = cast<FrameIndexSDNode>(Node)->getIndex();
-    SDValue TFI = CurDAG->getTargetFrameIndex(FI, MVT::i16);
-    if (Node->hasOneUse()) {
-      CurDAG->SelectNodeTo(Node, CPEN211::ADDframe, MVT::i16, TFI,
-                           CurDAG->getTargetConstant(0, dl, MVT::i16));
-      return;
-    }
-    ReplaceNode(Node, CurDAG->getMachineNode(
-                          CPEN211::ADDframe, dl, MVT::i16, TFI,
-                          CurDAG->getTargetConstant(0, dl, MVT::i16)));
-    return;
-  }
-  case ISD::LOAD:
-    if (tryIndexedLoad(Node))
-      return;
-    // Other cases are autogenerated.
-    break;
-  case ISD::ADD:
-    if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
-                        CPEN211::ADD8rp, CPEN211::ADD16rp))
-      return;
-    else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
-                             CPEN211::ADD8rp, CPEN211::ADD16rp))
-      return;
+  // // Few custom selection stuff.
+  // switch (Node->getOpcode()) {
+  // default:
+  //   break;
+  // case ISD::FrameIndex: {
+  //   assert(Node->getValueType(0) == MVT::i16);
+  //   int FI = cast<FrameIndexSDNode>(Node)->getIndex();
+  //   SDValue TFI = CurDAG->getTargetFrameIndex(FI, MVT::i16);
+  //   if (Node->hasOneUse()) {
+  //     CurDAG->SelectNodeTo(Node, CPEN211::ADDframe, MVT::i16, TFI,
+  //                          CurDAG->getTargetConstant(0, dl, MVT::i16));
+  //     return;
+  //   }
+  //   ReplaceNode(Node, CurDAG->getMachineNode(
+  //                         CPEN211::ADDframe, dl, MVT::i16, TFI,
+  //                         CurDAG->getTargetConstant(0, dl, MVT::i16)));
+  //   return;
+  // }
+  // case ISD::LOAD:
+  //   if (tryIndexedLoad(Node))
+  //     return;
+  //   // Other cases are autogenerated.
+  //   break;
+  // case ISD::ADD:
+  //   if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
+  //                       CPEN211::ADD8rp, CPEN211::ADD16rp))
+  //     return;
+  //   else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
+  //                            CPEN211::ADD8rp, CPEN211::ADD16rp))
+  //     return;
 
-    // Other cases are autogenerated.
-    break;
-  case ISD::SUB:
-    if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
-                        CPEN211::SUB8rp, CPEN211::SUB16rp))
-      return;
+  //   // Other cases are autogenerated.
+  //   break;
+  // case ISD::SUB:
+  //   if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
+  //                       CPEN211::SUB8rp, CPEN211::SUB16rp))
+  //     return;
 
-    // Other cases are autogenerated.
-    break;
-  case ISD::AND:
-    if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
-                        CPEN211::AND8rp, CPEN211::AND16rp))
-      return;
-    else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
-                             CPEN211::AND8rp, CPEN211::AND16rp))
-      return;
+  //   // Other cases are autogenerated.
+  //   break;
+  // case ISD::AND:
+  //   if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
+  //                       CPEN211::AND8rp, CPEN211::AND16rp))
+  //     return;
+  //   else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
+  //                            CPEN211::AND8rp, CPEN211::AND16rp))
+  //     return;
 
-    // Other cases are autogenerated.
-    break;
-  case ISD::OR:
-    if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
-                        CPEN211::BIS8rp, CPEN211::BIS16rp))
-      return;
-    else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
-                             CPEN211::BIS8rp, CPEN211::BIS16rp))
-      return;
+  //   // Other cases are autogenerated.
+  //   break;
+  // case ISD::OR:
+  //   if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
+  //                       CPEN211::BIS8rp, CPEN211::BIS16rp))
+  //     return;
+  //   else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
+  //                            CPEN211::BIS8rp, CPEN211::BIS16rp))
+  //     return;
 
-    // Other cases are autogenerated.
-    break;
-  case ISD::XOR:
-    if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
-                        CPEN211::XOR8rp, CPEN211::XOR16rp))
-      return;
-    else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
-                             CPEN211::XOR8rp, CPEN211::XOR16rp))
-      return;
+  //   // Other cases are autogenerated.
+  //   break;
+  // case ISD::XOR:
+  //   if (tryIndexedBinOp(Node, Node->getOperand(0), Node->getOperand(1),
+  //                       CPEN211::XOR8rp, CPEN211::XOR16rp))
+  //     return;
+  //   else if (tryIndexedBinOp(Node, Node->getOperand(1), Node->getOperand(0),
+  //                            CPEN211::XOR8rp, CPEN211::XOR16rp))
+  //     return;
 
-    // Other cases are autogenerated.
-    break;
-  }
+  //   // Other cases are autogenerated.
+  //   break;
+  // }
 
   // Select the default instruction
   SelectCode(Node);

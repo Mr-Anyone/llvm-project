@@ -318,62 +318,63 @@ ParseStatus CPEN211AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
 bool CPEN211AsmParser::parseJccInstruction(ParseInstructionInfo &Info,
                                            StringRef Name, SMLoc NameLoc,
                                            OperandVector &Operands) {
-  if (!Name.starts_with_insensitive("j"))
-    return true;
+  llvm_unreachable("this is not yet implemented!");
+  // if (!Name.starts_with_insensitive("j"))
+  //   return true;
 
-  auto CC = Name.drop_front().lower();
-  unsigned CondCode;
-  if (CC == "ne" || CC == "nz")
-    CondCode = CPEN211CC::COND_NE;
-  else if (CC == "eq" || CC == "z")
-    CondCode = CPEN211CC::COND_E;
-  else if (CC == "lo" || CC == "nc")
-    CondCode = CPEN211CC::COND_LO;
-  else if (CC == "hs" || CC == "c")
-    CondCode = CPEN211CC::COND_HS;
-  else if (CC == "n")
-    CondCode = CPEN211CC::COND_N;
-  else if (CC == "ge")
-    CondCode = CPEN211CC::COND_GE;
-  else if (CC == "l")
-    CondCode = CPEN211CC::COND_L;
-  else if (CC == "mp")
-    CondCode = CPEN211CC::COND_NONE;
-  else
-    return Error(NameLoc, "unknown instruction");
+  // auto CC = Name.drop_front().lower();
+  // unsigned CondCode;
+  // if (CC == "ne" || CC == "nz")
+  //   CondCode = CPEN211CC::COND_NE;
+  // else if (CC == "eq" || CC == "z")
+  //   CondCode = CPEN211CC::COND_E;
+  // else if (CC == "lo" || CC == "nc")
+  //   CondCode = CPEN211CC::COND_LO;
+  // else if (CC == "hs" || CC == "c")
+  //   CondCode = CPEN211CC::COND_HS;
+  // else if (CC == "n")
+  //   CondCode = CPEN211CC::COND_N;
+  // else if (CC == "ge")
+  //   CondCode = CPEN211CC::COND_GE;
+  // else if (CC == "l")
+  //   CondCode = CPEN211CC::COND_L;
+  // else if (CC == "mp")
+  //   CondCode = CPEN211CC::COND_NONE;
+  // else
+  //   return Error(NameLoc, "unknown instruction");
 
-  if (CondCode == (unsigned)CPEN211CC::COND_NONE)
-    Operands.push_back(CPEN211Operand::CreateToken("jmp", NameLoc));
-  else {
-    Operands.push_back(CPEN211Operand::CreateToken("j", NameLoc));
-    const MCExpr *CCode = MCConstantExpr::create(CondCode, getContext());
-    Operands.push_back(CPEN211Operand::CreateImm(CCode, SMLoc(), SMLoc()));
-  }
+  // if (CondCode == (unsigned)CPEN211CC::COND_NONE)
+  //   Operands.push_back(CPEN211Operand::CreateToken("jmp", NameLoc));
+  // else {
+  //   Operands.push_back(CPEN211Operand::CreateToken("j", NameLoc));
+  //   const MCExpr *CCode = MCConstantExpr::create(CondCode, getContext());
+  //   Operands.push_back(CPEN211Operand::CreateImm(CCode, SMLoc(), SMLoc()));
+  // }
 
-  // Skip optional '$' sign.
-  (void)parseOptionalToken(AsmToken::Dollar);
+  //// Skip optional '$' sign.
+  //(void)parseOptionalToken(AsmToken::Dollar);
 
-  const MCExpr *Val;
-  SMLoc ExprLoc = getLexer().getLoc();
-  if (getParser().parseExpression(Val))
-    return Error(ExprLoc, "expected expression operand");
+  // const MCExpr *Val;
+  // SMLoc ExprLoc = getLexer().getLoc();
+  // if (getParser().parseExpression(Val))
+  //   return Error(ExprLoc, "expected expression operand");
 
-  int64_t Res;
-  if (Val->evaluateAsAbsolute(Res))
-    if (Res < -512 || Res > 511)
-      return Error(ExprLoc, "invalid jump offset");
+  // int64_t Res;
+  // if (Val->evaluateAsAbsolute(Res))
+  //   if (Res < -512 || Res > 511)
+  //     return Error(ExprLoc, "invalid jump offset");
 
-  Operands.push_back(
-      CPEN211Operand::CreateImm(Val, ExprLoc, getLexer().getLoc()));
+  // Operands.push_back(
+  //     CPEN211Operand::CreateImm(Val, ExprLoc, getLexer().getLoc()));
 
-  if (getLexer().isNot(AsmToken::EndOfStatement)) {
-    SMLoc Loc = getLexer().getLoc();
-    getParser().eatToEndOfStatement();
-    return Error(Loc, "unexpected token");
-  }
+  // if (getLexer().isNot(AsmToken::EndOfStatement)) {
+  //   SMLoc Loc = getLexer().getLoc();
+  //   getParser().eatToEndOfStatement();
+  //   return Error(Loc, "unexpected token");
+  // }
 
-  getParser().Lex(); // Consume the EndOfStatement.
-  return false;
+  // getParser().Lex(); // Consume the EndOfStatement.
+  // return false;
 }
 
 bool CPEN211AsmParser::parseInstruction(ParseInstructionInfo &Info,
@@ -435,88 +436,91 @@ ParseStatus CPEN211AsmParser::parseDirective(AsmToken DirectiveID) {
 }
 
 bool CPEN211AsmParser::ParseOperand(OperandVector &Operands) {
-  switch (getLexer().getKind()) {
-  default:
-    return true;
-  case AsmToken::Identifier: {
-    // try rN
-    MCRegister RegNo;
-    SMLoc StartLoc, EndLoc;
-    if (!parseRegister(RegNo, StartLoc, EndLoc)) {
-      Operands.push_back(CPEN211Operand::CreateReg(RegNo, StartLoc, EndLoc));
-      return false;
-    }
-    [[fallthrough]];
-  }
-  case AsmToken::Integer:
-  case AsmToken::Plus:
-  case AsmToken::Minus: {
-    SMLoc StartLoc = getParser().getTok().getLoc();
-    const MCExpr *Val;
-    // Try constexpr[(rN)]
-    if (!getParser().parseExpression(Val)) {
-      MCRegister RegNo = CPEN211::PC;
-      SMLoc EndLoc = getParser().getTok().getLoc();
-      // Try (rN)
-      if (parseOptionalToken(AsmToken::LParen)) {
-        SMLoc RegStartLoc;
-        if (parseRegister(RegNo, RegStartLoc, EndLoc))
-          return true;
-        EndLoc = getParser().getTok().getEndLoc();
-        if (!parseOptionalToken(AsmToken::RParen))
-          return true;
-      }
-      Operands.push_back(
-          CPEN211Operand::CreateMem(RegNo, Val, StartLoc, EndLoc));
-      return false;
-    }
-    return true;
-  }
-  case AsmToken::Amp: {
-    // Try &constexpr
-    SMLoc StartLoc = getParser().getTok().getLoc();
-    getLexer().Lex(); // Eat '&'
-    const MCExpr *Val;
-    if (!getParser().parseExpression(Val)) {
-      SMLoc EndLoc = getParser().getTok().getLoc();
-      Operands.push_back(
-          CPEN211Operand::CreateMem(CPEN211::SR, Val, StartLoc, EndLoc));
-      return false;
-    }
-    return true;
-  }
-  case AsmToken::At: {
-    // Try @rN[+]
-    SMLoc StartLoc = getParser().getTok().getLoc();
-    getLexer().Lex(); // Eat '@'
-    MCRegister RegNo;
-    SMLoc RegStartLoc, EndLoc;
-    if (parseRegister(RegNo, RegStartLoc, EndLoc))
-      return true;
-    if (parseOptionalToken(AsmToken::Plus)) {
-      Operands.push_back(
-          CPEN211Operand::CreatePostIndReg(RegNo, StartLoc, EndLoc));
-      return false;
-    }
-    if (Operands.size() > 1) // Emulate @rd in destination position as 0(rd)
-      Operands.push_back(CPEN211Operand::CreateMem(
-          RegNo, MCConstantExpr::create(0, getContext()), StartLoc, EndLoc));
-    else
-      Operands.push_back(CPEN211Operand::CreateIndReg(RegNo, StartLoc, EndLoc));
-    return false;
-  }
-  case AsmToken::Hash:
-    // Try #constexpr
-    SMLoc StartLoc = getParser().getTok().getLoc();
-    getLexer().Lex(); // Eat '#'
-    const MCExpr *Val;
-    if (!getParser().parseExpression(Val)) {
-      SMLoc EndLoc = getParser().getTok().getLoc();
-      Operands.push_back(CPEN211Operand::CreateImm(Val, StartLoc, EndLoc));
-      return false;
-    }
-    return true;
-  }
+  llvm_unreachable("this is not yet implemented");
+
+  // switch (getLexer().getKind()) {
+  // default:
+  //   return true;
+  // case AsmToken::Identifier: {
+  //   // try rN
+  //   MCRegister RegNo;
+  //   SMLoc StartLoc, EndLoc;
+  //   if (!parseRegister(RegNo, StartLoc, EndLoc)) {
+  //     Operands.push_back(CPEN211Operand::CreateReg(RegNo, StartLoc, EndLoc));
+  //     return false;
+  //   }
+  //   [[fallthrough]];
+  // }
+  // case AsmToken::Integer:
+  // case AsmToken::Plus:
+  // case AsmToken::Minus: {
+  //   SMLoc StartLoc = getParser().getTok().getLoc();
+  //   const MCExpr *Val;
+  //   // Try constexpr[(rN)]
+  //   if (!getParser().parseExpression(Val)) {
+  //     MCRegister RegNo = CPEN211::PC;
+  //     SMLoc EndLoc = getParser().getTok().getLoc();
+  //     // Try (rN)
+  //     if (parseOptionalToken(AsmToken::LParen)) {
+  //       SMLoc RegStartLoc;
+  //       if (parseRegister(RegNo, RegStartLoc, EndLoc))
+  //         return true;
+  //       EndLoc = getParser().getTok().getEndLoc();
+  //       if (!parseOptionalToken(AsmToken::RParen))
+  //         return true;
+  //     }
+  //     Operands.push_back(
+  //         CPEN211Operand::CreateMem(RegNo, Val, StartLoc, EndLoc));
+  //     return false;
+  //   }
+  //   return true;
+  // }
+  // case AsmToken::Amp: {
+  //   // Try &constexpr
+  //   SMLoc StartLoc = getParser().getTok().getLoc();
+  //   getLexer().Lex(); // Eat '&'
+  //   const MCExpr *Val;
+  //   if (!getParser().parseExpression(Val)) {
+  //     SMLoc EndLoc = getParser().getTok().getLoc();
+  //     Operands.push_back(
+  //         CPEN211Operand::CreateMem(CPEN211::SR, Val, StartLoc, EndLoc));
+  //     return false;
+  //   }
+  //   return true;
+  // }
+  // case AsmToken::At: {
+  //   // Try @rN[+]
+  //   SMLoc StartLoc = getParser().getTok().getLoc();
+  //   getLexer().Lex(); // Eat '@'
+  //   MCRegister RegNo;
+  //   SMLoc RegStartLoc, EndLoc;
+  //   if (parseRegister(RegNo, RegStartLoc, EndLoc))
+  //     return true;
+  //   if (parseOptionalToken(AsmToken::Plus)) {
+  //     Operands.push_back(
+  //         CPEN211Operand::CreatePostIndReg(RegNo, StartLoc, EndLoc));
+  //     return false;
+  //   }
+  //   if (Operands.size() > 1) // Emulate @rd in destination position as 0(rd)
+  //     Operands.push_back(CPEN211Operand::CreateMem(
+  //         RegNo, MCConstantExpr::create(0, getContext()), StartLoc, EndLoc));
+  //   else
+  //     Operands.push_back(CPEN211Operand::CreateIndReg(RegNo, StartLoc,
+  //     EndLoc));
+  //   return false;
+  // }
+  // case AsmToken::Hash:
+  //   // Try #constexpr
+  //   SMLoc StartLoc = getParser().getTok().getLoc();
+  //   getLexer().Lex(); // Eat '#'
+  //   const MCExpr *Val;
+  //   if (!getParser().parseExpression(Val)) {
+  //     SMLoc EndLoc = getParser().getTok().getLoc();
+  //     Operands.push_back(CPEN211Operand::CreateImm(Val, StartLoc, EndLoc));
+  //     return false;
+  //   }
+  //   return true;
+  // }
 }
 
 bool CPEN211AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
@@ -539,42 +543,42 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeCPEN211AsmParser() {
 #include "CPEN211GenAsmMatcher.inc"
 
 static MCRegister convertGR16ToGR8(MCRegister Reg) {
-  switch (Reg.id()) {
-  default:
-    llvm_unreachable("Unknown GR16 register");
-  case CPEN211::PC:
-    return CPEN211::PCB;
-  case CPEN211::SP:
-    return CPEN211::SPB;
-  case CPEN211::SR:
-    return CPEN211::SRB;
-  case CPEN211::CG:
-    return CPEN211::CGB;
-  case CPEN211::R4:
-    return CPEN211::R4B;
-  case CPEN211::R5:
-    return CPEN211::R5B;
-  case CPEN211::R6:
-    return CPEN211::R6B;
-  case CPEN211::R7:
-    return CPEN211::R7B;
-  case CPEN211::R8:
-    return CPEN211::R8B;
-  case CPEN211::R9:
-    return CPEN211::R9B;
-  case CPEN211::R10:
-    return CPEN211::R10B;
-  case CPEN211::R11:
-    return CPEN211::R11B;
-  case CPEN211::R12:
-    return CPEN211::R12B;
-  case CPEN211::R13:
-    return CPEN211::R13B;
-  case CPEN211::R14:
-    return CPEN211::R14B;
-  case CPEN211::R15:
-    return CPEN211::R15B;
-  }
+  // switch (Reg.id()) {
+  // default:
+  //   llvm_unreachable("Unknown GR16 register");
+  // case CPEN211::PC:
+  //   return CPEN211::PCB;
+  // case CPEN211::SP:
+  //   return CPEN211::SPB;
+  // case CPEN211::SR:
+  //   return CPEN211::SRB;
+  // case CPEN211::CG:
+  //   return CPEN211::CGB;
+  // case CPEN211::R4:
+  //   return CPEN211::R4B;
+  // case CPEN211::R5:
+  //   return CPEN211::R5B;
+  // case CPEN211::R6:
+  //   return CPEN211::R6B;
+  // case CPEN211::R7:
+  //   return CPEN211::R7B;
+  // case CPEN211::R8:
+  //   return CPEN211::R8B;
+  // case CPEN211::R9:
+  //   return CPEN211::R9B;
+  // case CPEN211::R10:
+  //   return CPEN211::R10B;
+  // case CPEN211::R11:
+  //   return CPEN211::R11B;
+  // case CPEN211::R12:
+  //   return CPEN211::R12B;
+  // case CPEN211::R13:
+  //   return CPEN211::R13B;
+  // case CPEN211::R14:
+  //   return CPEN211::R14B;
+  // case CPEN211::R15:
+  //   return CPEN211::R15B;
+  // }
 }
 
 unsigned CPEN211AsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
@@ -587,10 +591,10 @@ unsigned CPEN211AsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
   MCRegister Reg = Op.getReg();
   bool isGR16 = CPEN211MCRegisterClasses[CPEN211::GR16RegClassID].contains(Reg);
 
-  if (isGR16 && (Kind == MCK_GR8)) {
-    Op.setReg(convertGR16ToGR8(Reg));
-    return Match_Success;
-  }
+  // if (isGR16 && (Kind == MCK_GR8)) {
+  //   Op.setReg(convertGR16ToGR8(Reg));
+  //   return Match_Success;
+  // }
 
   return Match_InvalidOperand;
 }

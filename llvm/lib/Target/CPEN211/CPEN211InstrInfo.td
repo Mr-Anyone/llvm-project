@@ -108,7 +108,8 @@ let isBranch = 1, isTerminator=1 in {
 
 //===----------------------------------------------------------------------
 // Memory Type Instructions
-// TO DO: check the dag selection pattern matching!
+// TODO: check the dag selection pattern matching! This might have to be a 
+// complex pattern instead of just GR16, because we can also left shift as well!
 def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins GR16:$Rn)
                     , "LDR\t{$Rd,[$Rn]}", [(set GR16:$Rd, (load GR16:$Rn))]>;
 def STR16mr: MForm<0b100, 2, (outs), (ins GR16:$Rd, GR16:$Rn)

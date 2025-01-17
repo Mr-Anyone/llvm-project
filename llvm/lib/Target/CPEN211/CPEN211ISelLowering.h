@@ -26,6 +26,10 @@ enum NodeType : unsigned {
 
   /// Return with a glue operand. Operand 0 is the chain operand.
   RET_GLUE,
+
+  // The  CMP Node, likely glued with brcc
+  CMP,
+  BR_CC
 };
 }
 

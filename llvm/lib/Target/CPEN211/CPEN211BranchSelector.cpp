@@ -115,111 +115,112 @@ bool CPEN211BSel::expandBranches(OffsetVector &BlockOffsets) {
   //     b!CC $PC+6
   //     b MBB
   //
-  bool MadeChange = false;
-  for (auto MBB = MF->begin(), E = MF->end(); MBB != E; ++MBB) {
-    unsigned MBBStartOffset = 0;
-    for (auto MI = MBB->begin(), EE = MBB->end(); MI != EE; ++MI) {
-      MBBStartOffset += TII->getInstSizeInBytes(*MI);
+    llvm_unreachable("unimplemented function");
+  // bool MadeChange = false;
+  // for (auto MBB = MF->begin(), E = MF->end(); MBB != E; ++MBB) {
+  //   unsigned MBBStartOffset = 0;
+  //   for (auto MI = MBB->begin(), EE = MBB->end(); MI != EE; ++MI) {
+  //     MBBStartOffset += TII->getInstSizeInBytes(*MI);
 
-      // If this instruction is not a short branch then skip it.
-      if (MI->getOpcode() != CPEN211::JCC && MI->getOpcode() != CPEN211::JMP) {
-        continue;
-      }
+  //     // If this instruction is not a short branch then skip it.
+  //     if (MI->getOpcode() != CPEN211::JCC && MI->getOpcode() != CPEN211::JMP) {
+  //       continue;
+  //     }
 
-      MachineBasicBlock *DestBB = MI->getOperand(0).getMBB();
-      // Determine the distance from the current branch to the destination
-      // block. MBBStartOffset already includes the size of the current branch
-      // instruction.
-      int BlockDistance =
-          BlockOffsets[DestBB->getNumber()] - BlockOffsets[MBB->getNumber()];
-      int BranchDistance = BlockDistance - MBBStartOffset;
+  //     MachineBasicBlock *DestBB = MI->getOperand(0).getMBB();
+  //     // Determine the distance from the current branch to the destination
+  //     // block. MBBStartOffset already includes the size of the current branch
+  //     // instruction.
+  //     int BlockDistance =
+  //         BlockOffsets[DestBB->getNumber()] - BlockOffsets[MBB->getNumber()];
+  //      BranchDistance = BlockDistance - MBBStartOffset;
 
-      // If this branch is in range, ignore it.
-      if (isInRage(BranchDistance)) {
-        continue;
-      }
+  //     // If this branch is in range, ignore it.
+  //     if (isInRage(BranchDistance)) {
+  //       continue;
+  //     }
 
-      LLVM_DEBUG(dbgs() << "  Found a branch that needs expanding, "
-                        << printMBBReference(*DestBB) << ", Distance "
-                        << BranchDistance << "\n");
+  //     LLVM_DEBUG(dbgs() << "  Found a branch that needs expanding, "
+  //                       << printMBBReference(*DestBB) << ", Distance "
+  //                       << BranchDistance << "\n");
 
-      // If JCC is not the last instruction we need to split the MBB.
-      if (MI->getOpcode() == CPEN211::JCC && std::next(MI) != EE) {
+  //     // If JCC is not the last instruction we need to split the MBB.
+  //     if (MI->getOpcode() == CPEN211::JCC && std::next(MI) != EE) {
 
-        LLVM_DEBUG(dbgs() << "  Found a basic block that needs to be split, "
-                          << printMBBReference(*MBB) << "\n");
+  //       LLVM_DEBUG(dbgs() << "  Found a basic block that needs to be split, "
+  //                         << printMBBReference(*MBB) << "\n");
 
-        // Create a new basic block.
-        MachineBasicBlock *NewBB =
-            MF->CreateMachineBasicBlock(MBB->getBasicBlock());
-        MF->insert(std::next(MBB), NewBB);
+  //       // Create a new basic block.
+  //       MachineBasicBlock *NewBB =
+  //           MF->CreateMachineBasicBlock(MBB->getBasicBlock());
+  //       MF->insert(std::next(MBB), NewBB);
 
-        // Splice the instructions following MI over to the NewBB.
-        NewBB->splice(NewBB->end(), &*MBB, std::next(MI), MBB->end());
+  //       // Splice the instructions following MI over to the NewBB.
+  //       NewBB->splice(NewBB->end(), &*MBB, std::next(MI), MBB->end());
 
-        // Update the successor lists.
-        for (MachineBasicBlock *Succ : MBB->successors()) {
-          if (Succ == DestBB) {
-            continue;
-          }
-          MBB->replaceSuccessor(Succ, NewBB);
-          NewBB->addSuccessor(Succ);
-        }
+  //       // Update the successor lists.
+  //       for (MachineBasicBlock *Succ : MBB->successors()) {
+  //         if (Succ == DestBB) {
+  //           continue;
+  //         }
+  //         MBB->replaceSuccessor(Succ, NewBB);
+  //         NewBB->addSuccessor(Succ);
+  //       }
 
-        // We introduced a new MBB so all following blocks should be numbered
-        // and measured again.
-        measureFunction(BlockOffsets, &*MBB);
+  //       // We introduced a new MBB so all following blocks should be numbered
+  //       // and measured again.
+  //       measureFunction(BlockOffsets, &*MBB);
 
-        ++NumSplit;
+  //       ++NumSplit;
 
-        // It may be not necessary to start all over at this point, but it's
-        // safer do this anyway.
-        return true;
-      }
+  //       // It may be not necessary to start all over at this point, but it's
+  //       // safer do this anyway.
+  //       return true;
+  //     }
 
-      MachineInstr &OldBranch = *MI;
-      DebugLoc dl = OldBranch.getDebugLoc();
-      int InstrSizeDiff = -TII->getInstSizeInBytes(OldBranch);
+  //     MachineInstr &OldBranch = *MI;
+  //     DebugLoc dl = OldBranch.getDebugLoc();
+  //     int InstrSizeDiff = -TII->getInstSizeInBytes(OldBranch);
 
-      if (MI->getOpcode() == CPEN211::JCC) {
-        MachineBasicBlock *NextMBB = &*std::next(MBB);
-        assert(MBB->isSuccessor(NextMBB) &&
-               "This block must have a layout successor!");
+  //     if (MI->getOpcode() == CPEN211::JCC) {
+  //       MachineBasicBlock *NextMBB = &*std::next(MBB);
+  //       assert(MBB->isSuccessor(NextMBB) &&
+  //              "This block must have a layout successor!");
 
-        // The BCC operands are:
-        // 0. Target MBB
-        // 1. CPEN211 branch predicate
-        SmallVector<MachineOperand, 1> Cond;
-        Cond.push_back(MI->getOperand(1));
+  //       // The BCC operands are:
+  //       // 0. Target MBB
+  //       // 1. CPEN211 branch predicate
+  //       SmallVector<MachineOperand, 1> Cond;
+  //       Cond.push_back(MI->getOperand(1));
 
-        // Jump over the long branch on the opposite condition
-        TII->reverseBranchCondition(Cond);
-        MI = BuildMI(*MBB, MI, dl, TII->get(CPEN211::JCC))
-                 .addMBB(NextMBB)
-                 .add(Cond[0]);
-        InstrSizeDiff += TII->getInstSizeInBytes(*MI);
-        ++MI;
-      }
+  //       // Jump over the long branch on the opposite condition
+  //       TII->reverseBranchCondition(Cond);
+  //       MI = BuildMI(*MBB, MI, dl, TII->get(CPEN211::JCC))
+  //                .addMBB(NextMBB)
+  //                .add(Cond[0]);
+  //       InstrSizeDiff += TII->getInstSizeInBytes(*MI);
+  //       ++MI;
+  //     }
 
-      // Unconditional branch to the real destination.
-      MI = BuildMI(*MBB, MI, dl, TII->get(CPEN211::Bi)).addMBB(DestBB);
-      InstrSizeDiff += TII->getInstSizeInBytes(*MI);
+  //     // Unconditional branch to the real destination.
+  //     MI = BuildMI(*MBB, MI, dl, TII->get(CPEN211::Bi)).addMBB(DestBB);
+  //     InstrSizeDiff += TII->getInstSizeInBytes(*MI);
 
-      // Remove the old branch from the function.
-      OldBranch.eraseFromParent();
+  //     // Remove the old branch from the function.
+  //     OldBranch.eraseFromParent();
 
-      // The size of a new instruction is different from the old one, so we need
-      // to correct all block offsets.
-      for (int i = MBB->getNumber() + 1, e = BlockOffsets.size(); i < e; ++i) {
-        BlockOffsets[i] += InstrSizeDiff;
-      }
-      MBBStartOffset += InstrSizeDiff;
+  //     // The size of a new instruction is different from the old one, so we need
+  //     // to correct all block offsets.
+  //     for (int i = MBB->getNumber() + 1, e = BlockOffsets.size(); i < e; ++i) {
+  //       BlockOffsets[i] += InstrSizeDiff;
+  //     }
+  //     MBBStartOffset += InstrSizeDiff;
 
-      ++NumExpanded;
-      MadeChange = true;
-    }
-  }
-  return MadeChange;
+  //     ++NumExpanded;
+  //     MadeChange = true;
+  //   }
+  // }
+  // return MadeChange;
 }
 
 bool CPEN211BSel::runOnMachineFunction(MachineFunction &mf) {

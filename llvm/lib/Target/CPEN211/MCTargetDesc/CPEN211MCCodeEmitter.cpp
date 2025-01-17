@@ -197,24 +197,25 @@ unsigned CPEN211MCCodeEmitter::getCCOpValue(const MCInst &MI, unsigned Op,
                                             const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(Op);
   assert(MO.isImm() && "Immediate operand expected");
-  switch (MO.getImm()) {
-  case CPEN211CC::COND_NE:
-    return 0;
-  case CPEN211CC::COND_E:
-    return 1;
-  case CPEN211CC::COND_LO:
-    return 2;
-  case CPEN211CC::COND_HS:
-    return 3;
-  case CPEN211CC::COND_N:
-    return 4;
-  case CPEN211CC::COND_GE:
-    return 5;
-  case CPEN211CC::COND_L:
-    return 6;
-  default:
-    llvm_unreachable("Unknown condition code");
-  }
+  llvm_unreachable("unimplemented function");
+  // switch (MO.getImm()) {
+  // case CPEN211CC::COND_NE:
+  //   return 0;
+  // case CPEN211CC::COND_E:
+  //   return 1;
+  // case CPEN211CC::COND_LO:
+  //   return 2;
+  // case CPEN211CC::COND_HS:
+  //   return 3;
+  // case CPEN211CC::COND_N:
+  //   return 4;
+  // case CPEN211CC::COND_GE:
+  //   return 5;
+  // case CPEN211CC::COND_L:
+  //   return 6;
+  // default:
+  //   llvm_unreachable("Unknown condition code");
+  // }
 }
 
 MCCodeEmitter *createCPEN211MCCodeEmitter(const MCInstrInfo &MCII,

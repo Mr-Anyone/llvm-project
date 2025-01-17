@@ -44,15 +44,16 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
                                              const CPEN211Subtarget &STI)
     : TargetLowering(TM) {
 
+  llvm_unreachable("this is not yet implemented");
   // Set up the register classes.
-  addRegisterClass(MVT::i8, &CPEN211::GR8RegClass);
+  // addRegisterClass(MVT::i8, &CPEN211::GR8RegClass);
   addRegisterClass(MVT::i16, &CPEN211::GR16RegClass);
 
   // Compute derived properties from the register classes
   computeRegisterProperties(STI.getRegisterInfo());
 
   // Provide all sorts of operation actions
-  setStackPointerRegisterToSaveRestore(CPEN211::SP);
+  // setStackPointerRegisterToSaveRestore(CPEN211::SP);
   setBooleanContents(ZeroOrOneBooleanContent);
   setBooleanVectorContents(ZeroOrOneBooleanContent); // FIXME: Is this correct?
 
@@ -417,9 +418,6 @@ CPEN211TargetLowering::getRegForInlineAsmConstraint(
     default:
       break;
     case 'r': // GENERAL_REGS
-      if (VT == MVT::i8)
-        return std::make_pair(0U, &CPEN211::GR8RegClass);
-
       return std::make_pair(0U, &CPEN211::GR16RegClass);
     }
   }
@@ -474,94 +472,98 @@ template <typename ArgT>
 static void AnalyzeArguments(CCState &State,
                              SmallVectorImpl<CCValAssign> &ArgLocs,
                              const SmallVectorImpl<ArgT> &Args) {
-  static const MCPhysReg CRegList[] = {CPEN211::R12, CPEN211::R13, CPEN211::R14,
-                                       CPEN211::R15};
-  static const unsigned CNbRegs = std::size(CRegList);
-  static const MCPhysReg BuiltinRegList[] = {
-      CPEN211::R8,  CPEN211::R9,  CPEN211::R10, CPEN211::R11,
-      CPEN211::R12, CPEN211::R13, CPEN211::R14, CPEN211::R15};
-  static const unsigned BuiltinNbRegs = std::size(BuiltinRegList);
+  llvm_unreachable("this is not yet implemented!");
+  // static const MCPhysReg CRegList[] = {CPEN211::R12, CPEN211::R13,
+  // CPEN211::R14,
+  //                                      CPEN211::R15};
+  // static const unsigned CNbRegs = std::size(CRegList);
+  // static const MCPhysReg BuiltinRegList[] = {
+  //     CPEN211::R8,  CPEN211::R9,  CPEN211::R10, CPEN211::R11,
+  //     CPEN211::R12, CPEN211::R13, CPEN211::R14, CPEN211::R15};
+  // static const unsigned BuiltinNbRegs = std::size(BuiltinRegList);
 
-  ArrayRef<MCPhysReg> RegList;
-  unsigned NbRegs;
+  // ArrayRef<MCPhysReg> RegList;
+  // unsigned NbRegs;
 
-  // TODO (for Vincent): you have to fix this
-  bool Builtin = (State.getCallingConv() == CallingConv::MSP430_INTR);
-  if (Builtin) {
-    RegList = BuiltinRegList;
-    NbRegs = BuiltinNbRegs;
-  } else {
-    RegList = CRegList;
-    NbRegs = CNbRegs;
-  }
+  // // TODO (for Vincent): you have to fix this
+  // bool Builtin = (State.getCallingConv() == CallingConv::MSP430_INTR);
+  // if (Builtin) {
+  //   RegList = BuiltinRegList;
+  //   NbRegs = BuiltinNbRegs;
+  // } else {
+  //   RegList = CRegList;
+  //   NbRegs = CNbRegs;
+  // }
 
-  if (State.isVarArg()) {
-    AnalyzeVarArgs(State, Args);
-    return;
-  }
+  // if (State.isVarArg()) {
+  //   AnalyzeVarArgs(State, Args);
+  //   return;
+  // }
 
-  SmallVector<unsigned, 4> ArgsParts;
-  ParseFunctionArgs(Args, ArgsParts);
+  // SmallVector<unsigned, 4> ArgsParts;
+  // ParseFunctionArgs(Args, ArgsParts);
 
-  if (Builtin) {
-    assert(ArgsParts.size() == 2 &&
-           "Builtin calling convention requires two arguments");
-  }
+  // if (Builtin) {
+  //   assert(ArgsParts.size() == 2 &&
+  //          "Builtin calling convention requires two arguments");
+  // }
 
-  unsigned RegsLeft = NbRegs;
-  bool UsedStack = false;
-  unsigned ValNo = 0;
+  // unsigned RegsLeft = NbRegs;
+  // bool UsedStack = false;
+  // unsigned ValNo = 0;
 
-  for (unsigned i = 0, e = ArgsParts.size(); i != e; i++) {
-    MVT ArgVT = Args[ValNo].VT;
-    ISD::ArgFlagsTy ArgFlags = Args[ValNo].Flags;
-    MVT LocVT = ArgVT;
-    CCValAssign::LocInfo LocInfo = CCValAssign::Full;
+  // for (unsigned i = 0, e = ArgsParts.size(); i != e; i++) {
+  //   MVT ArgVT = Args[ValNo].VT;
+  //   ISD::ArgFlagsTy ArgFlags = Args[ValNo].Flags;
+  //   MVT LocVT = ArgVT;
+  //   CCValAssign::LocInfo LocInfo = CCValAssign::Full;
 
-    // Promote i8 to i16
-    if (LocVT == MVT::i8) {
-      LocVT = MVT::i16;
-      if (ArgFlags.isSExt())
-        LocInfo = CCValAssign::SExt;
-      else if (ArgFlags.isZExt())
-        LocInfo = CCValAssign::ZExt;
-      else
-        LocInfo = CCValAssign::AExt;
-    }
+  //   // Promote i8 to i16
+  //   if (LocVT == MVT::i8) {
+  //     LocVT = MVT::i16;
+  //     if (ArgFlags.isSExt())
+  //       LocInfo = CCValAssign::SExt;
+  //     else if (ArgFlags.isZExt())
+  //       LocInfo = CCValAssign::ZExt;
+  //     else
+  //       LocInfo = CCValAssign::AExt;
+  //   }
 
-    // Handle byval arguments
-    if (ArgFlags.isByVal()) {
-      State.HandleByVal(ValNo++, ArgVT, LocVT, LocInfo, 2, Align(2), ArgFlags);
-      continue;
-    }
+  //   // Handle byval arguments
+  //   if (ArgFlags.isByVal()) {
+  //     State.HandleByVal(ValNo++, ArgVT, LocVT, LocInfo, 2, Align(2),
+  //     ArgFlags); continue;
+  //   }
 
-    unsigned Parts = ArgsParts[i];
+  //   unsigned Parts = ArgsParts[i];
 
-    if (Builtin) {
-      assert(Parts == 4 &&
-             "Builtin calling convention requires 64-bit arguments");
-    }
+  //   if (Builtin) {
+  //     assert(Parts == 4 &&
+  //            "Builtin calling convention requires 64-bit arguments");
+  //   }
 
-    if (!UsedStack && Parts == 2 && RegsLeft == 1) {
-      // Special case for 32-bit register split, see EABI section 3.3.3
-      MCRegister Reg = State.AllocateReg(RegList);
-      State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT, LocInfo));
-      RegsLeft -= 1;
+  //   if (!UsedStack && Parts == 2 && RegsLeft == 1) {
+  //     // Special case for 32-bit register split, see EABI section 3.3.3
+  //     MCRegister Reg = State.AllocateReg(RegList);
+  //     State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT, LocInfo));
+  //     RegsLeft -= 1;
 
-      UsedStack = true;
-      CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags, State);
-    } else if (Parts <= RegsLeft) {
-      for (unsigned j = 0; j < Parts; j++) {
-        MCRegister Reg = State.AllocateReg(RegList);
-        State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT, LocInfo));
-        RegsLeft--;
-      }
-    } else {
-      UsedStack = true;
-      for (unsigned j = 0; j < Parts; j++)
-        CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags, State);
-    }
-  }
+  //     UsedStack = true;
+  //     CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
+  //     State);
+  //   } else if (Parts <= RegsLeft) {
+  //     for (unsigned j = 0; j < Parts; j++) {
+  //       MCRegister Reg = State.AllocateReg(RegList);
+  //       State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT,
+  //       LocInfo)); RegsLeft--;
+  //     }
+  //   } else {
+  //     UsedStack = true;
+  //     for (unsigned j = 0; j < Parts; j++)
+  //       CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
+  //       State);
+  //   }
+  // }
 }
 
 static void AnalyzeRetResult(CCState &State,
@@ -751,6 +753,7 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                                    const SmallVectorImpl<SDValue> &OutVals,
                                    const SDLoc &dl, SelectionDAG &DAG) const {
 
+  llvm_unreachable("this is not yet impelmented");
   MachineFunction &MF = DAG.getMachineFunction();
 
   // CCValAssign - represent the assignment of the return value to a location
@@ -793,23 +796,27 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
     MVT PtrVT = getFrameIndexTy(DAG.getDataLayout());
     SDValue Val = DAG.getCopyFromReg(Chain, dl, Reg, PtrVT);
-    unsigned R12 = CPEN211::R12;
+    // unsigned R12 = CPEN211::R12;
 
-    Chain = DAG.getCopyToReg(Chain, dl, R12, Val, Glue);
-    Glue = Chain.getValue(1);
-    RetOps.push_back(DAG.getRegister(R12, PtrVT));
+    // Chain = DAG.getCopyToReg(Chain, dl, R12, Val, Glue);
+    // Glue = Chain.getValue(1);
+    // RetOps.push_back(DAG.getRegister(R12, PtrVT));
   }
 
-  unsigned Opc = (CallConv == CallingConv::MSP430_INTR ? CPEN211ISD::RETI_GLUE
-                                                       : CPEN211ISD::RET_GLUE);
+  // unsigned Opc = (CallConv == CallingConv::MSP430_INTR ?
+  // CPEN211ISD::RETI_GLUE
+  //                                                      :
+  //                                                      CPEN211ISD::RET_GLUE);
 
-  RetOps[0] = Chain; // Update chain.
+  // RetOps[0] = Chain; // Update
+  //                    // chain.
 
-  // Add the glue if we have it.
-  if (Glue.getNode())
-    RetOps.push_back(Glue);
+  //// Add the glue if we
+  //// have it.
+  // if (Glue.getNode())
+  //   RetOps.push_back(Glue);
 
-  return DAG.getNode(Opc, dl, MVT::Other, RetOps);
+  // return DAG.getNode(Opc, dl, MVT::Other, RetOps);
 }
 
 /// LowerCCCCallTo - functions arguments are copied from virtual regs to
@@ -820,127 +827,135 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
     const SmallVectorImpl<SDValue> &OutVals,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
     SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
-  // Analyze operands of the call, assigning locations to each operand.
-  SmallVector<CCValAssign, 16> ArgLocs;
-  CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
-                 *DAG.getContext());
-  AnalyzeArguments(CCInfo, ArgLocs, Outs);
 
-  // Get a count of how many bytes are to be pushed on the stack.
-  unsigned NumBytes = CCInfo.getStackSize();
-  MVT PtrVT = getFrameIndexTy(DAG.getDataLayout());
+  llvm_unreachable("this is not yet implemented");
 
-  Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
+  // // Analyze operands of the call, assigning locations to each operand.
+  // SmallVector<CCValAssign, 16> ArgLocs;
+  // CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
+  //                *DAG.getContext());
+  // AnalyzeArguments(CCInfo, ArgLocs, Outs);
 
-  SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
-  SmallVector<SDValue, 12> MemOpChains;
-  SDValue StackPtr;
+  // // Get a count of how many bytes are to be pushed on the stack.
+  // unsigned NumBytes = CCInfo.getStackSize();
+  // MVT PtrVT = getFrameIndexTy(DAG.getDataLayout());
 
-  // Walk the register/memloc assignments, inserting copies/loads.
-  for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
-    CCValAssign &VA = ArgLocs[i];
+  // Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
 
-    SDValue Arg = OutVals[i];
+  // SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
+  // SmallVector<SDValue, 12> MemOpChains;
+  // SDValue StackPtr;
 
-    // Promote the value if needed.
-    switch (VA.getLocInfo()) {
-    default:
-      llvm_unreachable("Unknown loc info!");
-    case CCValAssign::Full:
-      break;
-    case CCValAssign::SExt:
-      Arg = DAG.getNode(ISD::SIGN_EXTEND, dl, VA.getLocVT(), Arg);
-      break;
-    case CCValAssign::ZExt:
-      Arg = DAG.getNode(ISD::ZERO_EXTEND, dl, VA.getLocVT(), Arg);
-      break;
-    case CCValAssign::AExt:
-      Arg = DAG.getNode(ISD::ANY_EXTEND, dl, VA.getLocVT(), Arg);
-      break;
-    }
+  // // Walk the register/memloc assignments, inserting copies/loads.
+  // for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+  //   CCValAssign &VA = ArgLocs[i];
 
-    // Arguments that can be passed on register must be kept at RegsToPass
-    // vector
-    if (VA.isRegLoc()) {
-      RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
-    } else {
-      assert(VA.isMemLoc());
+  //   SDValue Arg = OutVals[i];
 
-      if (!StackPtr.getNode())
-        StackPtr = DAG.getCopyFromReg(Chain, dl, CPEN211::SP, PtrVT);
+  //   // Promote the value if needed.
+  //   switch (VA.getLocInfo()) {
+  //   default:
+  //     llvm_unreachable("Unknown loc info!");
+  //   case CCValAssign::Full:
+  //     break;
+  //   case CCValAssign::SExt:
+  //     Arg = DAG.getNode(ISD::SIGN_EXTEND, dl, VA.getLocVT(), Arg);
+  //     break;
+  //   case CCValAssign::ZExt:
+  //     Arg = DAG.getNode(ISD::ZERO_EXTEND, dl, VA.getLocVT(), Arg);
+  //     break;
+  //   case CCValAssign::AExt:
+  //     Arg = DAG.getNode(ISD::ANY_EXTEND, dl, VA.getLocVT(), Arg);
+  //     break;
+  //   }
 
-      SDValue PtrOff =
-          DAG.getNode(ISD::ADD, dl, PtrVT, StackPtr,
-                      DAG.getIntPtrConstant(VA.getLocMemOffset(), dl));
+  //   // Arguments that can be passed on register must be kept at RegsToPass
+  //   // vector
+  //   if (VA.isRegLoc()) {
+  //     RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
+  //   } else {
+  //     assert(VA.isMemLoc());
 
-      SDValue MemOp;
-      ISD::ArgFlagsTy Flags = Outs[i].Flags;
+  //     if (!StackPtr.getNode())
+  //       StackPtr = DAG.getCopyFromReg(Chain, dl, CPEN211::SP, PtrVT);
 
-      if (Flags.isByVal()) {
-        SDValue SizeNode = DAG.getConstant(Flags.getByValSize(), dl, MVT::i16);
-        MemOp = DAG.getMemcpy(Chain, dl, PtrOff, Arg, SizeNode,
-                              Flags.getNonZeroByValAlign(),
-                              /*isVolatile*/ false,
-                              /*AlwaysInline=*/true,
-                              /*CI=*/nullptr, std::nullopt,
-                              MachinePointerInfo(), MachinePointerInfo());
-      } else {
-        MemOp = DAG.getStore(Chain, dl, Arg, PtrOff, MachinePointerInfo());
-      }
+  //     SDValue PtrOff =
+  //         DAG.getNode(ISD::ADD, dl, PtrVT, StackPtr,
+  //                     DAG.getIntPtrConstant(VA.getLocMemOffset(), dl));
 
-      MemOpChains.push_back(MemOp);
-    }
-  }
+  //     SDValue MemOp;
+  //     ISD::ArgFlagsTy Flags = Outs[i].Flags;
 
-  // Transform all store nodes into one single node because all store nodes are
-  // independent of each other.
-  if (!MemOpChains.empty())
-    Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, MemOpChains);
+  //     if (Flags.isByVal()) {
+  //       SDValue SizeNode = DAG.getConstant(Flags.getByValSize(), dl,
+  //       MVT::i16); MemOp = DAG.getMemcpy(Chain, dl, PtrOff, Arg, SizeNode,
+  //                             Flags.getNonZeroByValAlign(),
+  //                             /*isVolatile*/ false,
+  //                             /*AlwaysInline=*/true,
+  //                             /*CI=*/nullptr, std::nullopt,
+  //                             MachinePointerInfo(), MachinePointerInfo());
+  //     } else {
+  //       MemOp = DAG.getStore(Chain, dl, Arg, PtrOff, MachinePointerInfo());
+  //     }
 
-  // Build a sequence of copy-to-reg nodes chained together with token chain and
-  // flag operands which copy the outgoing args into registers.  The InGlue in
-  // necessary since all emitted instructions must be stuck together.
-  SDValue InGlue;
-  for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
-    Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
-                             RegsToPass[i].second, InGlue);
-    InGlue = Chain.getValue(1);
-  }
+  //     MemOpChains.push_back(MemOp);
+  //   }
+  // }
 
-  // If the callee is a GlobalAddress node (quite common, every direct call is)
-  // turn it into a TargetGlobalAddress node so that legalize doesn't hack it.
-  // Likewise ExternalSymbol -> TargetExternalSymbol.
-  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee))
-    Callee = DAG.getTargetGlobalAddress(G->getGlobal(), dl, MVT::i16);
-  else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee))
-    Callee = DAG.getTargetExternalSymbol(E->getSymbol(), MVT::i16);
+  // // Transform all store nodes into one single node because all store nodes
+  // are
+  // // independent of each other.
+  // if (!MemOpChains.empty())
+  //   Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, MemOpChains);
 
-  // Returns a chain & a flag for retval copy to use.
-  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
-  SmallVector<SDValue, 8> Ops;
-  Ops.push_back(Chain);
-  Ops.push_back(Callee);
+  // // Build a sequence of copy-to-reg nodes chained together with token chain
+  // and
+  // // flag operands which copy the outgoing args into registers.  The InGlue
+  // in
+  // // necessary since all emitted instructions must be stuck together.
+  // SDValue InGlue;
+  // for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
+  //   Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
+  //                            RegsToPass[i].second, InGlue);
+  //   InGlue = Chain.getValue(1);
+  // }
 
-  // Add argument registers to the end of the list so that they are
-  // known live into the call.
-  for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i)
-    Ops.push_back(DAG.getRegister(RegsToPass[i].first,
-                                  RegsToPass[i].second.getValueType()));
+  // // If the callee is a GlobalAddress node (quite common, every direct call
+  // is)
+  // // turn it into a TargetGlobalAddress node so that legalize doesn't hack
+  // it.
+  // // Likewise ExternalSymbol -> TargetExternalSymbol.
+  // if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee))
+  //   Callee = DAG.getTargetGlobalAddress(G->getGlobal(), dl, MVT::i16);
+  // else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee))
+  //   Callee = DAG.getTargetExternalSymbol(E->getSymbol(), MVT::i16);
 
-  if (InGlue.getNode())
-    Ops.push_back(InGlue);
+  // // Returns a chain & a flag for retval copy to use.
+  // SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
+  // SmallVector<SDValue, 8> Ops;
+  // Ops.push_back(Chain);
+  // Ops.push_back(Callee);
 
-  Chain = DAG.getNode(CPEN211ISD::CALL, dl, NodeTys, Ops);
-  InGlue = Chain.getValue(1);
+  // // Add argument registers to the end of the list so that they are
+  // // known live into the call.
+  // for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i)
+  //   Ops.push_back(DAG.getRegister(RegsToPass[i].first,
+  //                                 RegsToPass[i].second.getValueType()));
 
-  // Create the CALLSEQ_END node.
-  Chain = DAG.getCALLSEQ_END(Chain, NumBytes, 0, InGlue, dl);
-  InGlue = Chain.getValue(1);
+  // if (InGlue.getNode())
+  //   Ops.push_back(InGlue);
 
-  // Handle result values, copying them out of physregs into vregs that we
-  // return.
-  return LowerCallResult(Chain, InGlue, CallConv, isVarArg, Ins, dl, DAG,
-                         InVals);
+  // Chain = DAG.getNode(CPEN211ISD::CALL, dl, NodeTys, Ops);
+  // InGlue = Chain.getValue(1);
+
+  // // Create the CALLSEQ_END node.
+  // Chain = DAG.getCALLSEQ_END(Chain, NumBytes, 0, InGlue, dl);
+  // InGlue = Chain.getValue(1);
+
+  // // Handle result values, copying them out of physregs into vregs that we
+  // // return.
+  // return LowerCallResult(Chain, InGlue, CallConv, isVarArg, Ins, dl, DAG,
+  //                        InVals);
 }
 
 /// LowerCallResult - Lower the result values of a call into the
@@ -972,66 +987,70 @@ SDValue CPEN211TargetLowering::LowerCallResult(
 
 SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
                                            SelectionDAG &DAG) const {
-  unsigned Opc = Op.getOpcode();
-  SDNode *N = Op.getNode();
-  EVT VT = Op.getValueType();
-  SDLoc dl(N);
+  llvm_unreachable("cannot lower shift for now!");
+  // unsigned Opc = Op.getOpcode();
+  // SDNode *N = Op.getNode();
+  // EVT VT = Op.getValueType();
+  // SDLoc dl(N);
 
-  // Expand non-constant shifts to loops:
-  if (!isa<ConstantSDNode>(N->getOperand(1)))
-    return Op;
+  //// Expand non-constant shifts to loops:
+  // if (!isa<ConstantSDNode>(N->getOperand(1)))
+  //   return Op;
 
-  uint64_t ShiftAmount = N->getConstantOperandVal(1);
+  // uint64_t ShiftAmount = N->getConstantOperandVal(1);
 
-  // Expand the stuff into sequence of shifts.
-  SDValue Victim = N->getOperand(0);
+  //// Expand the stuff into sequence of shifts.
+  // SDValue Victim = N->getOperand(0);
 
-  if (ShiftAmount >= 8) {
-    assert(VT == MVT::i16 && "Can not shift i8 by 8 and more");
-    switch (Opc) {
-    default:
-      llvm_unreachable("Unknown shift");
-    case ISD::SHL:
-      // foo << (8 + N) => swpb(zext(foo)) << N
-      Victim = DAG.getZeroExtendInReg(Victim, dl, MVT::i8);
-      Victim = DAG.getNode(ISD::BSWAP, dl, VT, Victim);
-      break;
-    case ISD::SRA:
-    case ISD::SRL:
-      // foo >> (8 + N) => sxt(swpb(foo)) >> N
-      Victim = DAG.getNode(ISD::BSWAP, dl, VT, Victim);
-      Victim = (Opc == ISD::SRA)
-                   ? DAG.getNode(ISD::SIGN_EXTEND_INREG, dl, VT, Victim,
-                                 DAG.getValueType(MVT::i8))
-                   : DAG.getZeroExtendInReg(Victim, dl, MVT::i8);
-      break;
-    }
-    ShiftAmount -= 8;
-  }
+  // if (ShiftAmount >= 8) {
+  //   assert(VT == MVT::i16 && "Can not shift i8 by 8 and more");
+  //   switch (Opc) {
+  //   default:
+  //     llvm_unreachable("Unknown shift");
+  //   case ISD::SHL:
+  //     // foo << (8 + N) => swpb(zext(foo)) << N
+  //     Victim = DAG.getZeroExtendInReg(Victim, dl, MVT::i8);
+  //     Victim = DAG.getNode(ISD::BSWAP, dl, VT, Victim);
+  //     break;
+  //   case ISD::SRA:
+  //   case ISD::SRL:
+  //     // foo >> (8 + N) => sxt(swpb(foo)) >> N
+  //     Victim = DAG.getNode(ISD::BSWAP, dl, VT, Victim);
+  //     Victim = (Opc == ISD::SRA)
+  //                  ? DAG.getNode(ISD::SIGN_EXTEND_INREG, dl, VT, Victim,
+  //                                DAG.getValueType(MVT::i8))
+  //                  : DAG.getZeroExtendInReg(Victim, dl, MVT::i8);
+  //     break;
+  //   }
+  //   ShiftAmount -= 8;
+  // }
 
-  if (Opc == ISD::SRL && ShiftAmount) {
-    // Emit a special goodness here:
-    // srl A, 1 => clrc; rrc A
-    Victim = DAG.getNode(CPEN211ISD::RRCL, dl, VT, Victim);
-    ShiftAmount -= 1;
-  }
+  // if (Opc == ISD::SRL && ShiftAmount) {
+  //   // Emit a special goodness here:
+  //   // srl A, 1 => clrc; rrc A
+  //   Victim = DAG.getNode(CPEN211ISD::RRCL, dl, VT, Victim);
+  //   ShiftAmount -= 1;
+  // }
 
-  while (ShiftAmount--)
-    Victim = DAG.getNode((Opc == ISD::SHL ? CPEN211ISD::RLA : CPEN211ISD::RRA),
-                         dl, VT, Victim);
+  // while (ShiftAmount--)
+  //   Victim = DAG.getNode((Opc == ISD::SHL ? CPEN211ISD::RLA :
+  //   CPEN211ISD::RRA),
+  //                        dl, VT, Victim);
 
-  return Victim;
+  // return Victim;
 }
 
 SDValue CPEN211TargetLowering::LowerGlobalAddress(SDValue Op,
                                                   SelectionDAG &DAG) const {
+  llvm_unreachable("this is not correct!");
   const GlobalValue *GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
   int64_t Offset = cast<GlobalAddressSDNode>(Op)->getOffset();
   EVT PtrVT = Op.getValueType();
 
   // Create the TargetGlobalAddress node, folding in the constant offset.
   SDValue Result = DAG.getTargetGlobalAddress(GV, SDLoc(Op), PtrVT, Offset);
-  return DAG.getNode(CPEN211ISD::Wrapper, SDLoc(Op), PtrVT, Result);
+  return Result;
+  // return DAG.getNode(CPEN211ISD::Wrapper, SDLoc(Op), PtrVT, Result);
 }
 
 SDValue CPEN211TargetLowering::LowerExternalSymbol(SDValue Op,
@@ -1041,7 +1060,9 @@ SDValue CPEN211TargetLowering::LowerExternalSymbol(SDValue Op,
   EVT PtrVT = Op.getValueType();
   SDValue Result = DAG.getTargetExternalSymbol(Sym, PtrVT);
 
-  return DAG.getNode(CPEN211ISD::Wrapper, dl, PtrVT, Result);
+  llvm_unreachable("this is not correct!");
+  return Result;
+  // return DAG.getNode(CPEN211ISD::Wrapper, dl, PtrVT, Result);
 }
 
 SDValue CPEN211TargetLowering::LowerBlockAddress(SDValue Op,
@@ -1051,93 +1072,99 @@ SDValue CPEN211TargetLowering::LowerBlockAddress(SDValue Op,
   EVT PtrVT = Op.getValueType();
   SDValue Result = DAG.getTargetBlockAddress(BA, PtrVT);
 
-  return DAG.getNode(CPEN211ISD::Wrapper, dl, PtrVT, Result);
+  llvm_unreachable("this is not correct!");
+  return Result;
+  // return DAG.getNode(CPEN211ISD::Wrapper, dl, PtrVT, Result);
 }
 
 static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
                        ISD::CondCode CC, const SDLoc &dl, SelectionDAG &DAG) {
-  // FIXME: Handle bittests someday
-  assert(!LHS.getValueType().isFloatingPoint() && "We don't handle FP yet");
+  llvm_unreachable("this is not correct!");
 
-  // FIXME: Handle jump negative someday
-  CPEN211CC::CondCodes TCC = CPEN211CC::COND_INVALID;
-  switch (CC) {
-  default:
-    llvm_unreachable("Invalid integer condition!");
-  case ISD::SETEQ:
-    TCC = CPEN211CC::COND_E; // aka COND_Z
-    // Minor optimization: if LHS is a constant, swap operands, then the
-    // constant can be folded into comparison.
-    if (LHS.getOpcode() == ISD::Constant)
-      std::swap(LHS, RHS);
-    break;
-  case ISD::SETNE:
-    TCC = CPEN211CC::COND_NE; // aka COND_NZ
-    // Minor optimization: if LHS is a constant, swap operands, then the
-    // constant can be folded into comparison.
-    if (LHS.getOpcode() == ISD::Constant)
-      std::swap(LHS, RHS);
-    break;
-  case ISD::SETULE:
-    std::swap(LHS, RHS);
-    [[fallthrough]];
-  case ISD::SETUGE:
-    // Turn lhs u>= rhs with lhs constant into rhs u< lhs+1, this allows us to
-    // fold constant into instruction.
-    if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-      LHS = RHS;
-      RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-      TCC = CPEN211CC::COND_LO;
-      break;
-    }
-    TCC = CPEN211CC::COND_HS; // aka COND_C
-    break;
-  case ISD::SETUGT:
-    std::swap(LHS, RHS);
-    [[fallthrough]];
-  case ISD::SETULT:
-    // Turn lhs u< rhs with lhs constant into rhs u>= lhs+1, this allows us to
-    // fold constant into instruction.
-    if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-      LHS = RHS;
-      RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-      TCC = CPEN211CC::COND_HS;
-      break;
-    }
-    TCC = CPEN211CC::COND_LO; // aka COND_NC
-    break;
-  case ISD::SETLE:
-    std::swap(LHS, RHS);
-    [[fallthrough]];
-  case ISD::SETGE:
-    // Turn lhs >= rhs with lhs constant into rhs < lhs+1, this allows us to
-    // fold constant into instruction.
-    if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-      LHS = RHS;
-      RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-      TCC = CPEN211CC::COND_L;
-      break;
-    }
-    TCC = CPEN211CC::COND_GE;
-    break;
-  case ISD::SETGT:
-    std::swap(LHS, RHS);
-    [[fallthrough]];
-  case ISD::SETLT:
-    // Turn lhs < rhs with lhs constant into rhs >= lhs+1, this allows us to
-    // fold constant into instruction.
-    if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-      LHS = RHS;
-      RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-      TCC = CPEN211CC::COND_GE;
-      break;
-    }
-    TCC = CPEN211CC::COND_L;
-    break;
-  }
+  //// FIXME: Handle bittests someday
+  // assert(!LHS.getValueType().isFloatingPoint() && "We don't handle FP yet");
 
-  TargetCC = DAG.getConstant(TCC, dl, MVT::i8);
-  return DAG.getNode(CPEN211ISD::CMP, dl, MVT::Glue, LHS, RHS);
+  //// FIXME: Handle jump negative someday
+  // CPEN211CC::CondCodes TCC = CPEN211CC::COND_INVALID;
+  // switch (CC) {
+  // default:
+  //   llvm_unreachable("Invalid integer condition!");
+  // case ISD::SETEQ:
+  //   TCC = CPEN211CC::COND_E; // aka COND_Z
+  //   // Minor optimization: if LHS is a constant, swap operands, then the
+  //   // constant can be folded into comparison.
+  //   if (LHS.getOpcode() == ISD::Constant)
+  //     std::swap(LHS, RHS);
+  //   break;
+  // case ISD::SETNE:
+  //   TCC = CPEN211CC::COND_NE; // aka COND_NZ
+  //   // Minor optimization: if LHS is a constant, swap operands, then the
+  //   // constant can be folded into comparison.
+  //   if (LHS.getOpcode() == ISD::Constant)
+  //     std::swap(LHS, RHS);
+  //   break;
+  // case ISD::SETULE:
+  //   std::swap(LHS, RHS);
+  //   [[fallthrough]];
+  // case ISD::SETUGE:
+  //   // Turn lhs u>= rhs with lhs constant into rhs u< lhs+1, this allows us
+  //   to
+  //   // fold constant into instruction.
+  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+  //     LHS = RHS;
+  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+  //     TCC = CPEN211CC::COND_LO;
+  //     break;
+  //   }
+  //   TCC = CPEN211CC::COND_HS; // aka COND_C
+  //   break;
+  // case ISD::SETUGT:
+  //   std::swap(LHS, RHS);
+  //   [[fallthrough]];
+  // case ISD::SETULT:
+  //   // Turn lhs u< rhs with lhs constant into rhs u>= lhs+1, this allows us
+  //   to
+  //   // fold constant into instruction.
+  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+  //     LHS = RHS;
+  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+  //     TCC = CPEN211CC::COND_HS;
+  //     break;
+  //   }
+  //   TCC = CPEN211CC::COND_LO; // aka COND_NC
+  //   break;
+  // case ISD::SETLE:
+  //   std::swap(LHS, RHS);
+  //   [[fallthrough]];
+  // case ISD::SETGE:
+  //   // Turn lhs >= rhs with lhs constant into rhs < lhs+1, this allows us to
+  //   // fold constant into instruction.
+  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+  //     LHS = RHS;
+  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+  //     TCC = CPEN211CC::COND_L;
+  //     break;
+  //   }
+  //   TCC = CPEN211CC::COND_GE;
+  //   break;
+  // case ISD::SETGT:
+  //   std::swap(LHS, RHS);
+  //   [[fallthrough]];
+  // case ISD::SETLT:
+  //   // Turn lhs < rhs with lhs constant into rhs >= lhs+1, this allows us to
+  //   // fold constant into instruction.
+  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+  //     LHS = RHS;
+  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+  //     TCC = CPEN211CC::COND_GE;
+  //     break;
+  //   }
+  //   TCC = CPEN211CC::COND_L;
+  //   break;
+  // }
+
+  // TargetCC = DAG.getConstant(TCC, dl, MVT::i8);
+  // return DAG.getNode(CPEN211ISD::CMP, dl, MVT::Glue, LHS, RHS);
 }
 
 SDValue CPEN211TargetLowering::LowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
@@ -1180,53 +1207,56 @@ SDValue CPEN211TargetLowering::LowerSETCC(SDValue Op, SelectionDAG &DAG) const {
   bool Invert = false;
   bool Shift = false;
   bool Convert = true;
-  switch (TargetCC->getAsZExtVal()) {
-  default:
-    Convert = false;
-    break;
-  case CPEN211CC::COND_HS:
-    // Res = SR & 1, no processing is required
-    break;
-  case CPEN211CC::COND_LO:
-    // Res = ~(SR & 1)
-    Invert = true;
-    break;
-  case CPEN211CC::COND_NE:
-    if (andCC) {
-      // C = ~Z, thus Res = SR & 1, no processing is required
-    } else {
-      // Res = ~((SR >> 1) & 1)
-      Shift = true;
-      Invert = true;
-    }
-    break;
-  case CPEN211CC::COND_E:
-    Shift = true;
-    // C = ~Z for AND instruction, thus we can put Res = ~(SR & 1), however,
-    // Res = (SR >> 1) & 1 is 1 word shorter.
-    break;
-  }
-  EVT VT = Op.getValueType();
-  SDValue One = DAG.getConstant(1, dl, VT);
-  if (Convert) {
-    SDValue SR =
-        DAG.getCopyFromReg(DAG.getEntryNode(), dl, CPEN211::SR, MVT::i16, Flag);
-    if (Shift)
-      // FIXME: somewhere this is turned into a SRL, lower it MSP specific?
-      SR = DAG.getNode(ISD::SRA, dl, MVT::i16, SR, One);
-    SR = DAG.getNode(ISD::AND, dl, MVT::i16, SR, One);
-    if (Invert)
-      SR = DAG.getNode(ISD::XOR, dl, MVT::i16, SR, One);
-    return SR;
-  } else {
-    SDValue Zero = DAG.getConstant(0, dl, VT);
-    SDValue Ops[] = {One, Zero, TargetCC, Flag};
-    return DAG.getNode(CPEN211ISD::SELECT_CC, dl, Op.getValueType(), Ops);
-  }
+  llvm_unreachable("this is not yet implemented");
+  // switch (TargetCC->getAsZExtVal()) {
+  // default:
+  //   Convert = false;
+  //   break;
+  // case CPEN211CC::COND_HS:
+  //   // Res = SR & 1, no processing is required
+  //   break;
+  // case CPEN211CC::COND_LO:
+  //   // Res = ~(SR & 1)
+  //   Invert = true;
+  //   break;
+  // case CPEN211CC::COND_NE:
+  //   if (andCC) {
+  //     // C = ~Z, thus Res = SR & 1, no processing is required
+  //   } else {
+  //     // Res = ~((SR >> 1) & 1)
+  //     Shift = true;
+  //     Invert = true;
+  //   }
+  //   break;
+  // case CPEN211CC::COND_E:
+  //   Shift = true;
+  //   // C = ~Z for AND instruction, thus we can put Res = ~(SR & 1), however,
+  //   // Res = (SR >> 1) & 1 is 1 word shorter.
+  //   break;
+  // }
+  // EVT VT = Op.getValueType();
+  // SDValue One = DAG.getConstant(1, dl, VT);
+  // if (Convert) {
+  //   SDValue SR =
+  //       DAG.getCopyFromReg(DAG.getEntryNode(), dl, CPEN211::SR, MVT::i16,
+  //       Flag);
+  //   if (Shift)
+  //     // FIXME: somewhere this is turned into a SRL, lower it MSP specific?
+  //     SR = DAG.getNode(ISD::SRA, dl, MVT::i16, SR, One);
+  //   SR = DAG.getNode(ISD::AND, dl, MVT::i16, SR, One);
+  //   if (Invert)
+  //     SR = DAG.getNode(ISD::XOR, dl, MVT::i16, SR, One);
+  //   return SR;
+  // } else {
+  //   SDValue Zero = DAG.getConstant(0, dl, VT);
+  //   SDValue Ops[] = {One, Zero, TargetCC, Flag};
+  //   return DAG.getNode(CPEN211ISD::SELECT_CC, dl, Op.getValueType(), Ops);
+  // }
 }
 
 SDValue CPEN211TargetLowering::LowerSELECT_CC(SDValue Op,
                                               SelectionDAG &DAG) const {
+  llvm_unreachable("this is not yet implemented");
   SDValue LHS = Op.getOperand(0);
   SDValue RHS = Op.getOperand(1);
   SDValue TrueV = Op.getOperand(2);
@@ -1239,7 +1269,7 @@ SDValue CPEN211TargetLowering::LowerSELECT_CC(SDValue Op,
 
   SDValue Ops[] = {TrueV, FalseV, TargetCC, Flag};
 
-  return DAG.getNode(CPEN211ISD::SELECT_CC, dl, Op.getValueType(), Ops);
+  // return DAG.getNode(CPEN211ISD::SELECT_CC, dl, Op.getValueType(), Ops);
 }
 
 SDValue CPEN211TargetLowering::LowerSIGN_EXTEND(SDValue Op,
@@ -1340,7 +1370,8 @@ SDValue CPEN211TargetLowering::LowerJumpTable(SDValue Op,
   JumpTableSDNode *JT = cast<JumpTableSDNode>(Op);
   EVT PtrVT = Op.getValueType();
   SDValue Result = DAG.getTargetJumpTable(JT->getIndex(), PtrVT);
-  return DAG.getNode(CPEN211ISD::Wrapper, SDLoc(JT), PtrVT, Result);
+  llvm_unreachable("this is not yet implemented");
+  // return DAG.getNode(CPEN211ISD::Wrapper, SDLoc(JT), PtrVT, Result);
 }
 
 /// getPostIndexedAddressParts - returns true by value, base pointer and
@@ -1381,30 +1412,6 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     break;
   case CPEN211ISD::RET_GLUE:
     return "CPEN211ISD::RET_GLUE";
-  case CPEN211ISD::RETI_GLUE:
-    return "CPEN211ISD::RETI_GLUE";
-  case CPEN211ISD::RRA:
-    return "CPEN211ISD::RRA";
-  case CPEN211ISD::RLA:
-    return "CPEN211ISD::RLA";
-  case CPEN211ISD::RRC:
-    return "CPEN211ISD::RRC";
-  case CPEN211ISD::RRCL:
-    return "CPEN211ISD::RRCL";
-  case CPEN211ISD::CALL:
-    return "CPEN211ISD::CALL";
-  case CPEN211ISD::Wrapper:
-    return "CPEN211ISD::Wrapper";
-  case CPEN211ISD::BR_CC:
-    return "CPEN211ISD::BR_CC";
-  case CPEN211ISD::CMP:
-    return "CPEN211ISD::CMP";
-  case CPEN211ISD::SETCC:
-    return "CPEN211ISD::SETCC";
-  case CPEN211ISD::SELECT_CC:
-    return "CPEN211ISD::SELECT_CC";
-  case CPEN211ISD::DADD:
-    return "CPEN211ISD::DADD";
   }
   return nullptr;
 }
@@ -1446,201 +1453,207 @@ CPEN211TargetLowering::EmitShiftInstr(MachineInstr &MI,
   DebugLoc dl = MI.getDebugLoc();
   const TargetInstrInfo &TII = *F->getSubtarget().getInstrInfo();
 
-  unsigned Opc;
-  bool ClearCarry = false;
-  const TargetRegisterClass *RC;
-  switch (MI.getOpcode()) {
-  default:
-    llvm_unreachable("Invalid shift opcode!");
-  case CPEN211::Shl8:
-    Opc = CPEN211::ADD8rr;
-    RC = &CPEN211::GR8RegClass;
-    break;
-  case CPEN211::Shl16:
-    Opc = CPEN211::ADD16rr;
-    RC = &CPEN211::GR16RegClass;
-    break;
-  case CPEN211::Sra8:
-    Opc = CPEN211::RRA8r;
-    RC = &CPEN211::GR8RegClass;
-    break;
-  case CPEN211::Sra16:
-    Opc = CPEN211::RRA16r;
-    RC = &CPEN211::GR16RegClass;
-    break;
-  case CPEN211::Srl8:
-    ClearCarry = true;
-    Opc = CPEN211::RRC8r;
-    RC = &CPEN211::GR8RegClass;
-    break;
-  case CPEN211::Srl16:
-    ClearCarry = true;
-    Opc = CPEN211::RRC16r;
-    RC = &CPEN211::GR16RegClass;
-    break;
-  case CPEN211::Rrcl8:
-  case CPEN211::Rrcl16: {
-    BuildMI(*BB, MI, dl, TII.get(CPEN211::BIC16rc), CPEN211::SR)
-        .addReg(CPEN211::SR)
-        .addImm(1);
-    Register SrcReg = MI.getOperand(1).getReg();
-    Register DstReg = MI.getOperand(0).getReg();
-    unsigned RrcOpc =
-        MI.getOpcode() == CPEN211::Rrcl16 ? CPEN211::RRC16r : CPEN211::RRC8r;
-    BuildMI(*BB, MI, dl, TII.get(RrcOpc), DstReg).addReg(SrcReg);
-    MI.eraseFromParent(); // The pseudo instruction is gone now.
-    return BB;
-  }
-  }
+  llvm_unreachable("this is not reachable");
+  return nullptr;
+  // unsigned Opc;
+  // bool ClearCarry = false;
+  // const TargetRegisterClass *RC;
+  // switch (MI.getOpcode()) {
+  // default:
+  //   llvm_unreachable("Invalid shift opcode!");
+  // case CPEN211::Shl8:
+  //   Opc = CPEN211::ADD8rr;
+  //   RC = &CPEN211::GR8RegClass;
+  //   break;
+  // case CPEN211::Shl16:
+  //   Opc = CPEN211::ADD16rr;
+  //   RC = &CPEN211::GR16RegClass;
+  //   break;
+  // case CPEN211::Sra8:
+  //   Opc = CPEN211::RRA8r;
+  //   RC = &CPEN211::GR8RegClass;
+  //   break;
+  // case CPEN211::Sra16:
+  //   Opc = CPEN211::RRA16r;
+  //   RC = &CPEN211::GR16RegClass;
+  //   break;
+  // case CPEN211::Srl8:
+  //   ClearCarry = true;
+  //   Opc = CPEN211::RRC8r;
+  //   RC = &CPEN211::GR8RegClass;
+  //   break;
+  // case CPEN211::Srl16:
+  //   ClearCarry = true;
+  //   Opc = CPEN211::RRC16r;
+  //   RC = &CPEN211::GR16RegClass;
+  //   break;
+  // case CPEN211::Rrcl8:
+  // case CPEN211::Rrcl16: {
+  //   BuildMI(*BB, MI, dl, TII.get(CPEN211::BIC16rc), CPEN211::SR)
+  //       .addReg(CPEN211::SR)
+  //       .addImm(1);
+  //   Register SrcReg = MI.getOperand(1).getReg();
+  //   Register DstReg = MI.getOperand(0).getReg();
+  //   unsigned RrcOpc =
+  //       MI.getOpcode() == CPEN211::Rrcl16 ? CPEN211::RRC16r : CPEN211::RRC8r;
+  //   BuildMI(*BB, MI, dl, TII.get(RrcOpc), DstReg).addReg(SrcReg);
+  //   MI.eraseFromParent(); // The pseudo instruction is gone now.
+  //   return BB;
+  // }
+  // }
 
-  const BasicBlock *LLVM_BB = BB->getBasicBlock();
-  MachineFunction::iterator I = ++BB->getIterator();
+  // const BasicBlock *LLVM_BB = BB->getBasicBlock();
+  // MachineFunction::iterator I = ++BB->getIterator();
 
-  // Create loop block
-  MachineBasicBlock *LoopBB = F->CreateMachineBasicBlock(LLVM_BB);
-  MachineBasicBlock *RemBB = F->CreateMachineBasicBlock(LLVM_BB);
+  //// Create loop block
+  // MachineBasicBlock *LoopBB = F->CreateMachineBasicBlock(LLVM_BB);
+  // MachineBasicBlock *RemBB = F->CreateMachineBasicBlock(LLVM_BB);
 
-  F->insert(I, LoopBB);
-  F->insert(I, RemBB);
+  // F->insert(I, LoopBB);
+  // F->insert(I, RemBB);
 
-  // Update machine-CFG edges by transferring all successors of the current
-  // block to the block containing instructions after shift.
-  RemBB->splice(RemBB->begin(), BB, std::next(MachineBasicBlock::iterator(MI)),
-                BB->end());
-  RemBB->transferSuccessorsAndUpdatePHIs(BB);
+  //// Update machine-CFG edges by transferring all successors of the current
+  //// block to the block containing instructions after shift.
+  // RemBB->splice(RemBB->begin(), BB,
+  // std::next(MachineBasicBlock::iterator(MI)),
+  //               BB->end());
+  // RemBB->transferSuccessorsAndUpdatePHIs(BB);
 
-  // Add edges BB => LoopBB => RemBB, BB => RemBB, LoopBB => LoopBB
-  BB->addSuccessor(LoopBB);
-  BB->addSuccessor(RemBB);
-  LoopBB->addSuccessor(RemBB);
-  LoopBB->addSuccessor(LoopBB);
+  //// Add edges BB => LoopBB => RemBB, BB => RemBB, LoopBB => LoopBB
+  // BB->addSuccessor(LoopBB);
+  // BB->addSuccessor(RemBB);
+  // LoopBB->addSuccessor(RemBB);
+  // LoopBB->addSuccessor(LoopBB);
 
-  Register ShiftAmtReg = RI.createVirtualRegister(&CPEN211::GR8RegClass);
-  Register ShiftAmtReg2 = RI.createVirtualRegister(&CPEN211::GR8RegClass);
-  Register ShiftReg = RI.createVirtualRegister(RC);
-  Register ShiftReg2 = RI.createVirtualRegister(RC);
-  Register ShiftAmtSrcReg = MI.getOperand(2).getReg();
-  Register SrcReg = MI.getOperand(1).getReg();
-  Register DstReg = MI.getOperand(0).getReg();
+  // Register ShiftAmtReg = RI.createVirtualRegister(&CPEN211::GR8RegClass);
+  // Register ShiftAmtReg2 = RI.createVirtualRegister(&CPEN211::GR8RegClass);
+  // Register ShiftReg = RI.createVirtualRegister(RC);
+  // Register ShiftReg2 = RI.createVirtualRegister(RC);
+  // Register ShiftAmtSrcReg = MI.getOperand(2).getReg();
+  // Register SrcReg = MI.getOperand(1).getReg();
+  // Register DstReg = MI.getOperand(0).getReg();
 
-  // BB:
-  // cmp 0, N
-  // je RemBB
-  BuildMI(BB, dl, TII.get(CPEN211::CMP8ri)).addReg(ShiftAmtSrcReg).addImm(0);
-  BuildMI(BB, dl, TII.get(CPEN211::JCC))
-      .addMBB(RemBB)
-      .addImm(CPEN211CC::COND_E);
+  //// BB:
+  //// cmp 0, N
+  //// je RemBB
+  // BuildMI(BB, dl, TII.get(CPEN211::CMP8ri)).addReg(ShiftAmtSrcReg).addImm(0);
+  // BuildMI(BB, dl, TII.get(CPEN211::JCC))
+  //     .addMBB(RemBB)
+  //     .addImm(CPEN211CC::COND_E);
 
-  // LoopBB:
-  // ShiftReg = phi [%SrcReg, BB], [%ShiftReg2, LoopBB]
-  // ShiftAmt = phi [%N, BB],      [%ShiftAmt2, LoopBB]
-  // ShiftReg2 = shift ShiftReg
-  // ShiftAmt2 = ShiftAmt - 1;
-  BuildMI(LoopBB, dl, TII.get(CPEN211::PHI), ShiftReg)
-      .addReg(SrcReg)
-      .addMBB(BB)
-      .addReg(ShiftReg2)
-      .addMBB(LoopBB);
-  BuildMI(LoopBB, dl, TII.get(CPEN211::PHI), ShiftAmtReg)
-      .addReg(ShiftAmtSrcReg)
-      .addMBB(BB)
-      .addReg(ShiftAmtReg2)
-      .addMBB(LoopBB);
-  if (ClearCarry)
-    BuildMI(LoopBB, dl, TII.get(CPEN211::BIC16rc), CPEN211::SR)
-        .addReg(CPEN211::SR)
-        .addImm(1);
-  if (Opc == CPEN211::ADD8rr || Opc == CPEN211::ADD16rr)
-    BuildMI(LoopBB, dl, TII.get(Opc), ShiftReg2)
-        .addReg(ShiftReg)
-        .addReg(ShiftReg);
-  else
-    BuildMI(LoopBB, dl, TII.get(Opc), ShiftReg2).addReg(ShiftReg);
-  BuildMI(LoopBB, dl, TII.get(CPEN211::SUB8ri), ShiftAmtReg2)
-      .addReg(ShiftAmtReg)
-      .addImm(1);
-  BuildMI(LoopBB, dl, TII.get(CPEN211::JCC))
-      .addMBB(LoopBB)
-      .addImm(CPEN211CC::COND_NE);
+  //// LoopBB:
+  //// ShiftReg = phi [%SrcReg, BB], [%ShiftReg2, LoopBB]
+  //// ShiftAmt = phi [%N, BB],      [%ShiftAmt2, LoopBB]
+  //// ShiftReg2 = shift ShiftReg
+  //// ShiftAmt2 = ShiftAmt - 1;
+  // BuildMI(LoopBB, dl, TII.get(CPEN211::PHI), ShiftReg)
+  //     .addReg(SrcReg)
+  //     .addMBB(BB)
+  //     .addReg(ShiftReg2)
+  //     .addMBB(LoopBB);
+  // BuildMI(LoopBB, dl, TII.get(CPEN211::PHI), ShiftAmtReg)
+  //     .addReg(ShiftAmtSrcReg)
+  //     .addMBB(BB)
+  //     .addReg(ShiftAmtReg2)
+  //     .addMBB(LoopBB);
+  // if (ClearCarry)
+  //   BuildMI(LoopBB, dl, TII.get(CPEN211::BIC16rc), CPEN211::SR)
+  //       .addReg(CPEN211::SR)
+  //       .addImm(1);
+  // if (Opc == CPEN211::ADD8rr || Opc == CPEN211::ADD16rr)
+  //   BuildMI(LoopBB, dl, TII.get(Opc), ShiftReg2)
+  //       .addReg(ShiftReg)
+  //       .addReg(ShiftReg);
+  // else
+  //   BuildMI(LoopBB, dl, TII.get(Opc), ShiftReg2).addReg(ShiftReg);
+  // BuildMI(LoopBB, dl, TII.get(CPEN211::SUB8ri), ShiftAmtReg2)
+  //     .addReg(ShiftAmtReg)
+  //     .addImm(1);
+  // BuildMI(LoopBB, dl, TII.get(CPEN211::JCC))
+  //     .addMBB(LoopBB)
+  //     .addImm(CPEN211CC::COND_NE);
 
-  // RemBB:
-  // DestReg = phi [%SrcReg, BB], [%ShiftReg, LoopBB]
-  BuildMI(*RemBB, RemBB->begin(), dl, TII.get(CPEN211::PHI), DstReg)
-      .addReg(SrcReg)
-      .addMBB(BB)
-      .addReg(ShiftReg2)
-      .addMBB(LoopBB);
+  //// RemBB:
+  //// DestReg = phi [%SrcReg, BB], [%ShiftReg, LoopBB]
+  // BuildMI(*RemBB, RemBB->begin(), dl, TII.get(CPEN211::PHI), DstReg)
+  //     .addReg(SrcReg)
+  //     .addMBB(BB)
+  //     .addReg(ShiftReg2)
+  //     .addMBB(LoopBB);
 
-  MI.eraseFromParent(); // The pseudo instruction is gone now.
-  return RemBB;
+  // MI.eraseFromParent(); // The pseudo instruction is gone now.
+  // return RemBB;
 }
 
 MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
     MachineInstr &MI, MachineBasicBlock *BB) const {
   unsigned Opc = MI.getOpcode();
 
-  if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8 ||
-      Opc == CPEN211::Sra16 || Opc == CPEN211::Srl8 || Opc == CPEN211::Srl16 ||
-      Opc == CPEN211::Rrcl8 || Opc == CPEN211::Rrcl16)
-    return EmitShiftInstr(MI, BB);
+  llvm_unreachable("this is not reachable");
+  return nullptr;
 
-  const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
-  DebugLoc dl = MI.getDebugLoc();
+  // if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8 ||
+  //     Opc == CPEN211::Sra16 || Opc == CPEN211::Srl8 || Opc == CPEN211::Srl16 ||
+  //     Opc == CPEN211::Rrcl8 || Opc == CPEN211::Rrcl16)
+  //   return EmitShiftInstr(MI, BB);
 
-  assert((Opc == CPEN211::Select16 || Opc == CPEN211::Select8) &&
-         "Unexpected instr type to insert");
+  // const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
+  // DebugLoc dl = MI.getDebugLoc();
 
-  // To "insert" a SELECT instruction, we actually have to insert the diamond
-  // control-flow pattern.  The incoming instruction knows the destination vreg
-  // to set, the condition code register to branch on, the true/false values to
-  // select between, and a branch opcode to use.
-  const BasicBlock *LLVM_BB = BB->getBasicBlock();
-  MachineFunction::iterator I = ++BB->getIterator();
+  // assert((Opc == CPEN211::Select16 || Opc == CPEN211::Select8) &&
+  //        "Unexpected instr type to insert");
 
-  //  thisMBB:
-  //  ...
-  //   TrueVal = ...
-  //   cmpTY ccX, r1, r2
-  //   jCC copy1MBB
-  //   fallthrough --> copy0MBB
-  MachineBasicBlock *thisMBB = BB;
-  MachineFunction *F = BB->getParent();
-  MachineBasicBlock *copy0MBB = F->CreateMachineBasicBlock(LLVM_BB);
-  MachineBasicBlock *copy1MBB = F->CreateMachineBasicBlock(LLVM_BB);
-  F->insert(I, copy0MBB);
-  F->insert(I, copy1MBB);
-  // Update machine-CFG edges by transferring all successors of the current
-  // block to the new block which will contain the Phi node for the select.
-  copy1MBB->splice(copy1MBB->begin(), BB,
-                   std::next(MachineBasicBlock::iterator(MI)), BB->end());
-  copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
-  // Next, add the true and fallthrough blocks as its successors.
-  BB->addSuccessor(copy0MBB);
-  BB->addSuccessor(copy1MBB);
+  // // To "insert" a SELECT instruction, we actually have to insert the diamond
+  // // control-flow pattern.  The incoming instruction knows the destination vreg
+  // // to set, the condition code register to branch on, the true/false values to
+  // // select between, and a branch opcode to use.
+  // const BasicBlock *LLVM_BB = BB->getBasicBlock();
+  // MachineFunction::iterator I = ++BB->getIterator();
 
-  BuildMI(BB, dl, TII.get(CPEN211::JCC))
-      .addMBB(copy1MBB)
-      .addImm(MI.getOperand(3).getImm());
+  // //  thisMBB:
+  // //  ...
+  // //   TrueVal = ...
+  // //   cmpTY ccX, r1, r2
+  // //   jCC copy1MBB
+  // //   fallthrough --> copy0MBB
+  // MachineBasicBlock *thisMBB = BB;
+  // MachineFunction *F = BB->getParent();
+  // MachineBasicBlock *copy0MBB = F->CreateMachineBasicBlock(LLVM_BB);
+  // MachineBasicBlock *copy1MBB = F->CreateMachineBasicBlock(LLVM_BB);
+  // F->insert(I, copy0MBB);
+  // F->insert(I, copy1MBB);
+  // // Update machine-CFG edges by transferring all successors of the current
+  // // block to the new block which will contain the Phi node for the select.
+  // copy1MBB->splice(copy1MBB->begin(), BB,
+  //                  std::next(MachineBasicBlock::iterator(MI)), BB->end());
+  // copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
+  // // Next, add the true and fallthrough blocks as its successors.
+  // BB->addSuccessor(copy0MBB);
+  // BB->addSuccessor(copy1MBB);
 
-  //  copy0MBB:
-  //   %FalseValue = ...
-  //   # fallthrough to copy1MBB
-  BB = copy0MBB;
+  // BuildMI(BB, dl, TII.get(CPEN211::JCC))
+  //     .addMBB(copy1MBB)
+  //     .addImm(MI.getOperand(3).getImm());
 
-  // Update machine-CFG edges
-  BB->addSuccessor(copy1MBB);
+  // //  copy0MBB:
+  // //   %FalseValue = ...
+  // //   # fallthrough to copy1MBB
+  // BB = copy0MBB;
 
-  //  copy1MBB:
-  //   %Result = phi [ %FalseValue, copy0MBB ], [ %TrueValue, thisMBB ]
-  //  ...
-  BB = copy1MBB;
-  BuildMI(*BB, BB->begin(), dl, TII.get(CPEN211::PHI),
-          MI.getOperand(0).getReg())
-      .addReg(MI.getOperand(2).getReg())
-      .addMBB(copy0MBB)
-      .addReg(MI.getOperand(1).getReg())
-      .addMBB(thisMBB);
+  // // Update machine-CFG edges
+  // BB->addSuccessor(copy1MBB);
 
-  MI.eraseFromParent(); // The pseudo instruction is gone now.
-  return BB;
+  // //  copy1MBB:
+  // //   %Result = phi [ %FalseValue, copy0MBB ], [ %TrueValue, thisMBB ]
+  // //  ...
+  // BB = copy1MBB;
+  // BuildMI(*BB, BB->begin(), dl, TII.get(CPEN211::PHI),
+  //         MI.getOperand(0).getReg())
+  //     .addReg(MI.getOperand(2).getReg())
+  //     .addMBB(copy0MBB)
+  //     .addReg(MI.getOperand(1).getReg())
+  //     .addMBB(thisMBB);
+
+  // MI.eraseFromParent(); // The pseudo instruction is gone now.
+  // return BB;
 }
