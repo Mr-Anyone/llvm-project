@@ -6,8 +6,14 @@ This is the dead simple backend of CPEN211 ISA:
 
 The entire instruction set is self explanatory
 
-# Implementation notes
+# Calling Conventions
 
-## Calling Convention
-- R7 is link register
-- R6 is stack pointer
+Here we are going to define the calling convention: 
+
+**R7** is link register, **R6** is stack pointer.
+
+Callee saved: 
+- R4
+- R5
+- R6
+- R7

@@ -26,11 +26,8 @@ using namespace llvm;
 void CPEN211InstrInfo::anchor() {}
 
 CPEN211InstrInfo::CPEN211InstrInfo(CPEN211Subtarget &STI)
-    // : CPEN211GenInstrInfo(CPEN211::ADJCALLSTACKDOWN,
-    // CPEN211::ADJCALLSTACKUP),
-    : RI() {
-  llvm_unreachable("This is not yet implemented!");
-}
+    : CPEN211GenInstrInfo(CPEN211::ADJCALLSTACKDOWN, CPEN211::ADJCALLSTACKUP),
+      RI() {}
 
 void CPEN211InstrInfo::storeRegToStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MI, Register SrcReg,

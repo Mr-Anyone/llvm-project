@@ -35,7 +35,9 @@ static Reloc::Model getEffectiveRelocModel(std::optional<Reloc::Model> RM) {
 
 static std::string computeDataLayout(const Triple &TT, StringRef CPU,
                                      const TargetOptions &Options) {
-  return "e-m:e-p:16:16-i32:16-i64:16-f32:16-f64:16-a:8-n8:16-S16";
+
+  // TODO (for Vincent): check if this is correct?
+  return "e-p:16:16-i16:16";
 }
 
 CPEN211TargetMachine::CPEN211TargetMachine(const Target &T, const Triple &TT,

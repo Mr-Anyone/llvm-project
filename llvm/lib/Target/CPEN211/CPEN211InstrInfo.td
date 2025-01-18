@@ -119,3 +119,20 @@ def STR16mr: MForm<0b100, 2, (outs), (ins GR16:$Rd, GR16:$Rn)
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?
 let isReturn=1 in def RET : Pseudo<(outs), (ins), 
                 "BX\tR7", [(CPEN211retglue)]>;
+
+
+//===----------------------------------------------------------------------
+// Special type of instruction
+
+let isCodeGenOnly = 1, Defs = [R6, R6], Uses = [R6] in {
+def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
+                              "#ADJCALLSTACKDOWN $amt1 $amt2",
+                              // TODO (for Vincent): this is in corrent!
+                              // [(MSP430callseq_start timm:$amt1, timm:$amt2)]>;
+                              []>;
+def ADJCALLSTACKUP   : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
+                              "#ADJCALLSTACKUP $amt1 $amt2",
+                              // TODO (for Vincent): this is in corrent!
+                              // [(MSP430callseq_end timm:$amt1, timm:$amt2)]>;
+                              []>;
+}

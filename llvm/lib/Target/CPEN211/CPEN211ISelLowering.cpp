@@ -44,7 +44,6 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
                                              const CPEN211Subtarget &STI)
     : TargetLowering(TM) {
 
-  llvm_unreachable("this is not yet implemented");
   // Set up the register classes.
   // addRegisterClass(MVT::i8, &CPEN211::GR8RegClass);
   addRegisterClass(MVT::i16, &CPEN211::GR16RegClass);
@@ -53,101 +52,110 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   computeRegisterProperties(STI.getRegisterInfo());
 
   // Provide all sorts of operation actions
-  // setStackPointerRegisterToSaveRestore(CPEN211::SP);
+  setStackPointerRegisterToSaveRestore(CPEN211::R6);
   setBooleanContents(ZeroOrOneBooleanContent);
   setBooleanVectorContents(ZeroOrOneBooleanContent); // FIXME: Is this correct?
 
   // We have post-incremented loads / stores.
-  setIndexedLoadAction(ISD::POST_INC, MVT::i8, Legal);
-  setIndexedLoadAction(ISD::POST_INC, MVT::i16, Legal);
+  // setIndexedLoadAction(ISD::POST_INC, MVT::i8, Expand);
+  setIndexedLoadAction(ISD::POST_INC, MVT::i16, Expand);
 
   for (MVT VT : MVT::integer_valuetypes()) {
-    setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Promote);
-    setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1, Promote);
-    setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1, Promote);
-    setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8, Expand);
+    setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Expand);
+    setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1, Expand);
+    setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1, Expand);
+    // setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8, Expand);
     setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i16, Expand);
   }
 
   // We don't have any truncstores
-  setTruncStoreAction(MVT::i16, MVT::i8, Expand);
+  // setTruncStoreAction(MVT::i16, MVT::i8, Expand);
 
-  setOperationAction(ISD::SRA, MVT::i8, Custom);
-  setOperationAction(ISD::SHL, MVT::i8, Custom);
-  setOperationAction(ISD::SRL, MVT::i8, Custom);
-  setOperationAction(ISD::SRA, MVT::i16, Custom);
-  setOperationAction(ISD::SHL, MVT::i16, Custom);
-  setOperationAction(ISD::SRL, MVT::i16, Custom);
-  setOperationAction(ISD::ROTL, MVT::i8, Expand);
-  setOperationAction(ISD::ROTR, MVT::i8, Expand);
+  // setOperationAction(ISD::SRA, MVT::i8, Expand);
+  // setOperationAction(ISD::SHL, MVT::i8, Expand);
+  // setOperationAction(ISD::SRL, MVT::i8, Expand);
+  setOperationAction(ISD::SRA, MVT::i16, Custom); // shift right arithmetic
+  setOperationAction(ISD::SHL, MVT::i16, Custom); // shift left lowest bit 0
+  setOperationAction(ISD::SRL, MVT::i16,
+                     Custom); // shift right left lowest bit 0, rotate
+
+  // setOperationAction(ISD::ROTL, MVT::i8, Expand);
+  // setOperationAction(ISD::ROTR, MVT::i8, Expand);
   setOperationAction(ISD::ROTL, MVT::i16, Expand);
   setOperationAction(ISD::ROTR, MVT::i16, Expand);
-  setOperationAction(ISD::GlobalAddress, MVT::i16, Custom);
-  setOperationAction(ISD::ExternalSymbol, MVT::i16, Custom);
-  setOperationAction(ISD::BlockAddress, MVT::i16, Custom);
+  setOperationAction(ISD::GlobalAddress, MVT::i16, Expand);
+  setOperationAction(ISD::ExternalSymbol, MVT::i16, Expand);
+  setOperationAction(ISD::BlockAddress, MVT::i16, Expand);
   setOperationAction(ISD::BR_JT, MVT::Other, Expand);
-  setOperationAction(ISD::BR_CC, MVT::i8, Custom);
-  setOperationAction(ISD::BR_CC, MVT::i16, Custom);
+  // setOperationAction(ISD::BR_CC, MVT::i8, Expand);
+  setOperationAction(ISD::BR_CC, MVT::i16, Expand);
   setOperationAction(ISD::BRCOND, MVT::Other, Expand);
-  setOperationAction(ISD::SETCC, MVT::i8, Custom);
-  setOperationAction(ISD::SETCC, MVT::i16, Custom);
-  setOperationAction(ISD::SELECT, MVT::i8, Expand);
+  // setOperationAction(ISD::SETCC, MVT::i8, Expand);
+  setOperationAction(ISD::SETCC, MVT::i16, Expand);
+  // setOperationAction(ISD::SELECT, MVT::i8, Expand);
   setOperationAction(ISD::SELECT, MVT::i16, Expand);
-  setOperationAction(ISD::SELECT_CC, MVT::i8, Custom);
-  setOperationAction(ISD::SELECT_CC, MVT::i16, Custom);
-  setOperationAction(ISD::SIGN_EXTEND, MVT::i16, Custom);
-  setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i8, Expand);
+  // setOperationAction(ISD::SELECT_CC, MVT::i8, Expand);
+  setOperationAction(ISD::SELECT_CC, MVT::i16, Expand);
+  setOperationAction(ISD::SIGN_EXTEND, MVT::i16, Expand);
+  // setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i8, Expand);
   setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i16, Expand);
   setOperationAction(ISD::STACKSAVE, MVT::Other, Expand);
   setOperationAction(ISD::STACKRESTORE, MVT::Other, Expand);
 
-  setOperationAction(ISD::CTTZ, MVT::i8, Expand);
+  // setOperationAction(ISD::CTTZ, MVT::i8, Expand);
   setOperationAction(ISD::CTTZ, MVT::i16, Expand);
-  setOperationAction(ISD::CTLZ, MVT::i8, Expand);
+  // setOperationAction(ISD::CTLZ, MVT::i8, Expand);
   setOperationAction(ISD::CTLZ, MVT::i16, Expand);
-  setOperationAction(ISD::CTPOP, MVT::i8, Expand);
+  // setOperationAction(ISD::CTPOP, MVT::i8, Expand);
   setOperationAction(ISD::CTPOP, MVT::i16, Expand);
 
-  setOperationAction(ISD::SHL_PARTS, MVT::i8, Expand);
+  // setOperationAction(ISD::SHL_PARTS, MVT::i8, Expand);
   setOperationAction(ISD::SHL_PARTS, MVT::i16, Expand);
-  setOperationAction(ISD::SRL_PARTS, MVT::i8, Expand);
+  // setOperationAction(ISD::SRL_PARTS, MVT::i8, Expand);
   setOperationAction(ISD::SRL_PARTS, MVT::i16, Expand);
-  setOperationAction(ISD::SRA_PARTS, MVT::i8, Expand);
+  // setOperationAction(ISD::SRA_PARTS, MVT::i8, Expand);
   setOperationAction(ISD::SRA_PARTS, MVT::i16, Expand);
 
   setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1, Expand);
 
+  //********************************************************************
+  //********************************************************************
+  //********************************************************************
+  // TODO (for Vincent): this is just straight up unimplemented for now!
+  //********************************************************************
+  //********************************************************************
+  //********************************************************************
   // FIXME: Implement efficiently multiplication by a constant
-  setOperationAction(ISD::MUL, MVT::i8, Promote);
-  setOperationAction(ISD::MULHS, MVT::i8, Promote);
-  setOperationAction(ISD::MULHU, MVT::i8, Promote);
-  setOperationAction(ISD::SMUL_LOHI, MVT::i8, Promote);
-  setOperationAction(ISD::UMUL_LOHI, MVT::i8, Promote);
-  setOperationAction(ISD::MUL, MVT::i16, LibCall);
-  setOperationAction(ISD::MULHS, MVT::i16, Expand);
-  setOperationAction(ISD::MULHU, MVT::i16, Expand);
-  setOperationAction(ISD::SMUL_LOHI, MVT::i16, Expand);
-  setOperationAction(ISD::UMUL_LOHI, MVT::i16, Expand);
+  // setOperationAction(ISD::MUL, MVT::i8, Promote);
+  // setOperationAction(ISD::MULHS, MVT::i8, Promote);
+  // setOperationAction(ISD::MULHU, MVT::i8, Promote);
+  // setOperationAction(ISD::SMUL_LOHI, MVT::i8, Promote);
+  // setOperationAction(ISD::UMUL_LOHI, MVT::i8, Promote);
+  // setOperationAction(ISD::MUL, MVT::i16, LibCall);
+  // setOperationAction(ISD::MULHS, MVT::i16, Expand);
+  // setOperationAction(ISD::MULHU, MVT::i16, Expand);
+  // setOperationAction(ISD::SMUL_LOHI, MVT::i16, Expand);
+  // setOperationAction(ISD::UMUL_LOHI, MVT::i16, Expand);
 
-  setOperationAction(ISD::UDIV, MVT::i8, Promote);
-  setOperationAction(ISD::UDIVREM, MVT::i8, Promote);
-  setOperationAction(ISD::UREM, MVT::i8, Promote);
-  setOperationAction(ISD::SDIV, MVT::i8, Promote);
-  setOperationAction(ISD::SDIVREM, MVT::i8, Promote);
-  setOperationAction(ISD::SREM, MVT::i8, Promote);
-  setOperationAction(ISD::UDIV, MVT::i16, LibCall);
-  setOperationAction(ISD::UDIVREM, MVT::i16, Expand);
-  setOperationAction(ISD::UREM, MVT::i16, LibCall);
-  setOperationAction(ISD::SDIV, MVT::i16, LibCall);
-  setOperationAction(ISD::SDIVREM, MVT::i16, Expand);
-  setOperationAction(ISD::SREM, MVT::i16, LibCall);
+  // setOperationAction(ISD::UDIV, MVT::i8, Promote);
+  // setOperationAction(ISD::UDIVREM, MVT::i8, Promote);
+  // setOperationAction(ISD::UREM, MVT::i8, Promote);
+  // setOperationAction(ISD::SDIV, MVT::i8, Promote);
+  // setOperationAction(ISD::SDIVREM, MVT::i8, Promote);
+  // setOperationAction(ISD::SREM, MVT::i8, Promote);
+  // setOperationAction(ISD::UDIV, MVT::i16, LibCall);
+  // setOperationAction(ISD::UDIVREM, MVT::i16, Expand);
+  // setOperationAction(ISD::UREM, MVT::i16, LibCall);
+  // setOperationAction(ISD::SDIV, MVT::i16, LibCall);
+  // setOperationAction(ISD::SDIVREM, MVT::i16, Expand);
+  // setOperationAction(ISD::SREM, MVT::i16, LibCall);
 
   // varargs support
-  setOperationAction(ISD::VASTART, MVT::Other, Custom);
-  setOperationAction(ISD::VAARG, MVT::Other, Expand);
-  setOperationAction(ISD::VAEND, MVT::Other, Expand);
-  setOperationAction(ISD::VACOPY, MVT::Other, Expand);
-  setOperationAction(ISD::JumpTable, MVT::i16, Custom);
+  // setOperationAction(ISD::VASTART, MVT::Other, Expand);
+  // setOperationAction(ISD::VAARG, MVT::Other, Expand);
+  // setOperationAction(ISD::VAEND, MVT::Other, Expand);
+  // setOperationAction(ISD::VACOPY, MVT::Other, Expand);
+  // setOperationAction(ISD::JumpTable, MVT::i16, Expand);
 
   // TODO (for Vincent):L add libcalls?
   // EABI Libcalls - EABI Section 6.2
@@ -335,6 +343,7 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // TODO: __mspabi_srall, __mspabi_srlll, __mspabi_sllll
 
   // TODO (for Vincent): Check this!
+  // this really doesn't matter because we have just fill it with
   setMinFunctionAlignment(Align(1));
   setPrefFunctionAlignment(Align(1));
   setMaxAtomicSizeInBitsSupported(0);
@@ -1585,27 +1594,32 @@ CPEN211TargetLowering::EmitShiftInstr(MachineInstr &MI,
   // return RemBB;
 }
 
-MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
-    MachineInstr &MI, MachineBasicBlock *BB) const {
+MachineBasicBlock *
+CPEN211TargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
+                                           MachineBasicBlock *BB) const {
   unsigned Opc = MI.getOpcode();
 
   llvm_unreachable("this is not reachable");
   return nullptr;
 
-  // if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8 ||
-  //     Opc == CPEN211::Sra16 || Opc == CPEN211::Srl8 || Opc == CPEN211::Srl16 ||
-  //     Opc == CPEN211::Rrcl8 || Opc == CPEN211::Rrcl16)
+  // if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8
+  // ||
+  //     Opc == CPEN211::Sra16 || Opc == CPEN211::Srl8 || Opc == CPEN211::Srl16
+  //     || Opc == CPEN211::Rrcl8 || Opc == CPEN211::Rrcl16)
   //   return EmitShiftInstr(MI, BB);
 
-  // const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
-  // DebugLoc dl = MI.getDebugLoc();
+  // const TargetInstrInfo &TII =
+  // *BB->getParent()->getSubtarget().getInstrInfo(); DebugLoc dl =
+  // MI.getDebugLoc();
 
   // assert((Opc == CPEN211::Select16 || Opc == CPEN211::Select8) &&
   //        "Unexpected instr type to insert");
 
   // // To "insert" a SELECT instruction, we actually have to insert the diamond
-  // // control-flow pattern.  The incoming instruction knows the destination vreg
-  // // to set, the condition code register to branch on, the true/false values to
+  // // control-flow pattern.  The incoming instruction knows the destination
+  // vreg
+  // // to set, the condition code register to branch on, the true/false values
+  // to
   // // select between, and a branch opcode to use.
   // const BasicBlock *LLVM_BB = BB->getBasicBlock();
   // MachineFunction::iterator I = ++BB->getIterator();

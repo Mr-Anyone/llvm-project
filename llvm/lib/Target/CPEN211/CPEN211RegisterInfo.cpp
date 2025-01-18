@@ -31,8 +31,9 @@ using namespace llvm;
 
 // FIXME: Provide proper call frame setup / destroy opcodes.
 CPEN211RegisterInfo::CPEN211RegisterInfo()
-    // TODO
-    : CPEN211GenRegisterInfo(CPEN211::R1) {
+    // TODO (for Vincent): is this the stack pointer or is this the link
+    // or is this the link register
+    : CPEN211GenRegisterInfo(CPEN211::R6) {
   // llvm_unreachable("Please decide a PC on top! ");
 }
 
@@ -41,48 +42,17 @@ CPEN211RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   const CPEN211FrameLowering *TFI = getFrameLowering(*MF);
   const Function *F = &MF->getFunction();
   static const MCPhysReg CalleeSavedRegs[] = {CPEN211::R4, CPEN211::R5,
-                                              CPEN211::R6, CPEN211::R7, 0};
+                                              CPEN211::R6, CPEN211::R7};
 
-  static const MCPhysReg CalleeSavedRegsFP[] = {CPEN211::R5, CPEN211::R6,
-                                                CPEN211::R7, 0};
-  static const MCPhysReg CalleeSavedRegsIntr[] = {CPEN211::R4, CPEN211::R5,
-                                                  CPEN211::R6, CPEN211::R7, 0};
-
-  static const MCPhysReg CalleeSavedRegsIntrFP[] = {CPEN211::R5, CPEN211::R6,
-                                                    CPEN211::R7};
-
-  // TODO (for Vincent): fix the following
-  // we have to define a custom calling convention I guess
-  if (TFI->hasFP(*MF))
-    return (F->getCallingConv() == CallingConv::MSP430_INTR
-                ? CalleeSavedRegsIntrFP
-                : CalleeSavedRegsFP);
-  else
-    return (F->getCallingConv() == CallingConv::MSP430_INTR
-                ? CalleeSavedRegsIntr
-                : CalleeSavedRegs);
+  // TODO (for Vincent): this may changes depending on
+  // MF Calling Convention
+  return CalleeSavedRegs;
 }
 
 BitVector
 CPEN211RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
   const CPEN211FrameLowering *TFI = getFrameLowering(MF);
-
-  // Mark 4 special registers with subregisters as reserved.
-  // Reserved.set(CPEN211::PCB);
-  // Reserved.set(CPEN211::SPB);
-  // Reserved.set(CPEN211::SRB);
-  // Reserved.set(CPEN211::CGB);
-  // Reserved.set(CPEN211::PC);
-  // Reserved.set(CPEN211::SP);
-  // Reserved.set(CPEN211::SR);
-  // Reserved.set(CPEN211::CG);
-
-  // Mark frame pointer as reserved if needed.
-  // if (TFI->hasFP(MF)) {
-  //   Reserved.set(CPEN211::R4B);
-  //   Reserved.set(CPEN211::R4);
-  // }
 
   return Reserved;
 }
@@ -159,6 +129,5 @@ CPEN211RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const CPEN211FrameLowering *TFI = getFrameLowering(MF);
 
   llvm_unreachable("this is not yet implemented!");
-  // return TFI->hasFP(MF) ? CPEN211::R4 : CPEN211::SP;
   return CPEN211::R4;
 }
