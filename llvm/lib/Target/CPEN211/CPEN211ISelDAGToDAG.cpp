@@ -120,7 +120,7 @@ public:
 };
 } // end anonymous namespace
 
-char CPEN211DAGToDAGISelLegacy::ID;
+ char CPEN211DAGToDAGISelLegacy::ID;
 //
 INITIALIZE_PASS(CPEN211DAGToDAGISelLegacy, DEBUG_TYPE, PASS_NAME, false, false)
 

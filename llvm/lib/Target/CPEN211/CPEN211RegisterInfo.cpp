@@ -33,7 +33,7 @@ using namespace llvm;
 CPEN211RegisterInfo::CPEN211RegisterInfo()
     // TODO
     : CPEN211GenRegisterInfo(CPEN211::R1) {
-  llvm_unreachable("Please decide a PC on top! ");
+  // llvm_unreachable("Please decide a PC on top! ");
 }
 
 const MCPhysReg *

@@ -83,7 +83,7 @@ using namespace llvm;
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeCPEN211TargetMC() {
   Target &T = getTheCPEN211Target();
-  llvm_unreachable("to do: what does the thing below do?");
+  // llvm_unreachable("to do: what does the thing below do?");
 
   // TargetRegistry::RegisterMCAsmInfo(T, createCPEN211MCAsmInfo);
   // TargetRegistry::RegisterMCInstrInfo(T, createCPEN211MCInstrInfo);
