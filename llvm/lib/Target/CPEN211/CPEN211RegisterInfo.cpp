@@ -33,7 +33,7 @@ using namespace llvm;
 CPEN211RegisterInfo::CPEN211RegisterInfo()
     // TODO (for Vincent): is this the stack pointer or is this the link
     // or is this the link register
-    : CPEN211GenRegisterInfo(CPEN211::R6) {
+    : CPEN211GenRegisterInfo(CPEN211::SP) {
   // llvm_unreachable("Please decide a PC on top! ");
 }
 
@@ -42,7 +42,7 @@ CPEN211RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   const CPEN211FrameLowering *TFI = getFrameLowering(*MF);
   const Function *F = &MF->getFunction();
   static const MCPhysReg CalleeSavedRegs[] = {CPEN211::R4, CPEN211::R5,
-                                              CPEN211::R6, CPEN211::R7};
+                                              CPEN211::SP, CPEN211::LR};
 
   // TODO (for Vincent): this may changes depending on
   // MF Calling Convention

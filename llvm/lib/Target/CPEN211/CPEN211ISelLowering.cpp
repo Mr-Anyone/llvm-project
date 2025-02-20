@@ -10,7 +10,6 @@
 // This file implements the CPEN211TargetLowering class.
 //
 //===----------------------------------------------------------------------===//
-
 #include "CPEN211ISelLowering.h"
 #include "CPEN211.h"
 #include "CPEN211MachineFunctionInfo.h"
@@ -31,6 +30,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include <iostream>
 using namespace llvm;
 
 #define DEBUG_TYPE "msp430-lower"
@@ -52,7 +52,7 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   computeRegisterProperties(STI.getRegisterInfo());
 
   // Provide all sorts of operation actions
-  setStackPointerRegisterToSaveRestore(CPEN211::R6);
+  setStackPointerRegisterToSaveRestore(CPEN211::SP);
   setBooleanContents(ZeroOrOneBooleanContent);
   setBooleanVectorContents(ZeroOrOneBooleanContent); // FIXME: Is this correct?
 
@@ -463,116 +463,73 @@ static void ParseFunctionArgs(const SmallVectorImpl<ArgT> &Args,
   }
 }
 
-static void AnalyzeVarArgs(CCState &State,
-                           const SmallVectorImpl<ISD::OutputArg> &Outs) {
-  State.AnalyzeCallOperands(Outs, CC_CPEN211_AssignStack);
+void printVec(SmallVector<unsigned, 4> ArgPargs) {
+  for (int i = 0; i < ArgPargs.size(); ++i) {
+    std::cout << ArgPargs[i] << std::endl;
+  }
 }
 
-static void AnalyzeVarArgs(CCState &State,
-                           const SmallVectorImpl<ISD::InputArg> &Ins) {
-  State.AnalyzeFormalArguments(Ins, CC_CPEN211_AssignStack);
+static inline void SingleSizeCheck(SmallVector<unsigned, 4> ArgsParts) {
+  for (int i = 0; i < ArgsParts.size(); ++i) {
+    assert(ArgsParts[i] == 1 &&
+           "don't know how to lower with argument greater than one!");
+  }
 }
 
-/// Analyze incoming and outgoing function arguments. We need custom C++ code
-/// to handle special constraints in the ABI like reversing the order of the
-/// pieces of splitted arguments. In addition, all pieces of a certain argument
-/// have to be passed either using registers or the stack but never mixing both.
+// populates the  ArgLocs, and Args
 template <typename ArgT>
 static void AnalyzeArguments(CCState &State,
                              SmallVectorImpl<CCValAssign> &ArgLocs,
                              const SmallVectorImpl<ArgT> &Args) {
-  llvm_unreachable("this is not yet implemented!");
-  // static const MCPhysReg CRegList[] = {CPEN211::R12, CPEN211::R13,
-  // CPEN211::R14,
-  //                                      CPEN211::R15};
-  // static const unsigned CNbRegs = std::size(CRegList);
-  // static const MCPhysReg BuiltinRegList[] = {
-  //     CPEN211::R8,  CPEN211::R9,  CPEN211::R10, CPEN211::R11,
-  //     CPEN211::R12, CPEN211::R13, CPEN211::R14, CPEN211::R15};
-  // static const unsigned BuiltinNbRegs = std::size(BuiltinRegList);
 
-  // ArrayRef<MCPhysReg> RegList;
-  // unsigned NbRegs;
+  static const MCPhysReg RegList[] = {CPEN211::R0, CPEN211::R1};
+  static const unsigned NbRegs = std::size(RegList);
 
-  // // TODO (for Vincent): you have to fix this
-  // bool Builtin = (State.getCallingConv() == CallingConv::MSP430_INTR);
-  // if (Builtin) {
-  //   RegList = BuiltinRegList;
-  //   NbRegs = BuiltinNbRegs;
-  // } else {
-  //   RegList = CRegList;
-  //   NbRegs = CNbRegs;
-  // }
+  assert(NbRegs == 2);
+  assert(!State.isVarArg() && "I have no idea how variadic works");
 
-  // if (State.isVarArg()) {
-  //   AnalyzeVarArgs(State, Args);
-  //   return;
-  // }
+  SmallVector<unsigned, 4> ArgsParts;
+  ParseFunctionArgs(Args, ArgsParts);
+  SingleSizeCheck(ArgsParts); // making sure that all of the arguments are one
+                              // size! (i.e. 8 bit or 16 most likely)
 
-  // SmallVector<unsigned, 4> ArgsParts;
-  // ParseFunctionArgs(Args, ArgsParts);
+  unsigned RegsLeft = NbRegs;
+  unsigned ValNo = 0;
 
-  // if (Builtin) {
-  //   assert(ArgsParts.size() == 2 &&
-  //          "Builtin calling convention requires two arguments");
-  // }
+  for (unsigned i = 0, e = ArgsParts.size(); i != e; i++) {
+    MVT ArgVT = Args[ValNo].VT;
+    ISD::ArgFlagsTy ArgFlags = Args[ValNo].Flags;
+    MVT LocVT = ArgVT;
+    CCValAssign::LocInfo LocInfo = CCValAssign::Full;
 
-  // unsigned RegsLeft = NbRegs;
-  // bool UsedStack = false;
-  // unsigned ValNo = 0;
+    assert(LocVT == MVT::i16 && "value type must be 16 bytes in length");
+    assert(!ArgFlags.isByVal() &&
+           "don't know how to translate arguments that is by value");
 
-  // for (unsigned i = 0, e = ArgsParts.size(); i != e; i++) {
-  //   MVT ArgVT = Args[ValNo].VT;
-  //   ISD::ArgFlagsTy ArgFlags = Args[ValNo].Flags;
-  //   MVT LocVT = ArgVT;
-  //   CCValAssign::LocInfo LocInfo = CCValAssign::Full;
+    // Handle byval arguments
+    // if (ArgFlags.isByVal()) {
+    //   State.HandleByVal(ValNo++, ArgVT, LocVT, LocInfo, 2, Align(2),
+    //   ArgFlags); continue;
+    // }
 
-  //   // Promote i8 to i16
-  //   if (LocVT == MVT::i8) {
-  //     LocVT = MVT::i16;
-  //     if (ArgFlags.isSExt())
-  //       LocInfo = CCValAssign::SExt;
-  //     else if (ArgFlags.isZExt())
-  //       LocInfo = CCValAssign::ZExt;
-  //     else
-  //       LocInfo = CCValAssign::AExt;
-  //   }
+    unsigned Parts = ArgsParts[i];
 
-  //   // Handle byval arguments
-  //   if (ArgFlags.isByVal()) {
-  //     State.HandleByVal(ValNo++, ArgVT, LocVT, LocInfo, 2, Align(2),
-  //     ArgFlags); continue;
-  //   }
+    if (Parts <= RegsLeft) {
+      for (unsigned j = 0; j < Parts; j++) {
+        MCRegister Reg = State.AllocateReg(RegList);
+        assert(Reg != 0 && "did not succesfully allocate a register");
 
-  //   unsigned Parts = ArgsParts[i];
-
-  //   if (Builtin) {
-  //     assert(Parts == 4 &&
-  //            "Builtin calling convention requires 64-bit arguments");
-  //   }
-
-  //   if (!UsedStack && Parts == 2 && RegsLeft == 1) {
-  //     // Special case for 32-bit register split, see EABI section 3.3.3
-  //     MCRegister Reg = State.AllocateReg(RegList);
-  //     State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT, LocInfo));
-  //     RegsLeft -= 1;
-
-  //     UsedStack = true;
-  //     CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
-  //     State);
-  //   } else if (Parts <= RegsLeft) {
-  //     for (unsigned j = 0; j < Parts; j++) {
-  //       MCRegister Reg = State.AllocateReg(RegList);
-  //       State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT,
-  //       LocInfo)); RegsLeft--;
-  //     }
-  //   } else {
-  //     UsedStack = true;
-  //     for (unsigned j = 0; j < Parts; j++)
-  //       CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
-  //       State);
-  //   }
-  // }
+        State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT, LocInfo));
+        RegsLeft--;
+      }
+    } else {
+      assert(0 && "don't know how to assign to stack bro");
+      // using the stack if we run out of regs
+      // for (unsigned j = 0; j < Parts; j++)
+      //   CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
+      //   State);
+    }
+  }
 }
 
 static void AnalyzeRetResult(CCState &State,
@@ -653,17 +610,13 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
   CPEN211MachineFunctionInfo *FuncInfo =
       MF.getInfo<CPEN211MachineFunctionInfo>();
 
+  assert(!isVarArg && "I have no idea how variadic argument works!");
+
   // Assign locations to all of the incoming arguments.
   SmallVector<CCValAssign, 16> ArgLocs;
   CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
                  *DAG.getContext());
   AnalyzeArguments(CCInfo, ArgLocs, Ins);
-
-  // Create frame index for the start of the first vararg value
-  if (isVarArg) {
-    unsigned Offset = CCInfo.getStackSize();
-    FuncInfo->setVarArgsFrameIndex(MFI.CreateFixedObject(1, Offset, true));
-  }
 
   for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
     CCValAssign &VA = ArgLocs[i];
@@ -682,6 +635,7 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
         Register VReg = RegInfo.createVirtualRegister(&CPEN211::GR16RegClass);
         RegInfo.addLiveIn(VA.getLocReg(), VReg);
         SDValue ArgValue = DAG.getCopyFromReg(Chain, dl, VReg, RegVT);
+        DAG.viewGraph();
 
         // If this is an 8-bit value, it is really passed promoted to 16
         // bits. Insert an assert[sz]ext to capture this, then truncate to the
@@ -693,6 +647,7 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
           ArgValue = DAG.getNode(ISD::AssertZext, dl, RegVT, ArgValue,
                                  DAG.getValueType(VA.getValVT()));
 
+        // Sis this being executed
         if (VA.getLocInfo() != CCValAssign::Full)
           ArgValue = DAG.getNode(ISD::TRUNCATE, dl, VA.getValVT(), ArgValue);
 
@@ -700,6 +655,7 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
       }
     } else {
       // Only arguments passed on the stack should make it here.
+      assert(0 && "again. How idea how to lower stack");
       assert(VA.isMemLoc());
 
       SDValue InVal;
@@ -732,6 +688,7 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
     }
   }
 
+  // TODO: what the fuck is this for?
   for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
     if (Ins[i].Flags.isSRet()) {
       Register Reg = FuncInfo->getSRetReturnReg();
@@ -762,6 +719,7 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                                    const SmallVectorImpl<SDValue> &OutVals,
                                    const SDLoc &dl, SelectionDAG &DAG) const {
 
+    DAG.viewGraph();
   llvm_unreachable("this is not yet impelmented");
   MachineFunction &MF = DAG.getMachineFunction();
 
@@ -1594,13 +1552,10 @@ CPEN211TargetLowering::EmitShiftInstr(MachineInstr &MI,
   // return RemBB;
 }
 
-MachineBasicBlock *
-CPEN211TargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
-                                           MachineBasicBlock *BB) const {
-  unsigned Opc = MI.getOpcode();
-
-  llvm_unreachable("this is not reachable");
-  return nullptr;
+MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
+    MachineInstr &MI, MachineBasicBlock *BB) const {
+  llvm_unreachable("you are getting close");
+  // unsigned Opc = MI.getOpcode();
 
   // if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8
   // ||

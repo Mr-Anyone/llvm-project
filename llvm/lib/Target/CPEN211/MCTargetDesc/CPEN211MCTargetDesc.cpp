@@ -42,8 +42,8 @@ static MCInstrInfo *createCPEN211MCInstrInfo() {
 static MCRegisterInfo *createCPEN211MCRegisterInfo(const Triple &TT) {
   MCRegisterInfo *X = new MCRegisterInfo();
   // TOOD (for Vincent): is it CPEN221::R6, i.e. the stack pointer?
-
-  InitCPEN211MCRegisterInfo(X, CPEN211::R6);
+  // this is complete black magic!
+  InitCPEN211MCRegisterInfo(X, CPEN211::SP);
   return X;
 }
 

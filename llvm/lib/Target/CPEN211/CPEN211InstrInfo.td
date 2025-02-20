@@ -120,11 +120,9 @@ def STR16mr: MForm<0b100, 2, (outs), (ins GR16:$Rd, GR16:$Rn)
 let isReturn=1 in def RET : Pseudo<(outs), (ins), 
                 "BX\tR7", [(CPEN211retglue)]>;
 
-
 //===----------------------------------------------------------------------
 // Special type of instruction
-
-let isCodeGenOnly = 1, Defs = [R6, R6], Uses = [R6] in {
+let isCodeGenOnly = 1, Defs = [SP, SP], Uses = [SP] in {
 def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
                               "#ADJCALLSTACKDOWN $amt1 $amt2",
                               // TODO (for Vincent): this is in corrent!

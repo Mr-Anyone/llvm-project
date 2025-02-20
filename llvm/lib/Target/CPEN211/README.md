@@ -12,8 +12,7 @@ Here we are going to define the calling convention:
 
 **R7** is link register, **R6** is stack pointer.
 
-Callee saved: 
-- R4
-- R5
-- R6
-- R7
+Argument register are R0, and R1.
+
+Return happens at R0.
+
