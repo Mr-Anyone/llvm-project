@@ -635,7 +635,6 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
         Register VReg = RegInfo.createVirtualRegister(&CPEN211::GR16RegClass);
         RegInfo.addLiveIn(VA.getLocReg(), VReg);
         SDValue ArgValue = DAG.getCopyFromReg(Chain, dl, VReg, RegVT);
-        DAG.viewGraph();
 
         // If this is an 8-bit value, it is really passed promoted to 16
         // bits. Insert an assert[sz]ext to capture this, then truncate to the
@@ -709,7 +708,8 @@ bool CPEN211TargetLowering::CanLowerReturn(
     const SmallVectorImpl<ISD::OutputArg> &Outs, LLVMContext &Context) const {
   SmallVector<CCValAssign, 16> RVLocs;
   CCState CCInfo(CallConv, IsVarArg, MF, RVLocs, Context);
-  return CCInfo.CheckReturn(Outs, RetCC_CPEN211);
+  bool CanReturn = CCInfo.CheckReturn(Outs, RetCC_CPEN211);
+  return CanReturn;
 }
 
 SDValue
@@ -719,8 +719,9 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                                    const SmallVectorImpl<SDValue> &OutVals,
                                    const SDLoc &dl, SelectionDAG &DAG) const {
 
-    DAG.viewGraph();
-  llvm_unreachable("this is not yet impelmented");
+  assert(!isVarArg && "don't know how to lower Return that is variadic!");
+   // llvm_unreachable("this is not yet impelmented");
+
   MachineFunction &MF = DAG.getMachineFunction();
 
   // CCValAssign - represent the assignment of the return value to a location
@@ -736,6 +737,8 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
   // Analize return values.
   AnalyzeReturnValues(CCInfo, RVLocs, Outs);
+  assert(Outs.size() == 1 && RVLocs.size() == 1 &&
+         "don't know how to return stuff with size that are more than one?");
 
   SDValue Glue;
   SmallVector<SDValue, 4> RetOps(1, Chain);
@@ -753,37 +756,15 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
     RetOps.push_back(DAG.getRegister(VA.getLocReg(), VA.getLocVT()));
   }
 
-  if (MF.getFunction().hasStructRetAttr()) {
-    CPEN211MachineFunctionInfo *FuncInfo =
-        MF.getInfo<CPEN211MachineFunctionInfo>();
-    Register Reg = FuncInfo->getSRetReturnReg();
+  assert(!MF.getFunction().hasStructRetAttr() &&
+         "I have no idea how to lower a structure");
 
-    if (!Reg)
-      llvm_unreachable("sret virtual register not created in entry block");
+  RetOps[0] = Chain; // Update chain.
 
-    MVT PtrVT = getFrameIndexTy(DAG.getDataLayout());
-    SDValue Val = DAG.getCopyFromReg(Chain, dl, Reg, PtrVT);
-    // unsigned R12 = CPEN211::R12;
+  if (Glue.getNode())
+    RetOps.push_back(Glue);
 
-    // Chain = DAG.getCopyToReg(Chain, dl, R12, Val, Glue);
-    // Glue = Chain.getValue(1);
-    // RetOps.push_back(DAG.getRegister(R12, PtrVT));
-  }
-
-  // unsigned Opc = (CallConv == CallingConv::MSP430_INTR ?
-  // CPEN211ISD::RETI_GLUE
-  //                                                      :
-  //                                                      CPEN211ISD::RET_GLUE);
-
-  // RetOps[0] = Chain; // Update
-  //                    // chain.
-
-  //// Add the glue if we
-  //// have it.
-  // if (Glue.getNode())
-  //   RetOps.push_back(Glue);
-
-  // return DAG.getNode(Opc, dl, MVT::Other, RetOps);
+  return DAG.getNode(CPEN211ISD::RET_GLUE, dl, MVT::Other, RetOps);
 }
 
 /// LowerCCCCallTo - functions arguments are copied from virtual regs to
