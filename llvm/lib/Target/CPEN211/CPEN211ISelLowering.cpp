@@ -720,7 +720,6 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                                    const SDLoc &dl, SelectionDAG &DAG) const {
 
   assert(!isVarArg && "don't know how to lower Return that is variadic!");
-   // llvm_unreachable("this is not yet impelmented");
 
   MachineFunction &MF = DAG.getMachineFunction();
 
@@ -743,6 +742,9 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
   SDValue Glue;
   SmallVector<SDValue, 4> RetOps(1, Chain);
 
+  assert(OutVals.size() == 1 &&
+         "I am not sure how can output value be greater than one?");
+
   // Copy the result values into the output registers.
   for (unsigned i = 0; i != RVLocs.size(); ++i) {
     CCValAssign &VA = RVLocs[i];
@@ -753,6 +755,8 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
     // Guarantee that all emitted copies are stuck together,
     // avoiding something bad.
     Glue = Chain.getValue(1);
+
+    assert(VA.getLocVT() == MVT::i16 && "Return type must be i16 for now");
     RetOps.push_back(DAG.getRegister(VA.getLocReg(), VA.getLocVT()));
   }
 
