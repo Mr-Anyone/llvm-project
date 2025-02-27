@@ -71,7 +71,7 @@ let Rn = 0b000 in {
     // TOOD (for Vincent): find out why doesn't i8imm doesn't work?
     let Rm=0b000 in {
         def MOV16ri : IForm<0b110, 0b10, 2, (outs GR16:$Rd), (ins i16imm:$value)
-                , "MOV\t{$Rd,$value}", [(set GR16:$Rd, imm:$value)]>;
+                , "MOV\t{$Rd, $value}", [(set GR16:$Rd, imm:$value)]>;
     }
 } // Rn
 
@@ -79,10 +79,10 @@ let Rn = 0b000 in {
 // ALU Instructions without cmp
 let isCommutable = true in {
     def ADD16rr : IForm<0b101, 0b00, 2, (outs GR16:$Rd)
-                        , (ins GR16:$Rm, GR16:$Rn), "ADD\t{$Rd,$Rn,$Rm}", [(set GR16:$Rd, (add GR16:$Rn, GR16:$Rm))]>;
+                        , (ins GR16:$Rm, GR16:$Rn), "ADD\t{$Rd, $Rn , $Rm}", [(set GR16:$Rd, (add GR16:$Rn, GR16:$Rm))]>;
 
     def AND16rr : IForm<0b101, 0b10, 2, (outs GR16:$Rd)
-                        , (ins GR16:$Rm, GR16:$Rn), "ADD\t{$Rd,$Rn,$Rm}", [(set GR16:$Rd, (and GR16:$Rn, GR16:$Rm))]>;
+                        , (ins GR16:$Rm, GR16:$Rn), "AND\t{$Rd , $Rn, $Rm}", [(set GR16:$Rd, (and GR16:$Rn, GR16:$Rm))]>;
 
     // TODO (for Vincent): how do you translate this instruction in llvm?
     // def MVN16rr: IForm<0b101, 0b11, 2, (outs GR16:$Rd)

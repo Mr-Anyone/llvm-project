@@ -179,9 +179,6 @@ void CPEN211AsmPrinter::EmitInterruptVectorSection(MachineFunction &ISR) {
 }
 
 bool CPEN211AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
-  LLVM_DEBUG(dbgs() << "Current State of Run Machine Function");
-  MF.dump();
-
   // Emit separate section for an interrupt vector if ISR
   if (MF.getFunction().hasFnAttribute("interrupt")) {
     EmitInterruptVectorSection(MF);
