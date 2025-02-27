@@ -117,7 +117,7 @@ def STR16mr: MForm<0b100, 2, (outs), (ins GR16:$Rd, GR16:$Rn)
 
 // TOOD (for Vincent): create a register alias both the stack pointer and the link register  
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?
-let isReturn=1 in def RET : Pseudo<(outs), (ins), 
+let isReturn = 1, isTerminator = 1, isBarrier = 1 in def RET : Pseudo<(outs), (ins), 
                 "BX\tR7", [(CPEN211retglue)]>;
 
 //===----------------------------------------------------------------------

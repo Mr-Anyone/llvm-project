@@ -59,7 +59,7 @@ public:
 
 void CPEN211AsmPrinter::PrintSymbolOperand(const MachineOperand &MO,
                                            raw_ostream &O) {
-  llvm_unreachable("unimplemented");
+  // llvm_unreachable("unimplemented");
   uint64_t Offset = MO.getOffset();
   if (Offset)
     O << '(' << Offset << '+';
@@ -104,17 +104,17 @@ void CPEN211AsmPrinter::printOperand(const MachineInstr *MI, int OpNum,
 void CPEN211AsmPrinter::printSrcMemOperand(const MachineInstr *MI, int OpNum,
                                            raw_ostream &O) {
   llvm_unreachable("unimplemented");
-  // const MachineOperand &Base = MI->getOperand(OpNum);
-  // const MachineOperand &Disp = MI->getOperand(OpNum + 1);
+  const MachineOperand &Base = MI->getOperand(OpNum);
+  const MachineOperand &Disp = MI->getOperand(OpNum + 1);
 
-  // // Print displacement first
+  // Print displacement first
 
-  // // Imm here is in fact global address - print extra modifier.
+  // Imm here is in fact global address - print extra modifier.
   // if (Disp.isImm() && Base.getReg() == CPEN211::SR)
   //   O << '&';
   // printOperand(MI, OpNum + 1, O, "nohash");
 
-  // // Print register base field
+  // Print register base field
   // if (Base.getReg() != CPEN211::SR && Base.getReg() != CPEN211::PC) {
   //   O << '(';
   //   printOperand(MI, OpNum, O);
@@ -126,7 +126,7 @@ void CPEN211AsmPrinter::printSrcMemOperand(const MachineInstr *MI, int OpNum,
 ///
 bool CPEN211AsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
                                         const char *ExtraCode, raw_ostream &O) {
-  llvm_unreachable("unimplemented");
+  // llvm_unreachable("unimplemented");
   // Does this asm operand have a single letter operand modifier?
   if (ExtraCode && ExtraCode[0])
     return AsmPrinter::PrintAsmOperand(MI, OpNo, ExtraCode, O);
@@ -148,7 +148,7 @@ bool CPEN211AsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
 
 //===----------------------------------------------------------------------===//
 void CPEN211AsmPrinter::emitInstruction(const MachineInstr *MI) {
-  llvm_unreachable("unimplemented");
+  // llvm_unreachable("unimplemented");
   CPEN211_MC::verifyInstructionPredicates(MI->getOpcode(),
                                           getSubtargetInfo().getFeatureBits());
 
@@ -160,7 +160,7 @@ void CPEN211AsmPrinter::emitInstruction(const MachineInstr *MI) {
 }
 
 void CPEN211AsmPrinter::EmitInterruptVectorSection(MachineFunction &ISR) {
-  llvm_unreachable("unimplemented");
+  // llvm_unreachable("unimplemented");
   MCSection *Cur = OutStreamer->getCurrentSectionOnly();
   const auto *F = &ISR.getFunction();
   if (F->getCallingConv() != CallingConv::MSP430_INTR) {
@@ -179,7 +179,9 @@ void CPEN211AsmPrinter::EmitInterruptVectorSection(MachineFunction &ISR) {
 }
 
 bool CPEN211AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
-  llvm_unreachable("unimplemented");
+  LLVM_DEBUG(dbgs() << "Current State of Run Machine Function");
+  MF.dump();
+
   // Emit separate section for an interrupt vector if ISR
   if (MF.getFunction().hasFnAttribute("interrupt")) {
     EmitInterruptVectorSection(MF);
@@ -192,6 +194,6 @@ bool CPEN211AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 
 // Force static initialization.
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeCPEN211AsmPrinter() {
-  // llvm_unreachable("nice try");
+  // // llvm_unreachable("nice try");
   RegisterAsmPrinter<CPEN211AsmPrinter> X(getTheCPEN211Target());
 }

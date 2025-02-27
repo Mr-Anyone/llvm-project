@@ -183,7 +183,10 @@ bool CPEN211InstrInfo::analyzeBranch(MachineBasicBlock &MBB,
                                      MachineBasicBlock *&FBB,
                                      SmallVectorImpl<MachineOperand> &Cond,
                                      bool AllowModify) const {
-  llvm_unreachable("not implemented");
+
+  // TODO: implement this in the future bro!
+  // no branch folding for now
+  return true;
   // Start from the bottom of the block and work up, examining the
   // terminator instructions.
   // MachineBasicBlock::iterator I = MBB.end();
@@ -221,7 +224,7 @@ bool CPEN211InstrInfo::analyzeBranch(MachineBasicBlock &MBB,
   //     // Delete the JMP if it's equivalent to a fall-through.
   //     if (MBB.isLayoutSuccessor(I->getOperand(0).getMBB())) {
   //       TBB = nullptr;
-  //       I->eraseFromParent();
+  //       I->eraseFromParent();remains
   //       I = MBB.end();
   //       continue;
   //     }

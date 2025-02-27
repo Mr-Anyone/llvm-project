@@ -12,7 +12,7 @@
 // CPEN211 Return Value Calling Convention
 //===----------------------------------------------------------------------===//
 def RetCC_CPEN211 : CallingConv<[
-  // i16 are returned in registers R12, R13, R14, R15
+  // i16 are returned in registers R0
   CCIfType<[i16], CCAssignToReg<[R0]>>
 ]>;
 

@@ -124,10 +124,12 @@ bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // return false;
 }
 
-Register
+ Register
 CPEN211RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const CPEN211FrameLowering *TFI = getFrameLowering(MF);
-
-  llvm_unreachable("this is not yet implemented!");
-  return CPEN211::R4;
+  // llvm_unreachable("this is not yet implemented!");
+  // make the frame pointer the stack pointer
+  // this may be janky?
+  assert(!TFI->hasFP(MF) && "where is the frame pointer?");
+  return CPEN211::SP;
 }

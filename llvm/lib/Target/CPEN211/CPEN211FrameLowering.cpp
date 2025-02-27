@@ -43,15 +43,18 @@ bool CPEN211FrameLowering::hasReservedCallFrame(
 
 void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
-  llvm_unreachable("this is not yet implemented!");
+  // llvm_unreachable("this is not yet implemented!");
 
-  // assert(&MF.front() == &MBB && "Shrink-wrapping not yet supported");
-  // MachineFrameInfo &MFI = MF.getFrameInfo();
-  // CPEN211MachineFunctionInfo *CPEN211FI =
-  //     MF.getInfo<CPEN211MachineFunctionInfo>();
-  // const CPEN211InstrInfo &TII =
-  //     *static_cast<const CPEN211InstrInfo
-  //     *>(MF.getSubtarget().getInstrInfo());
+  assert(&MF.front() == &MBB && "Shrink-wrapping not yet supported");
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  CPEN211MachineFunctionInfo *CPEN211FI =
+      MF.getInfo<CPEN211MachineFunctionInfo>();
+  const CPEN211InstrInfo &TII =
+      *static_cast<const CPEN211InstrInfo *>(MF.getSubtarget().getInstrInfo());
+
+  // this is another problem for future me
+  assert(CPEN211FI->getCalleeSavedFrameSize() == 0 &&
+         "this is another future problem for me!future");
 
   // MachineBasicBlock::iterator MBBI = MBB.begin();
   // DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
@@ -158,30 +161,30 @@ void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
 
 void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
-  llvm_unreachable("this is a impossible place to reach!!!");
-  // const MachineFrameInfo &MFI = MF.getFrameInfo();
-  // CPEN211MachineFunctionInfo *CPEN211FI =
-  //     MF.getInfo<CPEN211MachineFunctionInfo>();
-  // const CPEN211InstrInfo &TII =
-  //     *static_cast<const CPEN211InstrInfo
-  //     *>(MF.getSubtarget().getInstrInfo());
 
-  // MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
-  // unsigned RetOpcode = MBBI->getOpcode();
-  // DebugLoc DL = MBBI->getDebugLoc();
+  // llvm_unreachable("this is a impossible place to reach!!!");
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
+  CPEN211MachineFunctionInfo *CPEN211FI =
+      MF.getInfo<CPEN211MachineFunctionInfo>();
+  const CPEN211InstrInfo &TII =
+      *static_cast<const CPEN211InstrInfo *>(MF.getSubtarget().getInstrInfo());
 
-  // switch (RetOpcode) {
-  // case CPEN211::RET:
-  // case CPEN211::RETI:
-  //   break; // These are ok
-  // default:
-  //   llvm_unreachable("Can only insert epilog into returning blocks");
-  // }
+  MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
+  unsigned RetOpcode = MBBI->getOpcode();
+  DebugLoc DL = MBBI->getDebugLoc();
 
-  // // Get the number of bytes to allocate from the FrameInfo
-  // uint64_t StackSize = MFI.getStackSize();
-  // unsigned CSSize = CPEN211FI->getCalleeSavedFrameSize();
-  // uint64_t NumBytes = 0;
+  switch (RetOpcode) {
+  case CPEN211::RET:
+    break; // These are ok
+  default:
+    llvm_unreachable("Can only insert epilog into returning blocks");
+  }
+
+  // Get the number of bytes to allocate from the FrameInfo
+  uint64_t StackSize = MFI.getStackSize();
+  unsigned CSSize = CPEN211FI->getCalleeSavedFrameSize();
+  uint64_t NumBytes = 0;
+  assert(CSSize == 0 && "no idea how to restore the stack for now!");
 
   // MachineBasicBlock::iterator AfterPop = MBBI;
   // if (hasFP(MF)) {
@@ -403,7 +406,7 @@ MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
   // return MBB.erase(I);
 }
 
-// do we even need this function call? 
+// do we even need this function call?
 void CPEN211FrameLowering::processFunctionBeforeFrameFinalized(
     MachineFunction &MF, RegScavenger *) const {
   // llvm_unreachable("this is a impossible place to reach!!!");

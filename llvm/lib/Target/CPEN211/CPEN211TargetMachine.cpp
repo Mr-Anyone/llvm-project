@@ -98,5 +98,6 @@ bool CPEN211PassConfig::addInstSelector() {
 
 void CPEN211PassConfig::addPreEmitPass() {
   // Must run branch selection immediately preceding the asm printer.
-  addPass(createCPEN211BranchSelectionPass());
+  // why do we even need this?
+  // addPass(createCPEN211BranckhSelectionPass());
 }
