@@ -62,9 +62,6 @@ public:
                 const DebugLoc &DL, const MCCFIInstruction &CFIInst,
                 MachineInstr::MIFlag Flag = MachineInstr::NoFlags) const;
 
-  void emitCalleeSavedFrameMoves(MachineBasicBlock &MBB,
-                                 MachineBasicBlock::iterator MBBI,
-                                 const DebugLoc &DL, bool IsPrologue) const;
 };
 
 } // namespace llvm

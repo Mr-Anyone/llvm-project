@@ -24,62 +24,27 @@
 using namespace llvm;
 
 CPEN211FrameLowering::CPEN211FrameLowering(const CPEN211Subtarget &STI)
-    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(1), -2,
-                          Align(2)),
+    // TODO (for Vincent): I don't think this is right?
+    // LocalAreaOffset is -2? I am pretty sure this is 0 CHECK THIS!
+    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(1), 0),
       STI(STI), TII(*STI.getInstrInfo()), TRI(STI.getRegisterInfo()) {}
 
 bool CPEN211FrameLowering::hasFPImpl(const MachineFunction &MF) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  return (MF.getTarget().Options.DisableFramePointerElim(MF) ||
-          MF.getFrameInfo().hasVarSizedObjects() || MFI.isFrameAddressTaken());
+  return false;
 }
 
 bool CPEN211FrameLowering::hasReservedCallFrame(
     const MachineFunction &MF) const {
-  return !MF.getFrameInfo().hasVarSizedObjects();
-}
-
-void CPEN211FrameLowering::BuildCFI(MachineBasicBlock &MBB,
-                                    MachineBasicBlock::iterator MBBI,
-                                    const DebugLoc &DL,
-                                    const MCCFIInstruction &CFIInst,
-                                    MachineInstr::MIFlag Flag) const {
-  MachineFunction &MF = *MBB.getParent();
-  unsigned CFIIndex = MF.addFrameInst(CFIInst);
-  BuildMI(MBB, MBBI, DL, TII.get(TargetOpcode::CFI_INSTRUCTION))
-      .addCFIIndex(CFIIndex)
-      .setMIFlag(Flag);
-}
-
-void CPEN211FrameLowering::emitCalleeSavedFrameMoves(
-    MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
-    const DebugLoc &DL, bool IsPrologue) const {
-  MachineFunction &MF = *MBB.getParent();
-  MachineFrameInfo &MFI = MF.getFrameInfo();
-  const MCRegisterInfo *MRI = MF.getContext().getRegisterInfo();
-
-  // Add callee saved registers to move list.
-  const std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
-
-  // Calculate offsets.
-  for (const CalleeSavedInfo &I : CSI) {
-    int64_t Offset = MFI.getObjectOffset(I.getFrameIdx());
-    Register Reg = I.getReg();
-    unsigned DwarfReg = MRI->getDwarfRegNum(Reg, true);
-
-    if (IsPrologue) {
-      BuildCFI(MBB, MBBI, DL,
-               MCCFIInstruction::createOffset(nullptr, DwarfReg, Offset));
-    } else {
-      BuildCFI(MBB, MBBI, DL,
-               MCCFIInstruction::createRestore(nullptr, DwarfReg));
-    }
-  }
+  // assume infinite stack is a bad idea?
+  return false;
 }
 
 void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
+  llvm_unreachable("this is not yet implemented!");
+
   // assert(&MF.front() == &MBB && "Shrink-wrapping not yet supported");
   // MachineFrameInfo &MFI = MF.getFrameInfo();
   // CPEN211MachineFunctionInfo *CPEN211FI =
@@ -193,7 +158,7 @@ void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
 
 void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
-  // llvm_unreachable("this is a impossible place to reach!!!");
+  llvm_unreachable("this is a impossible place to reach!!!");
   // const MachineFrameInfo &MFI = MF.getFrameInfo();
   // CPEN211MachineFunctionInfo *CPEN211FI =
   //     MF.getInfo<CPEN211MachineFunctionInfo>();
@@ -438,6 +403,7 @@ MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
   // return MBB.erase(I);
 }
 
+// do we even need this function call? 
 void CPEN211FrameLowering::processFunctionBeforeFrameFinalized(
     MachineFunction &MF, RegScavenger *) const {
   // llvm_unreachable("this is a impossible place to reach!!!");
