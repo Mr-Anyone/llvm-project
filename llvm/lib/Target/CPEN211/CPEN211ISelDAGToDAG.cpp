@@ -120,7 +120,7 @@ public:
 };
 } // end anonymous namespace
 
- char CPEN211DAGToDAGISelLegacy::ID;
+char CPEN211DAGToDAGISelLegacy::ID;
 //
 INITIALIZE_PASS(CPEN211DAGToDAGISelLegacy, DEBUG_TYPE, PASS_NAME, false, false)
 
@@ -182,105 +182,105 @@ bool CPEN211DAGToDAGISel::MatchAddressBase(SDValue N,
 }
 
 bool CPEN211DAGToDAGISel::MatchAddress(SDValue N, CPEN211ISelAddressMode &AM) {
-  llvm_unreachable("this is not reachable");
-  // LLVM_DEBUG(errs() << "MatchAddress: "; AM.dump());
 
-  // switch (N.getOpcode()) {
-  // default:
-  //   break;
-  // case ISD::Constant: {
-  //   uint64_t Val = cast<ConstantSDNode>(N)->getSExtValue();
-  //   AM.Disp += Val;
-  //   return false;
-  // }
+  // llvm_unreachable("this is not reachable for now?");
+  LLVM_DEBUG(errs() << "MatchAddress: "; AM.dump());
 
-  // case CPEN211ISD::Wrapper:
-  //   if (!MatchWrapper(N, AM))
-  //     return false;
-  //   break;
+  switch (N.getOpcode()) {
+  default:
+    break;
+  case ISD::Constant: {
+    uint64_t Val = cast<ConstantSDNode>(N)->getSExtValue();
+    AM.Disp += Val;
+    return false;
+  }
 
-  // case ISD::FrameIndex:
-  //   if (AM.BaseType == CPEN211ISelAddressMode::RegBase &&
-  //       AM.Base.Reg.getNode() == nullptr) {
-  //     AM.BaseType = CPEN211ISelAddressMode::FrameIndexBase;
-  //     AM.Base.FrameIndex = cast<FrameIndexSDNode>(N)->getIndex();
-  //     return false;
-  //   }
-  //   break;
+    // case CPEN211ISD::Wrapper:
+    //   if (!MatchWrapper(N, AM))
+    //     return false;
+    //   break;
 
-  // case ISD::ADD: {
-  //   CPEN211ISelAddressMode Backup = AM;
-  //   if (!MatchAddress(N.getNode()->getOperand(0), AM) &&
-  //       !MatchAddress(N.getNode()->getOperand(1), AM))
-  //     return false;
-  //   AM = Backup;
-  //   if (!MatchAddress(N.getNode()->getOperand(1), AM) &&
-  //       !MatchAddress(N.getNode()->getOperand(0), AM))
-  //     return false;
-  //   AM = Backup;
+  case ISD::FrameIndex:
+    if (AM.BaseType == CPEN211ISelAddressMode::RegBase &&
+        AM.Base.Reg.getNode() == nullptr) {
+      AM.BaseType = CPEN211ISelAddressMode::FrameIndexBase;
+      AM.Base.FrameIndex = cast<FrameIndexSDNode>(N)->getIndex();
+      return false;
+    }
+    break;
 
-  //  break;
-  //}
+  case ISD::ADD: {
+    CPEN211ISelAddressMode Backup = AM;
+    if (!MatchAddress(N.getNode()->getOperand(0), AM) &&
+        !MatchAddress(N.getNode()->getOperand(1), AM))
+      return false;
+    AM = Backup;
+    if (!MatchAddress(N.getNode()->getOperand(1), AM) &&
+        !MatchAddress(N.getNode()->getOperand(0), AM))
+      return false;
+    AM = Backup;
 
-  // case ISD::OR:
-  //   // Handle "X | C" as "X + C" iff X is known to have C bits clear.
-  //   if (ConstantSDNode *CN = dyn_cast<ConstantSDNode>(N.getOperand(1))) {
-  //     CPEN211ISelAddressMode Backup = AM;
-  //     uint64_t Offset = CN->getSExtValue();
-  //     // Start with the LHS as an addr mode.
-  //     if (!MatchAddress(N.getOperand(0), AM) &&
-  //         // Address could not have picked a GV address for the displacement.
-  //         AM.GV == nullptr &&
-  //         // Check to see if the LHS & C is zero.
-  //         CurDAG->MaskedValueIsZero(N.getOperand(0), CN->getAPIntValue())) {
-  //       AM.Disp += Offset;
-  //       return false;
-  //     }
-  //     AM = Backup;
-  //   }
-  //   break;
-  // }
+    break;
+  }
 
-  // return MatchAddressBase(N, AM);
+  case ISD::OR:
+    // Handle "X | C" as "X + C" iff X is known to have C bits clear.
+    if (ConstantSDNode *CN = dyn_cast<ConstantSDNode>(N.getOperand(1))) {
+      CPEN211ISelAddressMode Backup = AM;
+      uint64_t Offset = CN->getSExtValue();
+      // Start with the LHS as an addr mode.
+      if (!MatchAddress(N.getOperand(0), AM) &&
+          // Address could not have picked a GV address for the displacement.
+          AM.GV == nullptr &&
+          // Check to see if the LHS & C is zero.
+          CurDAG->MaskedValueIsZero(N.getOperand(0), CN->getAPIntValue())) {
+        AM.Disp += Offset;
+        return false;
+      }
+      AM = Backup;
+    }
+    break;
+  }
+
+  return MatchAddressBase(N, AM);
 }
 
 /// SelectAddr - returns true if it is able pattern match an addressing mode.
 /// It returns the operands which make up the maximal addressing mode it can
 /// match by reference.
 bool CPEN211DAGToDAGISel::SelectAddr(SDValue N, SDValue &Base, SDValue &Disp) {
-  llvm_unreachable("this is not doable");
-  // CPEN211ISelAddressMode AM;
+  CPEN211ISelAddressMode AM;
 
-  // if (MatchAddress(N, AM))
-  //   return false;
+  if (MatchAddress(N, AM))
+    return false;
 
+  assert(AM.BaseType != CPEN211ISelAddressMode::RegBase);
   // if (AM.BaseType == CPEN211ISelAddressMode::RegBase)
   //   if (!AM.Base.Reg.getNode())
   //     AM.Base.Reg = CurDAG->getRegister(CPEN211::SR, MVT::i16);
 
-  // Base = (AM.BaseType == CPEN211ISelAddressMode::FrameIndexBase)
-  //            ? CurDAG->getTargetFrameIndex(AM.Base.FrameIndex,
-  //            N.getValueType()) : AM.Base.Reg;
+  Base = (AM.BaseType == CPEN211ISelAddressMode::FrameIndexBase)
+             ? CurDAG->getTargetFrameIndex(AM.Base.FrameIndex, N.getValueType())
+             : AM.Base.Reg;
 
-  // if (AM.GV)
-  //   Disp = CurDAG->getTargetGlobalAddress(AM.GV, SDLoc(N), MVT::i16, AM.Disp,
-  //                                         0 /*AM.SymbolFlags*/);
-  // else if (AM.CP)
-  //   Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16, AM.Alignment,
-  //   AM.Disp,
-  //                                        0 /*AM.SymbolFlags*/);
-  // else if (AM.ES)
-  //   Disp = CurDAG->getTargetExternalSymbol(AM.ES, MVT::i16, 0
-  //                                          /*AM.SymbolFlags*/);
-  // else if (AM.JT != -1)
-  //   Disp = CurDAG->getTargetJumpTable(AM.JT, MVT::i16, 0 /*AM.SymbolFlags*/);
-  // else if (AM.BlockAddr)
-  //   Disp = CurDAG->getTargetBlockAddress(AM.BlockAddr, MVT::i32, 0,
-  //                                        0 /*AM.SymbolFlags*/);
-  // else
-  //   Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
+  if (AM.GV)
+    Disp = CurDAG->getTargetGlobalAddress(AM.GV, SDLoc(N), MVT::i16, AM.Disp,
+                                          0 /*AM.SymbolFlags*/);
+  else if (AM.CP)
+    Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16, AM.Alignment, AM.Disp,
+                                         0 /*AM.SymbolFlags*/);
+  else if (AM.ES)
+    Disp = CurDAG->getTargetExternalSymbol(AM.ES, MVT::i16, 0
+                                           /*AM.SymbolFlags*/);
+  else if (AM.JT != -1)
+    Disp = CurDAG->getTargetJumpTable(AM.JT, MVT::i16, 0 /*AM.SymbolFlags*/);
+  else if (AM.BlockAddr)
+    Disp = CurDAG->getTargetBlockAddress(AM.BlockAddr, MVT::i32, 0,
+                                         0 /*AM.SymbolFlags*/);
+  else
+    Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
 
-  // return true;
+  return true;
 }
 
 bool CPEN211DAGToDAGISel::SelectInlineAsmMemoryOperand(

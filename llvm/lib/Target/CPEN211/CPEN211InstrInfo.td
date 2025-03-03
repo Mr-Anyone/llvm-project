@@ -43,12 +43,17 @@ def cc : Operand<i16>{
 }
 
 // TODO (for Vincent): does there need two be two different operand?
-def mem : Operand<i16> {
+def MemAsmOperand : AsmOperandClass {
+  let Name = "Mem";
+}
+
+// Address operands
+def memsrc : Operand<i16> {
+  let PrintMethod = "printSrcMemOperand";
   let MIOperandInfo = (ops GR16, i16imm);
-  // let PrintMethod = "printSrcMemOperand";
-  // let ParserMatchClass = MemAsmOperand;
-  // let EncoderMethod = "getMemOpValue";
-  // let DecoderMethod = "DecodeMemOperand";
+  let ParserMatchClass = MemAsmOperand;
+  let EncoderMethod = "getMemOpValue";
+  let DecoderMethod = "DecodeMemOperand";
 }
 
 //===----------------------------------------------------------------------===//
@@ -106,14 +111,20 @@ let isBranch = 1, isTerminator=1 in {
 } // isBranch, isTerminator
 
 
+// complex pattern to select address or not? 
+// arguments:
+// ValueType, numops, string fn, roots, props
+def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;
+
 //===----------------------------------------------------------------------
 // Memory Type Instructions
 // TODO: check the dag selection pattern matching! This might have to be a 
 // complex pattern instead of just GR16, because we can also left shift as well!
-def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins GR16:$Rn)
-                    , "LDR\t{$Rd,[$Rn]}", [(set GR16:$Rd, (load GR16:$Rn))]>;
-def STR16mr: MForm<0b100, 2, (outs), (ins GR16:$Rd, GR16:$Rn)
-                    , "STR\t{$Rd,[$Rn]}", [(store GR16:$Rn, GR16:$Rd)]>;
+def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins memsrc:$Rn)
+                    , "LDR\t{$Rd,[$Rn]}", [(set GR16:$Rd, (load addr:$Rn))]>;
+
+def STR16mr: MForm<0b100, 2, (outs), (ins memsrc:$Rd, GR16:$Rn)
+                    , "STR\t{$Rd,[$Rn]}", [(store GR16:$Rn, addr:$Rd)]>;
 
 // TOOD (for Vincent): create a register alias both the stack pointer and the link register  
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?
