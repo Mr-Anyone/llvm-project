@@ -21,6 +21,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include <cstdlib>
 
 using namespace llvm;
 
@@ -78,47 +79,23 @@ bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
   assert(!TFI->hasFP(MF) && "unexpected");
   unsigned BasePtr = CPEN211::SP;
+  // offset have to be
+
   int Offset = MF.getFrameInfo().getObjectOffset(FrameIndex);
 
   // TODO (for Vincent): what even is this offset?
   // check this offset!
-  Offset += 2; // the SP?
   if (!TFI->hasFP(MF))
     Offset += MF.getFrameInfo().getStackSize();
   else
     Offset += 2; // Skip the saved FP
 
-  // // Fold imm into offset
+  // Fold imm into offset
   Offset += MI.getOperand(FIOperandNum + 1).getImm();
-
-  // if (MI.getOpcode() == CPEN211::ADDframe) {
-  //   // This is actually "load effective address" of the stack slot
-  //   // instruction. We have only two-address instructions, thus we need to
-  //   // expand it into mov + add
-  //   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-
-  //   MI.setDesc(TII.get(CPEN211::MOV16rr));
-  //   MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
-
-  //   // Remove the now unused Offset operand.
-  //   MI.removeOperand(FIOperandNum + 1);
-
-  //   if (Offset == 0)
-  //     return false;
-
-  //   // We need to materialize the offset via add instruction.
-  //   Register DstReg = MI.getOperand(0).getReg();
-  //   if (Offset < 0)
-  //     BuildMI(MBB, std::next(II), dl, TII.get(CPEN211::SUB16ri), DstReg)
-  //         .addReg(DstReg)
-  //         .addImm(-Offset);
-  //   else
-  //     BuildMI(MBB, std::next(II), dl, TII.get(CPEN211::ADD16ri), DstReg)
-  //         .addReg(DstReg)
-  //         .addImm(Offset);
-
-  //   return false;
-  // }
+  assert(Offset % 2 == 0 && "Offset mus be divisible by two!");
+  // TODO (for Vincent): is this even correct?
+  Offset = Offset /
+           2; // this is because of the weirdness of the CPEN211 memory model
 
   MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
   MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
