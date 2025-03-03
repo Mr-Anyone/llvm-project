@@ -66,29 +66,30 @@ CPEN211RegisterInfo::getPointerRegClass(const MachineFunction &MF,
 bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                               int SPAdj, unsigned FIOperandNum,
                                               RegScavenger *RS) const {
-  llvm_unreachable("this is not yet implemented");
-  // assert(SPAdj == 0 && "Unexpected");
+  // llvm_unreachable("this is not yet implemented");
+  assert(SPAdj == 0 && "Unexpected");
 
-  // MachineInstr &MI = *II;
-  // MachineBasicBlock &MBB = *MI.getParent();
-  // MachineFunction &MF = *MBB.getParent();
-  // const CPEN211FrameLowering *TFI = getFrameLowering(MF);
-  // DebugLoc dl = MI.getDebugLoc();
-  // int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
+  MachineInstr &MI = *II;
+  MachineBasicBlock &MBB = *MI.getParent();
+  MachineFunction &MF = *MBB.getParent();
+  const CPEN211FrameLowering *TFI = getFrameLowering(MF);
+  DebugLoc dl = MI.getDebugLoc();
+  int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
 
-  // unsigned BasePtr = (TFI->hasFP(MF) ? CPEN211::R4 : CPEN211::SP);
-  // int Offset = MF.getFrameInfo().getObjectOffset(FrameIndex);
+  assert(!TFI->hasFP(MF) && "unexpected");
+  unsigned BasePtr = CPEN211::SP;
+  int Offset = MF.getFrameInfo().getObjectOffset(FrameIndex);
 
-  // // Skip the saved PC
-  // Offset += 2;
-
-  // if (!TFI->hasFP(MF))
-  //   Offset += MF.getFrameInfo().getStackSize();
-  // else
-  //   Offset += 2; // Skip the saved FP
+  // TODO (for Vincent): what even is this offset?
+  // check this offset!
+  Offset += 2; // the SP?
+  if (!TFI->hasFP(MF))
+    Offset += MF.getFrameInfo().getStackSize();
+  else
+    Offset += 2; // Skip the saved FP
 
   // // Fold imm into offset
-  // Offset += MI.getOperand(FIOperandNum + 1).getImm();
+  Offset += MI.getOperand(FIOperandNum + 1).getImm();
 
   // if (MI.getOpcode() == CPEN211::ADDframe) {
   //   // This is actually "load effective address" of the stack slot
@@ -119,12 +120,12 @@ bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   //   return false;
   // }
 
-  // MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
-  // MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
-  // return false;
+  MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
+  MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
+  return false;
 }
 
- Register
+Register
 CPEN211RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const CPEN211FrameLowering *TFI = getFrameLowering(MF);
   // llvm_unreachable("this is not yet implemented!");

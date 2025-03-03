@@ -74,7 +74,13 @@ void CPEN211InstPrinter::printSrcMemOperand(const MCInst *MI, unsigned OpNo,
   const MCOperand &Base = MI->getOperand(OpNo);
   const MCOperand &Disp = MI->getOperand(OpNo + 1);
 
-  llvm_unreachable("this is not yet implemented for cpen 211"); // Print displacement first
+  assert(Base.isReg() && "I am not sure how base is not register?");
+  assert(Disp.isImm() && "displacement have to me intermediate");
+
+  const char *RegisterName = getRegisterName(Base.getReg());
+  O << RegisterName << "," << Disp.getImm();
+  // llvm_unreachable("this is not yet implemented for cpen 211"); // Print
+  // displacement first
 
   // If the global address expression is a part of displacement field with a
   // register base, we should not emit any prefix symbol here, e.g.
@@ -111,32 +117,32 @@ void CPEN211InstPrinter::printPostIndRegOperand(const MCInst *MI, unsigned OpNo,
 
 void CPEN211InstPrinter::printCCOperand(const MCInst *MI, unsigned OpNo,
                                         raw_ostream &O) {
-    llvm_unreachable("unimplemented");
-//  unsigned CC = MI->getOperand(OpNo).getImm();
-//
-//  switch (CC) {
-//  default:
-//    llvm_unreachable("Unsupported CC code");
-//  case CPEN211CC::COND_E:
-//    O << "eq";
-//    break;
-//  case CPEN211CC::COND_NE:
-//    O << "ne";
-//    break;
-//  case CPEN211CC::COND_HS:
-//    O << "hs";
-//    break;
-//  case CPEN211CC::COND_LO:
-//    O << "lo";
-//    break;
-//  case CPEN211CC::COND_GE:
-//    O << "ge";
-//    break;
-//  case CPEN211CC::COND_L:
-//    O << 'l';
-//    break;
-//  case CPEN211CC::COND_N:
-//    O << 'n';
-//    break;
-//  }
+  llvm_unreachable("unimplemented");
+  //  unsigned CC = MI->getOperand(OpNo).getImm();
+  //
+  //  switch (CC) {
+  //  default:
+  //    llvm_unreachable("Unsupported CC code");
+  //  case CPEN211CC::COND_E:
+  //    O << "eq";
+  //    break;
+  //  case CPEN211CC::COND_NE:
+  //    O << "ne";
+  //    break;
+  //  case CPEN211CC::COND_HS:
+  //    O << "hs";
+  //    break;
+  //  case CPEN211CC::COND_LO:
+  //    O << "lo";
+  //    break;
+  //  case CPEN211CC::COND_GE:
+  //    O << "ge";
+  //    break;
+  //  case CPEN211CC::COND_L:
+  //    O << 'l';
+  //    break;
+  //  case CPEN211CC::COND_N:
+  //    O << 'n';
+  //    break;
+  //  }
 }
