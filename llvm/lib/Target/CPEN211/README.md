@@ -16,3 +16,17 @@ Argument register are R0, and R1.
 
 Return happens at R0.
 
+```
+int add(int a, int b, int c, int d){
+    return a + b + c;
+}
+```
+
+Would be that the stack frame would look something like this!
+Note: variable must be pushed in reverse order to make sense!
+```
+R0:         int a
+R1:         int b
+SP  :       int d
+SP+1:       int c
+```
