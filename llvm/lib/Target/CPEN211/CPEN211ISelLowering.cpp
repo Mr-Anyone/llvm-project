@@ -523,7 +523,17 @@ static void AnalyzeArguments(CCState &State,
         RegsLeft--;
       }
     } else {
-      assert(0 && "don't know how to assign to stack bro");
+      assert(Parts == 1 &&
+             "don't know how to allocate type that need more that i16!");
+      if (LocVT == MVT::i16) {
+          
+        int64_t Offset1 = State.AllocateStack(2, Align(2));
+        State.addLoc(
+            CCValAssign::getMem(ValNo++, MVT::i16, Offset1, LocVT, LocInfo));
+      } else {
+        assert(false && "cannot allocate type that is not i16!");
+      }
+
       // using the stack if we run out of regs
       // for (unsigned j = 0; j < Parts; j++)
       //   CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
@@ -587,7 +597,7 @@ CPEN211TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   switch (CallConv) {
   default:
     report_fatal_error("Unsupported calling convention");
-  // case CallingConv::CPEN211_BUILTIN:
+    // case CallingConv::CPEN211_BUILTIN:
   case CallingConv::Fast:
   case CallingConv::C:
     return LowerCCCCallTo(Chain, Callee, CallConv, isVarArg, isTailCall, Outs,
@@ -654,34 +664,29 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
       }
     } else {
       // Only arguments passed on the stack should make it here.
-      assert(0 && "again. How idea how to lower stack");
+      // assert(0 && "again. How idea how to lower stack");
       assert(VA.isMemLoc());
 
       SDValue InVal;
       ISD::ArgFlagsTy Flags = Ins[i].Flags;
 
-      if (Flags.isByVal()) {
-        MVT PtrVT = VA.getLocVT();
-        int FI = MFI.CreateFixedObject(Flags.getByValSize(),
-                                       VA.getLocMemOffset(), true);
-        InVal = DAG.getFrameIndex(FI, PtrVT);
-      } else {
-        // Load the argument to a virtual register
-        unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
-        if (ObjSize > 2) {
-          errs() << "LowerFormalArguments Unhandled argument type: "
-                 << VA.getLocVT() << "\n";
-        }
-        // Create the frame index object for this incoming parameter...
-        int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
-
-        // Create the SelectionDAG nodes corresponding to a load
-        // from this parameter
-        SDValue FIN = DAG.getFrameIndex(FI, MVT::i16);
-        InVal = DAG.getLoad(
-            VA.getLocVT(), dl, Chain, FIN,
-            MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI));
+      assert(!Flags.isByVal() && "not sure what this means");
+      // Load the argument to a virtual register
+      unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
+      if (ObjSize > 2) {
+        errs() << "LowerFormalArguments Unhandled argument type: "
+               << VA.getLocVT() << "\n";
       }
+
+      // Create the frame index object for this incoming parameter...
+      int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
+
+      // Create the SelectionDAG nodes corresponding to a load
+      // from this parameter
+      SDValue FIN = DAG.getFrameIndex(FI, MVT::i16);
+      InVal = DAG.getLoad(
+          VA.getLocVT(), dl, Chain, FIN,
+          MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI));
 
       InVals.push_back(InVal);
     }
