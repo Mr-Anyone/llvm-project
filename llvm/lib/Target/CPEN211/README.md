@@ -8,16 +8,16 @@ The entire instruction set is basically self explanatory.
 
 # TODO 
 
-- [] Add a frame pointer support (**R5**), which is probably required by some calling conventions.
-- [] Define a structure calling conventions.
-- [] 
+- Add a frame pointer support (**R5**), which is probably required by some calling conventions.
+- Define a structure calling conventions.
+- 
 
 ## Technical Challenges
 
-- [] As of current, there is no way to lower frameIndex. Meaning the stack is basically accessible.  
-- [] Subtract requires a libcall which makes a lot of basic instruction hard to lower 
-- [] The CPEN211 memory model is an unconventional one, where one byte is 16 bit. 
-- [] Because one byte is 16 bit, it is hard to lower strings effectively. As of current, half of the memory space would not be used as a result!
+- As of current, there is no way to lower frameIndex. Meaning the stack is basically accessible.  
+- Subtract requires a libcall which makes a lot of basic instruction hard to lower 
+- The CPEN211 memory model is an unconventional one, where one byte is 16 bit. 
+- Because one byte is 16 bit, it is hard to lower strings effectively. As of current, half of the memory space would not be used as a result!
 
 ## Calling Conventions Custom (C ABI)
 
