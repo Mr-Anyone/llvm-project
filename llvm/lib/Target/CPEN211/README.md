@@ -8,13 +8,13 @@ The entire instruction set is basically self explanatory.
 
 # TODO 
 
-- [] Add a frame pointer support (**R5**), which is probably required by some calling conventions.
-- [] Define a structure calling conventions.
-- [] Deal with 8 bits variables
-- [] Software floating point support 
-- [] Lowering Shift 
-- [] Lower not in Selection DAG
-- [] Add Pseudo Instruction for NOT
+- Add a frame pointer support (**R5**), which is probably required by some calling conventions.
+- Define a structure calling conventions.
+- Deal with 8 bits variables
+- Software floating point support 
+- Lowering Shift 
+- Lower not in Selection DAG
+- Add Pseudo Instruction for NOT
 
 ## Technical Challenges
 
