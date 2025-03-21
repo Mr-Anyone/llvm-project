@@ -8,26 +8,31 @@ The entire instruction set is basically self explanatory.
 
 # TODO 
 
-- Add a frame pointer support (**R5**), which is probably required by some calling conventions.
-- Define a structure calling conventions.
-- 
+[] Add a frame pointer support (**R5**), which is probably required by some calling conventions.
+[] Define a structure calling conventions.
+[] Deal with 8 bits variables
+[] Software floating point support 
+[] Lowering Shift 
+[] Lower not in Selection DAG
+[] Add Pseudo Instruction for NOT
 
 ## Technical Challenges
 
-- As of current, there is no way to lower frameIndex. Meaning the stack is basically accessible.  
 - Subtract requires a libcall which makes a lot of basic instruction hard to lower 
 - The CPEN211 memory model is an unconventional one, where one byte is 16 bit. 
 - Because one byte is 16 bit, it is hard to lower strings effectively. As of current, half of the memory space would not be used as a result!
 
 ## Calling Conventions Custom (C ABI)
 
-Here we are going to define the calling convention, mainly inspired from x86:
+Here we are going to define the calling convention:
 
 **R7** is link register, **R6** is stack pointer, and **R5** is frame pointer. 
 
 Argument register are **R0**, and **R1**. 
 
 Return happens at R0.
+
+Additional arguments are passed on the stack in reverse order. 
 
 ## Example
 
