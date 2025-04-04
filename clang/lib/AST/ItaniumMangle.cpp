@@ -1088,7 +1088,17 @@ void CXXNameMangler::mangleNameWithAbiTags(GlobalDecl GD,
     return;
   }
 
-  if (isLocalContainerContext(DC)) {
+  const RecordDecl *RD = GetLocalClassDecl(GD.getDecl());
+  if(RD){
+      const DeclContext *DC = Context.getEffectiveDeclContext(RD);
+      const FunctionDecl* FD = dyn_cast<FunctionDecl>(DC);
+      if(FD->getTrailingRequiresClause() && IsLambda){
+          mangleNestedName(GD, DC, AdditionalAbiTags);
+          return;
+      }
+  }
+  
+  if (isLocalContainerContext(DC)){
     mangleLocalName(GD, AdditionalAbiTags);
     return;
   }
