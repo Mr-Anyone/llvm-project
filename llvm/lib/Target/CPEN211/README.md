@@ -52,3 +52,27 @@ SP-2:       R7 // Link Register
 SP-1:       int c
 SP  :       int d
 ```
+## Example code/Example Output
+
+This is the code
+```c
+int add(int a, int b, int c){
+    return a + b + c;
+}
+```
+
+This is the code after
+
+```
+        .file   "main.c"                                                                                                                                            .text                                                                                                                                                       .globl  add                             ; -- Begin function add                                                                                             .type   add,@function
+add:                                    ; @add
+; %bb.0:                                                                                                                                                            ADD     R0, R1 , R0
+        LDR     R1, [R6,0]
+        ADD     R0, R0 , R1
+        BX      R7
+.Lfunc_end0:
+        .size   add, .Lfunc_end0-add
+                                        ; -- End function
+        .ident  "Ubuntu clang version 14.0.0-1ubuntu1.1"
+        .section        ".note.GNU-stack","",@progbits
+```
