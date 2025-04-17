@@ -18,6 +18,11 @@ include "CPEN211InstrFormats.td"
 def SDT_CPEN211Cmp          : SDTypeProfile<0, 2, [SDTCisSameAs<0, 1>]>;
 // TODO: as of current, there are no type constraint
 def SDT_CPEN211BrCC         : SDTypeProfile<0, 2, []>;
+// {TrueV, FalseV, TargetCC, Flag};, TargetCC is the enum in CPEN211CC:CondCoes
+def SDT_CPEN211SelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
+                                                  SDTCisSameAs<1, 2>,
+                                                  SDTCisVT<3, i16>
+                                                  ]>;
 //===----------------------------------------------------------------------===//
 // CPEN211 Specific Node Definitions.
 //===----------------------------------------------------------------------===//
@@ -26,6 +31,8 @@ def CPEN211retglue  :   SDNode<"CPEN211ISD::RET_GLUE", SDTNone,
 def CPEN211cmp     :     SDNode<"CPEN211ISD::CMP",   SDT_CPEN211Cmp, [SDNPOutGlue]>;
 def CPEN211brcc    :     SDNode<"CPEN211ISD::BR_CC", SDT_CPEN211BrCC,
                             [SDNPHasChain, SDNPInGlue]>;
+def CPEN211selectcc: SDNode<"CPEN211ISD::SELECT_CC", SDT_CPEN211SelectCC,
+                            [SDNPInGlue]>;
 //===----------------------------------------------------------------------===//
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
@@ -134,14 +141,29 @@ let isReturn = 1, isTerminator = 1, isBarrier = 1 in def RET : Pseudo<(outs), (i
 //===----------------------------------------------------------------------
 // Special type of instruction
 let isCodeGenOnly = 1, Defs = [SP, SP], Uses = [SP] in {
-def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
-                              "#ADJCALLSTACKDOWN $amt1 $amt2",
-                              // TODO (for Vincent): this is in corrent!
-                              // [(MSP430callseq_start timm:$amt1, timm:$amt2)]>;
-                              []>;
-def ADJCALLSTACKUP   : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
-                              "#ADJCALLSTACKUP $amt1 $amt2",
-                              // TODO (for Vincent): this is in corrent!
-                              // [(MSP430callseq_end timm:$amt1, timm:$amt2)]>;
-                              []>;
-}
+    def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
+                                  "#ADJCALLSTACKDOWN $amt1 $amt2",
+                                  // TODO (for Vincent): this is in corrent!
+                                  // [(MSP430callseq_start timm:$amt1, timm:$amt2)]>;
+                                  []>;
+    def ADJCALLSTACKUP   : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
+                                  "#ADJCALLSTACKUP $amt1 $amt2",
+                                  // TODO (for Vincent): this is in corrent!
+                                  // [(MSP430callseq_end timm:$amt1, timm:$amt2)]>;
+                                  []>;
+} // isCodeGenOnly = 1
+
+let isCodeGenOnly = 1 in {
+    // this is a pseudo because we have to move the intermediate into 
+    // another register to perform the compare. We would have to move the 
+    // the intermediate to deal with this using a register
+    def CMP16ri : Pseudo<(outs), (ins GR16:$rd, i16imm:$imm), 
+                            "#CMP16ri PSEUDO", 
+                            [(CPEN211cmp GR16:$rd, imm:$imm)]>;
+
+    def SelectCC16 : Pseudo<(outs GR16:$dst), (ins GR16:$src, GR16:$src2, i16imm:$cc),
+                        "# SelectCC16 PSEUDO",
+                        [(set GR16:$dst,
+                          // true, false, cond_code
+                          (CPEN211selectcc GR16:$src, GR16:$src2, imm:$cc))]>;
+} // isCodeGenOnly = 1

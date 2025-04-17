@@ -33,8 +33,7 @@
 #include <iostream>
 using namespace llvm;
 
-#define DEBUG_TYPE "msp430-lower"
-
+#define DEBUG_TYPE "cpen211-lower"
 // static cl::opt<bool> CPEN211NoLegalImmediate(
 //     "msp430-no-legal-immediate", cl::Hidden,
 //     cl::desc("Enable non legal immediates (for testing purposes only)"),
@@ -43,7 +42,6 @@ using namespace llvm;
 CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
                                              const CPEN211Subtarget &STI)
     : TargetLowering(TM) {
-
   // Set up the register classes.
   // addRegisterClass(MVT::i8, &CPEN211::GR8RegClass);
   addRegisterClass(MVT::i16, &CPEN211::GR16RegClass);
@@ -88,14 +86,14 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::BlockAddress, MVT::i16, Expand);
   setOperationAction(ISD::BR_JT, MVT::Other, Expand);
   // setOperationAction(ISD::BR_CC, MVT::i8, Expand);
-  setOperationAction(ISD::BR_CC, MVT::i16, Expand);
-  setOperationAction(ISD::BRCOND, MVT::Other, Expand);
+  setOperationAction(ISD::BR_CC, MVT::i16, Custom);
+  setOperationAction(ISD::BRCOND, MVT::Other, Custom);
   // setOperationAction(ISD::SETCC, MVT::i8, Expand);
-  setOperationAction(ISD::SETCC, MVT::i16, Expand);
+  setOperationAction(ISD::SETCC, MVT::i16, Custom);
   // setOperationAction(ISD::SELECT, MVT::i8, Expand);
   setOperationAction(ISD::SELECT, MVT::i16, Expand);
   // setOperationAction(ISD::SELECT_CC, MVT::i8, Expand);
-  setOperationAction(ISD::SELECT_CC, MVT::i16, Expand);
+  setOperationAction(ISD::SELECT_CC, MVT::i16, Custom);
   setOperationAction(ISD::SIGN_EXTEND, MVT::i16, Expand);
   // setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i8, Expand);
   setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i16, Expand);
@@ -352,32 +350,32 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
 SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
                                               SelectionDAG &DAG) const {
   switch (Op.getOpcode()) {
-  case ISD::SHL: // FALLTHROUGH
-  case ISD::SRL:
-  case ISD::SRA:
-    return LowerShifts(Op, DAG);
-  case ISD::GlobalAddress:
-    return LowerGlobalAddress(Op, DAG);
-  case ISD::BlockAddress:
-    return LowerBlockAddress(Op, DAG);
-  case ISD::ExternalSymbol:
-    return LowerExternalSymbol(Op, DAG);
+  // case ISD::SHL: // FALLTHROUGH
+  // case ISD::SRL:
+  // case ISD::SRA:
+  //   return LowerShifts(Op, DAG);
+  // case ISD::GlobalAddress:
+  //   return LowerGlobalAddress(Op, DAG);
+  // case ISD::BlockAddress:
+  //   return LowerBlockAddress(Op, DAG);
+  // case ISD::ExternalSymbol:
+  //   return LowerExternalSymbol(Op, DAG);
   case ISD::SETCC:
     return LowerSETCC(Op, DAG);
-  case ISD::BR_CC:
-    return LowerBR_CC(Op, DAG);
+  // case ISD::BR_CC:
+  //   return LowerBR_CC(Op, DAG);
   case ISD::SELECT_CC:
     return LowerSELECT_CC(Op, DAG);
-  case ISD::SIGN_EXTEND:
-    return LowerSIGN_EXTEND(Op, DAG);
-  case ISD::RETURNADDR:
-    return LowerRETURNADDR(Op, DAG);
-  case ISD::FRAMEADDR:
-    return LowerFRAMEADDR(Op, DAG);
-  case ISD::VASTART:
-    return LowerVASTART(Op, DAG);
-  case ISD::JumpTable:
-    return LowerJumpTable(Op, DAG);
+  // case ISD::SIGN_EXTEND:
+  //   return LowerSIGN_EXTEND(Op, DAG);
+  // case ISD::RETURNADDR:
+  //   return LowerRETURNADDR(Op, DAG);
+  // case ISD::FRAMEADDR:
+  //   return LowerFRAMEADDR(Op, DAG);
+  // case ISD::VASTART:
+  //   return LowerVASTART(Op, DAG);
+  // case ISD::JumpTable:
+  //   return LowerJumpTable(Op, DAG);
   default:
     llvm_unreachable("unimplemented operand");
   }
@@ -526,7 +524,7 @@ static void AnalyzeArguments(CCState &State,
       assert(Parts == 1 &&
              "don't know how to allocate type that need more that i16!");
       if (LocVT == MVT::i16) {
-          
+
         int64_t Offset1 = State.AllocateStack(2, Align(2));
         State.addLoc(
             CCValAssign::getMem(ValNo++, MVT::i16, Offset1, LocVT, LocInfo));
@@ -1037,92 +1035,85 @@ SDValue CPEN211TargetLowering::LowerBlockAddress(SDValue Op,
 
 static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
                        ISD::CondCode CC, const SDLoc &dl, SelectionDAG &DAG) {
-  llvm_unreachable("this is not correct!");
+  // FIXME: Handle bittests someday
+  assert(!LHS.getValueType().isFloatingPoint() && "We don't handle FP yet");
 
-  //// FIXME: Handle bittests someday
-  // assert(!LHS.getValueType().isFloatingPoint() && "We don't handle FP yet");
+  // FIXME: Handle jump negative someday
+  CPEN211CC::CondCodes TCC = CPEN211CC::COND_INVALID;
 
-  //// FIXME: Handle jump negative someday
-  // CPEN211CC::CondCodes TCC = CPEN211CC::COND_INVALID;
-  // switch (CC) {
-  // default:
-  //   llvm_unreachable("Invalid integer condition!");
-  // case ISD::SETEQ:
-  //   TCC = CPEN211CC::COND_E; // aka COND_Z
-  //   // Minor optimization: if LHS is a constant, swap operands, then the
-  //   // constant can be folded into comparison.
-  //   if (LHS.getOpcode() == ISD::Constant)
-  //     std::swap(LHS, RHS);
-  //   break;
-  // case ISD::SETNE:
-  //   TCC = CPEN211CC::COND_NE; // aka COND_NZ
-  //   // Minor optimization: if LHS is a constant, swap operands, then the
-  //   // constant can be folded into comparison.
-  //   if (LHS.getOpcode() == ISD::Constant)
-  //     std::swap(LHS, RHS);
-  //   break;
-  // case ISD::SETULE:
-  //   std::swap(LHS, RHS);
-  //   [[fallthrough]];
-  // case ISD::SETUGE:
-  //   // Turn lhs u>= rhs with lhs constant into rhs u< lhs+1, this allows us
-  //   to
-  //   // fold constant into instruction.
-  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-  //     LHS = RHS;
-  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-  //     TCC = CPEN211CC::COND_LO;
-  //     break;
-  //   }
-  //   TCC = CPEN211CC::COND_HS; // aka COND_C
-  //   break;
-  // case ISD::SETUGT:
-  //   std::swap(LHS, RHS);
-  //   [[fallthrough]];
-  // case ISD::SETULT:
-  //   // Turn lhs u< rhs with lhs constant into rhs u>= lhs+1, this allows us
-  //   to
-  //   // fold constant into instruction.
-  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-  //     LHS = RHS;
-  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-  //     TCC = CPEN211CC::COND_HS;
-  //     break;
-  //   }
-  //   TCC = CPEN211CC::COND_LO; // aka COND_NC
-  //   break;
-  // case ISD::SETLE:
-  //   std::swap(LHS, RHS);
-  //   [[fallthrough]];
-  // case ISD::SETGE:
-  //   // Turn lhs >= rhs with lhs constant into rhs < lhs+1, this allows us to
-  //   // fold constant into instruction.
-  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-  //     LHS = RHS;
-  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-  //     TCC = CPEN211CC::COND_L;
-  //     break;
-  //   }
-  //   TCC = CPEN211CC::COND_GE;
-  //   break;
-  // case ISD::SETGT:
-  //   std::swap(LHS, RHS);
-  //   [[fallthrough]];
-  // case ISD::SETLT:
-  //   // Turn lhs < rhs with lhs constant into rhs >= lhs+1, this allows us to
-  //   // fold constant into instruction.
-  //   if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-  //     LHS = RHS;
-  //     RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-  //     TCC = CPEN211CC::COND_GE;
-  //     break;
-  //   }
-  //   TCC = CPEN211CC::COND_L;
-  //   break;
-  // }
+  switch (CC) {
+  default:
+    llvm_unreachable("cannot be lower such comparisons as of current!");
+  case ISD::SETEQ:
+    TCC = CPEN211CC::COND_EQ; // aka COND_Z
+    break;
+    //   case ISD::SETNE:
+    //     TCC = CPEN211CC::COND_NE; // aka COND_NZ
+    //     // Minor optimization: if LHS is a constant, swap operands, then the
+    //     // constant can be folded into comparison.
+    //     if (LHS.getOpcode() == ISD::Constant)
+    //       std::swap(LHS, RHS);
+    //     break;
+    //   case ISD::SETULE:
+    //     std::swap(LHS, RHS);
+    //     [[fallthrough]];
+    //   case ISD::SETUGE:
+    //     // Turn lhs u>= rhs with lhs constant into rhs u< lhs+1, this allows
+    //     us to
+    //         // fold constant into instruction.
+    //         if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+    //       LHS = RHS;
+    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
+    //       C->getValueType(0)); TCC = CPEN211CC::COND_LO; break;
+    //     }
+    //     TCC = CPEN211CC::COND_HS; // aka COND_C
+    //     break;
+    //   case ISD::SETUGT:
+    //     std::swap(LHS, RHS);
+    //     [[fallthrough]];
+    //   case ISD::SETULT:
+    //     // Turn lhs u< rhs with lhs constant into rhs u>= lhs+1, this allows
+    //     us to
+    //         // fold constant into instruction.
+    //         if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+    //       LHS = RHS;
+    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
+    //       C->getValueType(0)); TCC = CPEN211CC::COND_HS; break;
+    //     }
+    //     TCC = CPEN211CC::COND_LO; // aka COND_NC
+    //     break;
+    //   case ISD::SETLE:
+    //     std::swap(LHS, RHS);
+    //     [[fallthrough]];
+    //   case ISD::SETGE:
+    //     // Turn lhs >= rhs with lhs constant into rhs < lhs+1, this allows us
+    //     to
+    //     // fold constant into instruction.
+    //     if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+    //       LHS = RHS;
+    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
+    //       C->getValueType(0)); TCC = CPEN211CC::COND_L; break;
+    //     }
+    //     TCC = CPEN211CC::COND_GE;
+    //     break;
+    //   case ISD::SETGT:
+    //     std::swap(LHS, RHS);
+    //     [[fallthrough]];
+    //   case ISD::SETLT:
+    //     // Turn lhs < rhs with lhs constant into rhs >= lhs+1, this allows us
+    //     to
+    //     // fold constant into instruction.
+    //     if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
+    //       LHS = RHS;
+    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
+    //       C->getValueType(0)); TCC = CPEN211CC::COND_GE; break;
+    //     }
+    //     TCC = CPEN211CC::COND_L;
+    //     break;
+  }
 
-  // TargetCC = DAG.getConstant(TCC, dl, MVT::i8);
-  // return DAG.getNode(CPEN211ISD::CMP, dl, MVT::Glue, LHS, RHS);
+  TargetCC = DAG.getConstant(TCC, dl, MVT::i16);
+  return DAG.getNode(CPEN211ISD::CMP, dl, MVT::Glue, LHS, RHS);
 }
 
 SDValue CPEN211TargetLowering::LowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
@@ -1141,6 +1132,7 @@ SDValue CPEN211TargetLowering::LowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 }
 
 SDValue CPEN211TargetLowering::LowerSETCC(SDValue Op, SelectionDAG &DAG) const {
+  LLVM_DEBUG(dbgs() << "I have been called?");
   SDValue LHS = Op.getOperand(0);
   SDValue RHS = Op.getOperand(1);
   SDLoc dl(Op);
@@ -1214,7 +1206,10 @@ SDValue CPEN211TargetLowering::LowerSETCC(SDValue Op, SelectionDAG &DAG) const {
 
 SDValue CPEN211TargetLowering::LowerSELECT_CC(SDValue Op,
                                               SelectionDAG &DAG) const {
-  llvm_unreachable("this is not yet implemented");
+  /// Select with condition operator - This selects between a true value and
+  /// a false value (ops #2 and #3) based on the boolean result of comparing
+  /// the lhs and rhs (ops #0 and #1) of a conditional expression with the
+  /// condition code in op #4, a CondCodeSDNode.
   SDValue LHS = Op.getOperand(0);
   SDValue RHS = Op.getOperand(1);
   SDValue TrueV = Op.getOperand(2);
@@ -1227,7 +1222,7 @@ SDValue CPEN211TargetLowering::LowerSELECT_CC(SDValue Op,
 
   SDValue Ops[] = {TrueV, FalseV, TargetCC, Flag};
 
-  // return DAG.getNode(CPEN211ISD::SELECT_CC, dl, Op.getValueType(), Ops);
+  return DAG.getNode(CPEN211ISD::SELECT_CC, dl, Op.getValueType(), Ops);
 }
 
 SDValue CPEN211TargetLowering::LowerSIGN_EXTEND(SDValue Op,
@@ -1370,6 +1365,12 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     break;
   case CPEN211ISD::RET_GLUE:
     return "CPEN211ISD::RET_GLUE";
+  case llvm::CPEN211ISD::CMP:
+    return "CPEN211ISD::CMP";
+  case llvm::CPEN211ISD::SELECT_CC:
+    return "CPEN211ISD::SELECT_CC";
+  default:
+    llvm_unreachable("you forgot you add a node name here!");
   }
   return nullptr;
 }
@@ -1617,3 +1618,5 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
   // MI.eraseFromParent(); // The pseudo instruction is gone now.
   // return BB;
 }
+
+#undef DEBUG_TYPE

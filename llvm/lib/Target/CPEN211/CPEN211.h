@@ -21,9 +21,13 @@
 namespace CPEN211CC {
 // CPEN211 specific condition code.
 enum CondCodes {
-    TODO_PUT_SOMETHING_HERE,
+  // most common cond codes
+  COND_EQ,
+  COND_NE,
+  COND_LT,
+  COND_LE,
 
-  //COND_INVALID = -1
+  COND_INVALID = -1
 };
 } // namespace CPEN211CC
 
