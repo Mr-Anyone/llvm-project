@@ -1546,8 +1546,36 @@ CPEN211TargetLowering::EmitShiftInstr(MachineInstr &MI,
 
 MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
     MachineInstr &MI, MachineBasicBlock *BB) const {
-  llvm_unreachable("you are getting close");
-  // unsigned Opc = MI.getOpcode();
+
+  unsigned Opc = MI.getOpcode();
+  MachineFunction *F = BB->getParent();
+  DebugLoc dl = MI.getDebugLoc();
+  const TargetInstrInfo &TII = *F->getSubtarget().getInstrInfo();
+
+  switch (Opc) {
+  // convert CMP16ri into CMP16rr
+  case CPEN211::CMP16ri:
+
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::MOV16ri), CPEN211::R4)
+        .addImm(MI.getOperand(1).getImm());
+
+    // CMP16rr, with r4, this is basically the same as CMPri
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::CMP16rr))
+        .addReg(MI.getOperand(0).getReg())
+        .addReg(CPEN211::R4);
+
+    // BuildMI(*bBB, MI, dl, TII.get(CPEN211::))
+
+    LLVM_DEBUG(dbgs() << MI.getOperand(1).getImm());
+    MI.eraseFromParent();
+    BB->dump();
+    break;
+  case CPEN211::SelectCC16:
+    // FIXME: please emit SelectCC16
+    break;
+  }
+
+  return BB;
 
   // if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8
   // ||

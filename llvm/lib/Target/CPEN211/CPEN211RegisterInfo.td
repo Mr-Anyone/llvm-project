@@ -10,6 +10,7 @@
 //  Declarations that describe the CPEN211 register file
 //===----------------------------------------------------------------------===//
 
+// not 3 because we have an awkward status register 
 class CPEN211Reg<bits<3> num, string n, list<string> alt> : Register<n> {
   field bits<3> Num = num;
   let Namespace = "CPEN211";
@@ -33,6 +34,12 @@ def R5  : CPEN211Reg<5,  "R5", []>;
 def SP  : CPEN211Reg<6,  "R6", []>;
 def LR  : CPEN211Reg<7,  "R7", []>;
 
+// status register
+// Z - zero
+// V - overflow
+// N - negative
+def SR  : CPEN211Reg<7,  "SR", []>;  // a jank table gen hack to not modify num, because this will never reach codegen! 
+
 def GR16 : RegisterClass<"CPEN211", [i16], 16,
    // Volatile registers
-  (add R0,R1,R2,R3,R4,R5,LR,SP)>;
+  (add R0,R1,R2,R3,R4,R5,LR,SP,SR)>;

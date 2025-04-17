@@ -42,8 +42,8 @@ const MCPhysReg *
 CPEN211RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   const CPEN211FrameLowering *TFI = getFrameLowering(*MF);
   const Function *F = &MF->getFunction();
-  static const MCPhysReg CalleeSavedRegs[] = {CPEN211::R4, CPEN211::R5,
-                                              CPEN211::SP, CPEN211::LR};
+  static const MCPhysReg CalleeSavedRegs[] = {CPEN211::R5, CPEN211::SP,
+                                              CPEN211::LR};
 
   // TODO (for Vincent): this may changes depending on
   // MF Calling Convention
@@ -53,7 +53,10 @@ CPEN211RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
 BitVector
 CPEN211RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
-  const CPEN211FrameLowering *TFI = getFrameLowering(MF);
+  // 
+  Reserved.set(CPEN211::SP);
+  Reserved.set(CPEN211::LR);
+  Reserved.set(CPEN211::SR); // status register
 
   return Reserved;
 }

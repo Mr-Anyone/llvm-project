@@ -101,6 +101,16 @@ let isCommutable = true in {
     //                     , (ins GR16:$Rm), "MVN\t{$Rd,$Rm}", []>;
 }
 
+// CMP16rr is a native instructoin 
+// is the size 2?
+// FIXME: make a new instruction format?
+def CMP16rr : CPEN211Inst<(outs), (ins GR16:$Rn, GR16:$Rm), /*size*/ 2
+                        ,"CMP\t{$Rn, $Rm}"> {
+    let Pattern = [(CPEN211cmp GR16:$Rn, GR16:$Rm)];
+    let Defs = [SR]; // prevent dead code optimization
+}
+
+
 //===----------------------------------------------------------------------
 // Branch Type Instructions
 let isBranch = 1, isTerminator=1 in {
@@ -153,13 +163,13 @@ let isCodeGenOnly = 1, Defs = [SP, SP], Uses = [SP] in {
                                   []>;
 } // isCodeGenOnly = 1
 
-let isCodeGenOnly = 1 in {
+let isCodeGenOnly = 1, usesCustomInserter = 1 in {
     // this is a pseudo because we have to move the intermediate into 
     // another register to perform the compare. We would have to move the 
     // the intermediate to deal with this using a register
-    def CMP16ri : Pseudo<(outs), (ins GR16:$rd, i16imm:$imm), 
+    def CMP16ri : Pseudo<(outs), (ins GR16:$Rn, i16imm:$imm), 
                             "#CMP16ri PSEUDO", 
-                            [(CPEN211cmp GR16:$rd, imm:$imm)]>;
+                            [(CPEN211cmp GR16:$Rn, imm:$imm)]>;
 
     def SelectCC16 : Pseudo<(outs GR16:$dst), (ins GR16:$src, GR16:$src2, i16imm:$cc),
                         "# SelectCC16 PSEUDO",
