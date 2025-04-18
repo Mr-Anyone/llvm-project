@@ -103,17 +103,8 @@ void CPEN211InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                    bool RenamableDest,
                                    bool RenamableSrc) const {
 
-  llvm_unreachable("Not yet implemented");
-  // unsigned Opc;
-  // if (CPEN211::GR16RegClass.contains(DestReg, SrcReg))
-  //   Opc = CPEN211::MOV16rr;
-  // else if (CPEN211::GR8RegClass.contains(DestReg, SrcReg))
-  //   Opc = CPEN211::MOV8rr;
-  // else
-  //   llvm_unreachable("Impossible reg-to-reg copy");
-
-  // BuildMI(MBB, I, DL, get(Opc), DestReg)
-  //     .addReg(SrcReg, getKillRegState(KillSrc));
+  BuildMI(MBB, I, DL, get(CPEN211::MOV16rr), DestReg)
+      .addReg(SrcReg, getKillRegState(KillSrc));
 }
 
 unsigned CPEN211InstrInfo::removeBranch(MachineBasicBlock &MBB,

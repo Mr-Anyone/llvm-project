@@ -117,32 +117,23 @@ void CPEN211InstPrinter::printPostIndRegOperand(const MCInst *MI, unsigned OpNo,
 
 void CPEN211InstPrinter::printCCOperand(const MCInst *MI, unsigned OpNo,
                                         raw_ostream &O) {
-  llvm_unreachable("unimplemented");
-  //  unsigned CC = MI->getOperand(OpNo).getImm();
-  //
-  //  switch (CC) {
-  //  default:
-  //    llvm_unreachable("Unsupported CC code");
-  //  case CPEN211CC::COND_E:
-  //    O << "eq";
-  //    break;
-  //  case CPEN211CC::COND_NE:
-  //    O << "ne";
-  //    break;
-  //  case CPEN211CC::COND_HS:
-  //    O << "hs";
-  //    break;
-  //  case CPEN211CC::COND_LO:
-  //    O << "lo";
-  //    break;
-  //  case CPEN211CC::COND_GE:
-  //    O << "ge";
-  //    break;
-  //  case CPEN211CC::COND_L:
-  //    O << 'l';
-  //    break;
-  //  case CPEN211CC::COND_N:
-  //    O << 'n';
-  //    break;
-  //  }
+  unsigned CC = MI->getOperand(OpNo).getImm();
+
+  switch (CC) {
+  case CPEN211CC::CondCodes::COND_EQ:
+    O << "EQ";
+    break;
+  case CPEN211CC::CondCodes::COND_LE:
+    O << "LE";
+    break;
+  case CPEN211CC::CondCodes::COND_NE:
+    O << "NE";
+    break;
+  case CPEN211CC::CondCodes::COND_LT:
+    O << "LT";
+    break;
+  default:
+    llvm_unreachable(
+        "how did we get here? You should have Implemented it all!");
+  }
 }

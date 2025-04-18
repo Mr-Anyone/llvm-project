@@ -74,7 +74,7 @@ def memsrc : Operand<i16> {
 // TODO (for Vincent): is the size 2?
 let Rn = 0b000 in {
     def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm)
-                , "MOV\t{$Rd,$Rm}", []>;
+                , "MOV\t{$Rd, $Rm}", []>;
 
     // TODO (for Vincent): not all imm are valid? What should you do when imm is greater than 
     // signed extended 8 bit

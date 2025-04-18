@@ -1543,6 +1543,70 @@ CPEN211TargetLowering::EmitShiftInstr(MachineInstr &MI,
   // MI.eraseFromParent(); // The pseudo instruction is gone now.
   // return RemBB;
 }
+MachineBasicBlock *
+CPEN211TargetLowering::EmitSelectCC16(MachineInstr &MI,
+                                      MachineBasicBlock *BB) const {
+
+  assert((MI.getOpcode()) == CPEN211::SelectCC16 &&
+         "Unexpected instr type to insert");
+
+  const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
+  DebugLoc dl = MI.getDebugLoc();
+
+  // To "insert" a SELECT instruction, we actually have to insert the diamond
+  // control-flow pattern.  The incoming instruction knows the destination
+  // to set, the condition code register to branch on, the true/false values
+  // select between, and a branch opcode to use.
+  const BasicBlock *LLVM_BB = BB->getBasicBlock();
+  MachineFunction::iterator I = ++BB->getIterator();
+
+  //  thisMBB:
+  //  ...
+  //   TrueVal = ...
+  //   cmpTY ccX, r1, r2
+  //   jCC copy1MBB
+  //   fallthrough --> copy0MBB
+  MachineBasicBlock *thisMBB = BB;
+  MachineFunction *F = BB->getParent();
+  MachineBasicBlock *copy0MBB = F->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *copy1MBB = F->CreateMachineBasicBlock(LLVM_BB);
+  F->insert(I, copy0MBB);
+  F->insert(I, copy1MBB);
+  // Update machine-CFG edges by transferring all successors of the current
+  // block to the new block which will contain the Phi node for the select.
+  copy1MBB->splice(copy1MBB->begin(), BB,
+                   std::next(MachineBasicBlock::iterator(MI)), BB->end());
+  copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
+  // Next, add the true and fallthrough blocks as its successors.
+  BB->addSuccessor(copy0MBB);
+  BB->addSuccessor(copy1MBB);
+
+  BuildMI(BB, dl, TII.get(CPEN211::BCC))
+      .addMBB(copy1MBB)
+      .addImm(MI.getOperand(3).getImm());
+
+  //  copy0MBB:
+  //   %FalseValue = ...
+  //   # fallthrough to copy1MBB
+  BB = copy0MBB;
+
+  // Update machine-CFG edges
+  BB->addSuccessor(copy1MBB);
+
+  //  copy1MBB:
+  //   %Result = phi [ %FalseValue, copy0MBB ], [ %TrueValue, thisMBB ]
+  //  ...
+  BB = copy1MBB;
+  BuildMI(*BB, BB->begin(), dl, TII.get(CPEN211::PHI),
+          MI.getOperand(0).getReg())
+      .addReg(MI.getOperand(2).getReg())
+      .addMBB(copy0MBB)
+      .addReg(MI.getOperand(1).getReg())
+      .addMBB(thisMBB);
+
+  MI.eraseFromParent(); // The pseudo instruction is gone now.
+  return BB;
+}
 
 MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
     MachineInstr &MI, MachineBasicBlock *BB) const {
@@ -1564,87 +1628,11 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
         .addReg(MI.getOperand(0).getReg())
         .addReg(CPEN211::R4);
 
-    // BuildMI(*bBB, MI, dl, TII.get(CPEN211::))
-
-    LLVM_DEBUG(dbgs() << MI.getOperand(1).getImm());
     MI.eraseFromParent();
-    BB->dump();
-    break;
+    return BB;
   case CPEN211::SelectCC16:
-    // FIXME: please emit SelectCC16
-    break;
+    return EmitSelectCC16(MI, BB);
   }
-
-  return BB;
-
-  // if (Opc == CPEN211::Shl8 || Opc == CPEN211::Shl16 || Opc == CPEN211::Sra8
-  // ||
-  //     Opc == CPEN211::Sra16 || Opc == CPEN211::Srl8 || Opc == CPEN211::Srl16
-  //     || Opc == CPEN211::Rrcl8 || Opc == CPEN211::Rrcl16)
-  //   return EmitShiftInstr(MI, BB);
-
-  // const TargetInstrInfo &TII =
-  // *BB->getParent()->getSubtarget().getInstrInfo(); DebugLoc dl =
-  // MI.getDebugLoc();
-
-  // assert((Opc == CPEN211::Select16 || Opc == CPEN211::Select8) &&
-  //        "Unexpected instr type to insert");
-
-  // // To "insert" a SELECT instruction, we actually have to insert the diamond
-  // // control-flow pattern.  The incoming instruction knows the destination
-  // vreg
-  // // to set, the condition code register to branch on, the true/false values
-  // to
-  // // select between, and a branch opcode to use.
-  // const BasicBlock *LLVM_BB = BB->getBasicBlock();
-  // MachineFunction::iterator I = ++BB->getIterator();
-
-  // //  thisMBB:
-  // //  ...
-  // //   TrueVal = ...
-  // //   cmpTY ccX, r1, r2
-  // //   jCC copy1MBB
-  // //   fallthrough --> copy0MBB
-  // MachineBasicBlock *thisMBB = BB;
-  // MachineFunction *F = BB->getParent();
-  // MachineBasicBlock *copy0MBB = F->CreateMachineBasicBlock(LLVM_BB);
-  // MachineBasicBlock *copy1MBB = F->CreateMachineBasicBlock(LLVM_BB);
-  // F->insert(I, copy0MBB);
-  // F->insert(I, copy1MBB);
-  // // Update machine-CFG edges by transferring all successors of the current
-  // // block to the new block which will contain the Phi node for the select.
-  // copy1MBB->splice(copy1MBB->begin(), BB,
-  //                  std::next(MachineBasicBlock::iterator(MI)), BB->end());
-  // copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
-  // // Next, add the true and fallthrough blocks as its successors.
-  // BB->addSuccessor(copy0MBB);
-  // BB->addSuccessor(copy1MBB);
-
-  // BuildMI(BB, dl, TII.get(CPEN211::JCC))
-  //     .addMBB(copy1MBB)
-  //     .addImm(MI.getOperand(3).getImm());
-
-  // //  copy0MBB:
-  // //   %FalseValue = ...
-  // //   # fallthrough to copy1MBB
-  // BB = copy0MBB;
-
-  // // Update machine-CFG edges
-  // BB->addSuccessor(copy1MBB);
-
-  // //  copy1MBB:
-  // //   %Result = phi [ %FalseValue, copy0MBB ], [ %TrueValue, thisMBB ]
-  // //  ...
-  // BB = copy1MBB;
-  // BuildMI(*BB, BB->begin(), dl, TII.get(CPEN211::PHI),
-  //         MI.getOperand(0).getReg())
-  //     .addReg(MI.getOperand(2).getReg())
-  //     .addMBB(copy0MBB)
-  //     .addReg(MI.getOperand(1).getReg())
-  //     .addMBB(thisMBB);
-
-  // MI.eraseFromParent(); // The pseudo instruction is gone now.
-  // return BB;
 }
 
 #undef DEBUG_TYPE

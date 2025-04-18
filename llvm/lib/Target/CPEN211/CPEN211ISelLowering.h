@@ -98,6 +98,8 @@ public:
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,
                               MachineBasicBlock *BB) const override;
+  MachineBasicBlock *EmitSelectCC16(MachineInstr &MI,
+                                    MachineBasicBlock *BB) const;
   MachineBasicBlock *EmitShiftInstr(MachineInstr &MI,
                                     MachineBasicBlock *BB) const;
 
