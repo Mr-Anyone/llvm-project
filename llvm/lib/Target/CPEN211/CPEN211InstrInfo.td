@@ -29,6 +29,7 @@ def SDT_CPEN211SelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
 def CPEN211retglue  :   SDNode<"CPEN211ISD::RET_GLUE", SDTNone,
                             [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
 def CPEN211cmp     :     SDNode<"CPEN211ISD::CMP",   SDT_CPEN211Cmp, [SDNPOutGlue]>;
+// Chain, dest, target cc, flag
 def CPEN211brcc    :     SDNode<"CPEN211ISD::BR_CC", SDT_CPEN211BrCC,
                             [SDNPHasChain, SDNPInGlue]>;
 def CPEN211selectcc: SDNode<"CPEN211ISD::SELECT_CC", SDT_CPEN211SelectCC,

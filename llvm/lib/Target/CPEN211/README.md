@@ -56,23 +56,53 @@ SP  :       int d
 
 This is the code
 ```c
-int add(int a, int b, int c){
-    return a + b + c;
+int add_sum(int n) {
+  int result = 0;
+  for (int i = 0; i < n; ++i) {
+    result += i;
+  }
+
+  return result;
 }
 ```
 
 This is the code after
 
 ```
-        .file   "main.c"                                                                                                                                            .text                                                                                                                                                       .globl  add                             ; -- Begin function add                                                                                             .type   add,@function
-add:                                    ; @add
-; %bb.0:                                                                                                                                                            ADD     R0, R1 , R0
+        .file   "main.ll"
+        .text
+        .globl  add_sum                         ; -- Begin function add_sum
+        .type   add_sum,@function
+add_sum:                                ; @add_sum
+        .cfi_startproc
+; %bb.0:
+        STR     R0, [R6,2]
+        MOV     R0, #0
+        STR     R0, [R6,1]
+        STR     R0, [R6,0]
+        MOV     R0, #1
+.LBB0_1:                                ; =>This Inner Loop Header: Depth=1
         LDR     R1, [R6,0]
-        ADD     R0, R0 , R1
+        LDR     R2, [R6,2]
+        CMP     R2, R1
+        BLE     .LBB0_4
+        B       .LBB0_2
+.LBB0_2:                                ;   in Loop: Header=BB0_1 Depth=1
+        LDR     R1, [R6,1]
+        LDR     R2, [R6,0]
+        ADD     R1, R1 , R2
+        STR     R1, [R6,1]
+; %bb.3:                                ;   in Loop: Header=BB0_1 Depth=1
+        LDR     R1, [R6,0]
+        ADD     R1, R1 , R0
+        STR     R1, [R6,0]
+        B       .LBB0_1
+.LBB0_4:
+        LDR     R0, [R6,1]
         BX      R7
 .Lfunc_end0:
-        .size   add, .Lfunc_end0-add
+        .size   add_sum, .Lfunc_end0-add_sum
+        .cfi_endproc
                                         ; -- End function
-        .ident  "Ubuntu clang version 14.0.0-1ubuntu1.1"
         .section        ".note.GNU-stack","",@progbits
 ```

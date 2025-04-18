@@ -362,8 +362,8 @@ SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
   //   return LowerExternalSymbol(Op, DAG);
   case ISD::SETCC:
     return LowerSETCC(Op, DAG);
-  // case ISD::BR_CC:
-  //   return LowerBR_CC(Op, DAG);
+  case ISD::BR_CC:
+    return LowerBR_CC(Op, DAG);
   case ISD::SELECT_CC:
     return LowerSELECT_CC(Op, DAG);
   // case ISD::SIGN_EXTEND:
@@ -1043,10 +1043,27 @@ static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
 
   switch (CC) {
   default:
+    LLVM_DEBUG(dbgs() << "The unknonw value is: " << CC);
     llvm_unreachable("cannot be lower such comparisons as of current!");
   case ISD::SETEQ:
     TCC = CPEN211CC::COND_EQ; // aka COND_Z
     break;
+  case ISD::SETLT:
+    TCC = CPEN211CC::COND_LT;
+    break;
+  case ISD::SETLE:
+    TCC = CPEN211CC::COND_LE;
+    break;
+  case ISD::SETNE:
+    TCC = CPEN211CC::COND_NE;
+    break;
+
+  case ISD::SETGE:
+    // FIXME: you might have to do something like CMPir
+    TCC = CPEN211CC::COND_LE;
+    std::swap(LHS, RHS);
+    break;
+
     //   case ISD::SETNE:
     //     TCC = CPEN211CC::COND_NE; // aka COND_NZ
     //     // Minor optimization: if LHS is a constant, swap operands, then the
@@ -1369,6 +1386,8 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "CPEN211ISD::CMP";
   case llvm::CPEN211ISD::SELECT_CC:
     return "CPEN211ISD::SELECT_CC";
+  case llvm::CPEN211ISD::BR_CC:
+    return "CPEN211ISD::BR_CC";
   default:
     llvm_unreachable("you forgot you add a node name here!");
   }
@@ -1543,6 +1562,7 @@ CPEN211TargetLowering::EmitShiftInstr(MachineInstr &MI,
   // MI.eraseFromParent(); // The pseudo instruction is gone now.
   // return RemBB;
 }
+
 MachineBasicBlock *
 CPEN211TargetLowering::EmitSelectCC16(MachineInstr &MI,
                                       MachineBasicBlock *BB) const {
@@ -1563,8 +1583,8 @@ CPEN211TargetLowering::EmitSelectCC16(MachineInstr &MI,
   //  thisMBB:
   //  ...
   //   TrueVal = ...
-  //   cmpTY ccX, r1, r2
-  //   jCC copy1MBB
+  //   CMPrr ccX, r1, r2
+  //   Bcc copy1MBB
   //   fallthrough --> copy0MBB
   MachineBasicBlock *thisMBB = BB;
   MachineFunction *F = BB->getParent();
