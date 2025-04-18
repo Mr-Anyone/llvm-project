@@ -30,6 +30,7 @@ enum NodeType : unsigned {
   // The  CMP Node, likely glued with brcc
   CMP,
   SELECT_CC,
+  // chain, true, cond_code, cmp_flag (glue)
   BR_CC
 };
 }
