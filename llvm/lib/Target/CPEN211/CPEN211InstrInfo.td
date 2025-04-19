@@ -15,6 +15,10 @@ include "CPEN211InstrFormats.td"
 //===----------------------------------------------------------------------===//
 // Type Profiles.
 //===----------------------------------------------------------------------===//
+def SDT_CPEN211Call         : SDTypeProfile<0, -1, [SDTCisVT<0, iPTR>]>;
+def SDT_CPEN211CallSeqStart : SDCallSeqStart<[SDTCisVT<0, i16>,
+                                             SDTCisVT<1, i16>]>;
+def SDT_CPEN211CallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i16>, SDTCisVT<1, i16>]>;
 def SDT_CPEN211Cmp          : SDTypeProfile<0, 2, [SDTCisSameAs<0, 1>]>;
 // TODO: as of current, there are no type constraint
 def SDT_CPEN211BrCC         : SDTypeProfile<0, 2, []>;
@@ -34,6 +38,14 @@ def CPEN211brcc    :     SDNode<"CPEN211ISD::BR_CC", SDT_CPEN211BrCC,
                             [SDNPHasChain, SDNPInGlue]>;
 def CPEN211selectcc: SDNode<"CPEN211ISD::SELECT_CC", SDT_CPEN211SelectCC,
                             [SDNPInGlue]>;
+def CPEN211call    : SDNode<"CPEN211ISD::CALL", SDT_CPEN211Call,
+                     [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue, SDNPVariadic]>;
+def CPEN211callseq_start :
+                 SDNode<"ISD::CALLSEQ_START", SDT_CPEN211CallSeqStart,
+                        [SDNPHasChain, SDNPOutGlue]>;
+def CPEN211callseq_end :
+                 SDNode<"ISD::CALLSEQ_END",   SDT_CPEN211CallSeqEnd,
+                        [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
 //===----------------------------------------------------------------------===//
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
@@ -43,8 +55,7 @@ def jmptarget : Operand<OtherVT> {
     let EncoderMethod = "getPCRelImmOpValue";
 }
 
-// TODO (for Vincent): I am not quite sure if this is right or not!
-// is this i16 or i8? we might have to do something about this?
+// TODO (for Vincent): I am not quite sure if this is right or not! is this i16 or i8? we might have to do something about this?
 def cc : Operand<i16>{
     let PrintMethod = "printCCOperand";
     let EncoderMethod = "getCCOpValue";
@@ -92,7 +103,7 @@ let Rn = 0b000 in {
 // ALU Instructions without cmp
 let isCommutable = true in {
     def ADD16rr : IForm<0b101, 0b00, 2, (outs GR16:$Rd)
-                        , (ins GR16:$Rm, GR16:$Rn), "ADD\t{$Rd, $Rn , $Rm}", [(set GR16:$Rd, (add GR16:$Rn, GR16:$Rm))]>;
+                        , (ins GR16:$Rm, GR16:$Rn), "ADD\t{$Rd, $Rn, $Rm}", [(set GR16:$Rd, (add GR16:$Rn, GR16:$Rm))]>;
 
     def AND16rr : IForm<0b101, 0b10, 2, (outs GR16:$Rd)
                         , (ins GR16:$Rm, GR16:$Rn), "AND\t{$Rd , $Rn, $Rm}", [(set GR16:$Rd, (and GR16:$Rn, GR16:$Rm))]>;
@@ -126,8 +137,18 @@ let isBranch = 1, isTerminator=1 in {
         def BCC : BForm<2, (outs), (ins jmptarget:$dst, cc:$cond),
                    "B$cond\t$dst", [(CPEN211brcc bb:$dst, imm:$cond)]>;
     }
+
+    
 } // isBranch, isTerminator
 
+// FIXME: the cond is not correct, a jank hack as of current to speed development
+let isCall = 1, cond = 0b110 in {
+    def BL    : BForm<2, (outs), (ins i16imm:$imm),
+                        "BL\t$imm", []>;
+}
+
+def : Pat<(CPEN211call (i16 tglobaladdr:$dst)),
+          (BL tglobaladdr:$dst)>;
 
 // complex pattern to select address or not? 
 // arguments:
@@ -155,13 +176,13 @@ let isCodeGenOnly = 1, Defs = [SP, SP], Uses = [SP] in {
     def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
                                   "#ADJCALLSTACKDOWN $amt1 $amt2",
                                   // TODO (for Vincent): this is in corrent!
-                                  // [(MSP430callseq_start timm:$amt1, timm:$amt2)]>;
-                                  []>;
+                                  [(CPEN211callseq_start timm:$amt1, timm:$amt2)]>;
+                                  //[]>;
     def ADJCALLSTACKUP   : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
                                   "#ADJCALLSTACKUP $amt1 $amt2",
                                   // TODO (for Vincent): this is in corrent!
-                                  // [(MSP430callseq_end timm:$amt1, timm:$amt2)]>;
-                                  []>;
+                                  [(CPEN211callseq_end timm:$amt1, timm:$amt2)]>;
+                                  //[]>;
 } // isCodeGenOnly = 1
 
 let isCodeGenOnly = 1, usesCustomInserter = 1 in {
@@ -177,4 +198,7 @@ let isCodeGenOnly = 1, usesCustomInserter = 1 in {
                         [(set GR16:$dst,
                           // true, false, cond_code
                           (CPEN211selectcc GR16:$src, GR16:$src2, imm:$cc))]>;
+    def SUB16ri    : Pseudo<(outs GR16:$dst), (ins GR16:$rn, i16imm:$im), 
+                            "# SUB PSEUDO", 
+                            [(set GR16:$dst, (add GR16:$rn, imm:$im))]>;
 } // isCodeGenOnly = 1

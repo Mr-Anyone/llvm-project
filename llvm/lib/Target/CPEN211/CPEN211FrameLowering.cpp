@@ -289,28 +289,19 @@ void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
 bool CPEN211FrameLowering::spillCalleeSavedRegisters(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
     ArrayRef<CalleeSavedInfo> CSI, const TargetRegisterInfo *TRI) const {
-  llvm_unreachable("this is a impossible place to reach!!!");
-  // if (CSI.empty())
-  //   return false;
+  if (CSI.empty())
+    return false;
 
-  // DebugLoc DL;
-  // if (MI != MBB.end())
-  //   DL = MI->getDebugLoc();
+  DebugLoc DL;
+  if (MI != MBB.end())
+    DL = MI->getDebugLoc();
 
-  // MachineFunction &MF = *MBB.getParent();
-  // const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-  // CPEN211MachineFunctionInfo *MFI = MF.getInfo<CPEN211MachineFunctionInfo>();
-  // MFI->setCalleeSavedFrameSize(CSI.size() * 2);
+  MachineFunction &MF = *MBB.getParent();
+  const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
+  CPEN211MachineFunctionInfo *MFI = MF.getInfo<CPEN211MachineFunctionInfo>();
+  MFI->setCalleeSavedFrameSize(CSI.size() * 2);
 
-  // for (const CalleeSavedInfo &I : CSI) {
-  //   Register Reg = I.getReg();
-  //   // Add the callee-saved register as live-in. It's killed at the spill.
-  //   MBB.addLiveIn(Reg);
-  //   BuildMI(MBB, MI, DL, TII.get(CPEN211::PUSH16r))
-  //       .addReg(Reg, RegState::Kill)
-  //       .setMIFlag(MachineInstr::FrameSetup);
-  // }
-  // return true;
+  return true;
 }
 
 bool CPEN211FrameLowering::restoreCalleeSavedRegisters(

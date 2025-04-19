@@ -31,7 +31,8 @@ enum NodeType : unsigned {
   CMP,
   SELECT_CC,
   // chain, true, cond_code, cmp_flag (glue)
-  BR_CC
+  BR_CC,
+  CALL
 };
 }
 

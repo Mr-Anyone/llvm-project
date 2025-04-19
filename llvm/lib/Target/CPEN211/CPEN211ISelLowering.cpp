@@ -503,13 +503,6 @@ static void AnalyzeArguments(CCState &State,
     assert(LocVT == MVT::i16 && "value type must be 16 bytes in length");
     assert(!ArgFlags.isByVal() &&
            "don't know how to translate arguments that is by value");
-
-    // Handle byval arguments
-    // if (ArgFlags.isByVal()) {
-    //   State.HandleByVal(ValNo++, ArgVT, LocVT, LocInfo, 2, Align(2),
-    //   ArgFlags); continue;
-    // }
-
     unsigned Parts = ArgsParts[i];
 
     if (Parts <= RegsLeft) {
@@ -525,6 +518,8 @@ static void AnalyzeArguments(CCState &State,
              "don't know how to allocate type that need more that i16!");
       if (LocVT == MVT::i16) {
 
+        // although things are aligned on 2 bytes, we divided by two when
+        // accessing elements because of awkwardness
         int64_t Offset1 = State.AllocateStack(2, Align(2));
         State.addLoc(
             CCValAssign::getMem(ValNo++, MVT::i16, Offset1, LocVT, LocInfo));
@@ -568,10 +563,6 @@ SDValue CPEN211TargetLowering::LowerFormalArguments(
   case CallingConv::C:
   case CallingConv::Fast:
     return LowerCCCArguments(Chain, CallConv, isVarArg, Ins, dl, DAG, InVals);
-    // For future self: we are not going to use this calling convention
-    //  case CallingConv::CPEN211_INTR: if (Ins.empty())
-    //      return Chain;
-    //    report_fatal_error("ISRs cannot have arguments");
   }
 }
 
@@ -626,7 +617,7 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
                  *DAG.getContext());
   AnalyzeArguments(CCInfo, ArgLocs, Ins);
 
-  for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+  for (unsigned int i = 0, e = ArgLocs.size(); i != e; ++i) {
     CCValAssign &VA = ArgLocs[i];
     if (VA.isRegLoc()) {
       // Arguments passed in registers
@@ -690,18 +681,20 @@ SDValue CPEN211TargetLowering::LowerCCCArguments(
     }
   }
 
-  // TODO: what the fuck is this for?
-  for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
-    if (Ins[i].Flags.isSRet()) {
-      Register Reg = FuncInfo->getSRetReturnReg();
-      if (!Reg) {
-        Reg = MF.getRegInfo().createVirtualRegister(getRegClassFor(MVT::i16));
-        FuncInfo->setSRetReturnReg(Reg);
-      }
-      SDValue Copy = DAG.getCopyToReg(DAG.getEntryNode(), dl, Reg, InVals[i]);
-      Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, Copy, Chain);
-    }
-  }
+  // TODO: not sure what this is for?
+  // for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+  //   if (Ins[i].Flags.isSRet()) {
+  //     Register Reg = FuncInfo->getSRetReturnReg();
+  //     if (!Reg) {
+  //       Reg =
+  //       MF.getRegInfo().createVirtualRegister(getRegClassFor(MVT::i16));
+  //       FuncInfo->setSRetReturnReg(Reg);
+  //     }
+  //     SDValue Copy = DAG.getCopyToReg(DAG.getEntryNode(), dl, Reg,
+  //     InVals[i]); Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, Copy,
+  //     Chain);
+  //   }
+  // }
 
   return Chain;
 }
@@ -783,140 +776,131 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
     const SmallVectorImpl<SDValue> &OutVals,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
     SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
-
-  llvm_unreachable("this is not yet implemented");
-
   // // Analyze operands of the call, assigning locations to each operand.
-  // SmallVector<CCValAssign, 16> ArgLocs;
-  // CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
-  //                *DAG.getContext());
-  // AnalyzeArguments(CCInfo, ArgLocs, Outs);
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
+                 *DAG.getContext());
+  AnalyzeArguments(CCInfo, ArgLocs, Outs);
 
   // // Get a count of how many bytes are to be pushed on the stack.
-  // unsigned NumBytes = CCInfo.getStackSize();
-  // MVT PtrVT = getFrameIndexTy(DAG.getDataLayout());
+  unsigned NumBytes = CCInfo.getStackSize();
+  MVT PtrVT = getFrameIndexTy(DAG.getDataLayout());
 
-  // Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
+  Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
 
-  // SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
-  // SmallVector<SDValue, 12> MemOpChains;
-  // SDValue StackPtr;
+  SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
+  SmallVector<SDValue, 12> MemOpChains;
+  SDValue StackPtr;
 
-  // // Walk the register/memloc assignments, inserting copies/loads.
-  // for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
-  //   CCValAssign &VA = ArgLocs[i];
+  // Walk the register/memloc assignments, inserting copies/loads.
+  for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+    CCValAssign &VA = ArgLocs[i];
 
-  //   SDValue Arg = OutVals[i];
+    SDValue Arg = OutVals[i];
 
-  //   // Promote the value if needed.
-  //   switch (VA.getLocInfo()) {
-  //   default:
-  //     llvm_unreachable("Unknown loc info!");
-  //   case CCValAssign::Full:
-  //     break;
-  //   case CCValAssign::SExt:
-  //     Arg = DAG.getNode(ISD::SIGN_EXTEND, dl, VA.getLocVT(), Arg);
-  //     break;
-  //   case CCValAssign::ZExt:
-  //     Arg = DAG.getNode(ISD::ZERO_EXTEND, dl, VA.getLocVT(), Arg);
-  //     break;
-  //   case CCValAssign::AExt:
-  //     Arg = DAG.getNode(ISD::ANY_EXTEND, dl, VA.getLocVT(), Arg);
-  //     break;
-  //   }
+    // Promote the value if needed.
+    switch (VA.getLocInfo()) {
+    default:
+      llvm_unreachable("Unknown loc info!");
+    case CCValAssign::Full:
+      break;
+    case CCValAssign::SExt:
+      Arg = DAG.getNode(ISD::SIGN_EXTEND, dl, VA.getLocVT(), Arg);
+      break;
+    case CCValAssign::ZExt:
+      Arg = DAG.getNode(ISD::ZERO_EXTEND, dl, VA.getLocVT(), Arg);
+      break;
+    case CCValAssign::AExt:
+      Arg = DAG.getNode(ISD::ANY_EXTEND, dl, VA.getLocVT(), Arg);
+      break;
+    }
 
-  //   // Arguments that can be passed on register must be kept at RegsToPass
-  //   // vector
-  //   if (VA.isRegLoc()) {
-  //     RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
-  //   } else {
-  //     assert(VA.isMemLoc());
+    // Arguments that can be passed on register must be kept at RegsToPass
+    // vector
+    if (VA.isRegLoc()) {
+      RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
+    } else {
+      assert(VA.isMemLoc());
 
-  //     if (!StackPtr.getNode())
-  //       StackPtr = DAG.getCopyFromReg(Chain, dl, CPEN211::SP, PtrVT);
+      if (!StackPtr.getNode())
+        StackPtr = DAG.getCopyFromReg(Chain, dl, CPEN211::SP, PtrVT);
 
-  //     SDValue PtrOff =
-  //         DAG.getNode(ISD::ADD, dl, PtrVT, StackPtr,
-  //                     DAG.getIntPtrConstant(VA.getLocMemOffset(), dl));
+      SDValue PtrOff =
+          DAG.getNode(ISD::ADD, dl, PtrVT, StackPtr,
+                      DAG.getIntPtrConstant(VA.getLocMemOffset(), dl));
 
-  //     SDValue MemOp;
-  //     ISD::ArgFlagsTy Flags = Outs[i].Flags;
+      SDValue MemOp;
+      ISD::ArgFlagsTy Flags = Outs[i].Flags;
 
-  //     if (Flags.isByVal()) {
-  //       SDValue SizeNode = DAG.getConstant(Flags.getByValSize(), dl,
-  //       MVT::i16); MemOp = DAG.getMemcpy(Chain, dl, PtrOff, Arg, SizeNode,
-  //                             Flags.getNonZeroByValAlign(),
-  //                             /*isVolatile*/ false,
-  //                             /*AlwaysInline=*/true,
-  //                             /*CI=*/nullptr, std::nullopt,
-  //                             MachinePointerInfo(), MachinePointerInfo());
-  //     } else {
-  //       MemOp = DAG.getStore(Chain, dl, Arg, PtrOff, MachinePointerInfo());
-  //     }
+      if (Flags.isByVal()) {
+        SDValue SizeNode = DAG.getConstant(Flags.getByValSize(), dl, MVT::i16);
+        MemOp = DAG.getMemcpy(Chain, dl, PtrOff, Arg, SizeNode,
+                              Flags.getNonZeroByValAlign(),
+                              /*isVolatile*/ false,
+                              /*AlwaysInline=*/true,
+                              /*CI=*/nullptr, std::nullopt,
+                              MachinePointerInfo(), MachinePointerInfo());
+      } else {
+        MemOp = DAG.getStore(Chain, dl, Arg, PtrOff, MachinePointerInfo());
+      }
 
-  //     MemOpChains.push_back(MemOp);
-  //   }
-  // }
+      MemOpChains.push_back(MemOp);
+    }
+  }
 
-  // // Transform all store nodes into one single node because all store nodes
-  // are
-  // // independent of each other.
-  // if (!MemOpChains.empty())
-  //   Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, MemOpChains);
+  // Transform all store nodes into one single node because all store nodes
+  // independent of each other.
+  if (!MemOpChains.empty())
+    Chain = DAG.getNode(ISD::TokenFactor, dl, MVT::Other, MemOpChains);
 
-  // // Build a sequence of copy-to-reg nodes chained together with token chain
-  // and
-  // // flag operands which copy the outgoing args into registers.  The InGlue
-  // in
-  // // necessary since all emitted instructions must be stuck together.
-  // SDValue InGlue;
-  // for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
-  //   Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
-  //                            RegsToPass[i].second, InGlue);
-  //   InGlue = Chain.getValue(1);
-  // }
+  // Build a sequence of copy-to-reg nodes chained together with token chain
+  // flag operands which copy the outgoing args into registers.  The InGlue
+  // necessary since all emitted instructions must be stuck together.
+  SDValue InGlue;
+  for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
+    Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
+                             RegsToPass[i].second, InGlue);
+    InGlue = Chain.getValue(1);
+  }
 
-  // // If the callee is a GlobalAddress node (quite common, every direct call
-  // is)
-  // // turn it into a TargetGlobalAddress node so that legalize doesn't hack
-  // it.
-  // // Likewise ExternalSymbol -> TargetExternalSymbol.
-  // if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee))
-  //   Callee = DAG.getTargetGlobalAddress(G->getGlobal(), dl, MVT::i16);
-  // else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee))
-  //   Callee = DAG.getTargetExternalSymbol(E->getSymbol(), MVT::i16);
+  // If the callee is a GlobalAddress node (quite common, every direct cal is)
+  // turn it into a TargetGlobalAddress node so that legalize doesn't hack
+  // Likewise ExternalSymbol -> TargetExternalSymbol.
+  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee))
+    Callee = DAG.getTargetGlobalAddress(G->getGlobal(), dl, MVT::i16);
+  else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee))
+    Callee = DAG.getTargetExternalSymbol(E->getSymbol(), MVT::i16);
 
-  // // Returns a chain & a flag for retval copy to use.
-  // SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
-  // SmallVector<SDValue, 8> Ops;
-  // Ops.push_back(Chain);
-  // Ops.push_back(Callee);
+  // Returns a chain & a flag for retval copy to use.
+  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
+  SmallVector<SDValue, 8> Ops;
+  Ops.push_back(Chain);
+  Ops.push_back(Callee);
 
-  // // Add argument registers to the end of the list so that they are
-  // // known live into the call.
-  // for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i)
-  //   Ops.push_back(DAG.getRegister(RegsToPass[i].first,
-  //                                 RegsToPass[i].second.getValueType()));
+  // Add argument registers to the end of the list so that they are
+  // known live into the call.
+  for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i)
+    Ops.push_back(DAG.getRegister(RegsToPass[i].first,
+                                  RegsToPass[i].second.getValueType()));
 
-  // if (InGlue.getNode())
-  //   Ops.push_back(InGlue);
+  if (InGlue.getNode())
+    Ops.push_back(InGlue);
 
-  // Chain = DAG.getNode(CPEN211ISD::CALL, dl, NodeTys, Ops);
-  // InGlue = Chain.getValue(1);
+  Chain = DAG.getNode(CPEN211ISD::CALL, dl, NodeTys, Ops);
+  InGlue = Chain.getValue(1);
 
-  // // Create the CALLSEQ_END node.
-  // Chain = DAG.getCALLSEQ_END(Chain, NumBytes, 0, InGlue, dl);
-  // InGlue = Chain.getValue(1);
+  // Create the CALLSEQ_END node.
+  Chain = DAG.getCALLSEQ_END(Chain, NumBytes, 0, InGlue, dl);
+  InGlue = Chain.getValue(1);
 
-  // // Handle result values, copying them out of physregs into vregs that we
-  // // return.
-  // return LowerCallResult(Chain, InGlue, CallConv, isVarArg, Ins, dl, DAG,
-  //                        InVals);
+  // Handle result values, copying them out of physregs into vregs that we
+  // return.
+  return LowerCallResult(Chain, InGlue, CallConv, isVarArg, Ins, dl, DAG,
+                         InVals);
 }
 
 /// LowerCallResult - Lower the result values of a call into the
 /// appropriate copies out of appropriate physical registers.
-///
 SDValue CPEN211TargetLowering::LowerCallResult(
     SDValue Chain, SDValue InGlue, CallingConv::ID CallConv, bool isVarArg,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
@@ -928,6 +912,8 @@ SDValue CPEN211TargetLowering::LowerCallResult(
                  *DAG.getContext());
 
   AnalyzeReturnValues(CCInfo, RVLocs, Ins);
+  assert(RVLocs.size() == 1 &&
+         "as of current. Only support return value of size one! ");
 
   // Copy all of the result registers out of their specified physreg.
   for (unsigned i = 0; i != RVLocs.size(); ++i) {
@@ -1388,6 +1374,8 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "CPEN211ISD::SELECT_CC";
   case llvm::CPEN211ISD::BR_CC:
     return "CPEN211ISD::BR_CC";
+  case llvm::CPEN211ISD::CALL:
+    return "CPEN211ISD::CALL";
   default:
     llvm_unreachable("you forgot you add a node name here!");
   }
@@ -1652,6 +1640,23 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
     return BB;
   case CPEN211::SelectCC16:
     return EmitSelectCC16(MI, BB);
+  case CPEN211::SUB16ri:
+    // SUB R1, R2, #10
+    // converts into the following:
+    // MOV R4, #-10
+    // ADD R1, R2, R4
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::MOV16ri), CPEN211::R4)
+        .addImm(MI.getOperand(2).getImm());
+
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::ADD16rr), MI.getOperand(0).getReg())
+        .addReg(MI.getOperand(1).getReg())
+        .addReg(CPEN211::R4);
+
+    BB->dump();
+    MI.eraseFromParent();
+    return BB;
+  default:
+    llvm_unreachable("You have used an operation that is unsupported!");
   }
 }
 
