@@ -78,7 +78,7 @@ struct CPEN211ISelAddressMode {
 };
 } // namespace
 
-/// CPEN211DAGToDAGISel - CPEN211 specific code to select MSP430 machine
+/// CPEN211DAGToDAGISel - CPEN211 specific code to select CPEN211 machine
 /// instructions for SelectionDAG operations.
 ///
 namespace {
@@ -254,31 +254,38 @@ bool CPEN211DAGToDAGISel::SelectAddr(SDValue N, SDValue &Base, SDValue &Disp) {
   if (MatchAddress(N, AM))
     return false;
 
-  assert(AM.BaseType != CPEN211ISelAddressMode::RegBase);
-  // if (AM.BaseType == CPEN211ISelAddressMode::RegBase)
-  //   if (!AM.Base.Reg.getNode())
-  //     AM.Base.Reg = CurDAG->getRegister(CPEN211::SR, MVT::i16);
+  // assert(AM.BaseType != CPEN211ISelAddressMode::RegBase);
+  if (AM.BaseType == CPEN211ISelAddressMode::RegBase)
+    if (!AM.Base.Reg.getNode())
+      llvm_unreachable("I don't think SR as base is possible as of current!");
+  // AM.Base.Reg = CurDAG->getRegister(CPEN211::SR, MVT::i16);
 
   Base = (AM.BaseType == CPEN211ISelAddressMode::FrameIndexBase)
              ? CurDAG->getTargetFrameIndex(AM.Base.FrameIndex, N.getValueType())
              : AM.Base.Reg;
 
-  if (AM.GV)
+  if (AM.GV) {
     Disp = CurDAG->getTargetGlobalAddress(AM.GV, SDLoc(N), MVT::i16, AM.Disp,
                                           0 /*AM.SymbolFlags*/);
-  else if (AM.CP)
+  } else if (AM.CP) {
+
     Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16, AM.Alignment, AM.Disp,
                                          0 /*AM.SymbolFlags*/);
-  else if (AM.ES)
+  } else if (AM.ES) {
+
     Disp = CurDAG->getTargetExternalSymbol(AM.ES, MVT::i16, 0
                                            /*AM.SymbolFlags*/);
-  else if (AM.JT != -1)
+  } else if (AM.JT != -1) {
+
     Disp = CurDAG->getTargetJumpTable(AM.JT, MVT::i16, 0 /*AM.SymbolFlags*/);
-  else if (AM.BlockAddr)
+  } else if (AM.BlockAddr) {
+
     Disp = CurDAG->getTargetBlockAddress(AM.BlockAddr, MVT::i32, 0,
                                          0 /*AM.SymbolFlags*/);
-  else
-    Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
+  } else {
+    assert(AM.Disp % 2 == 0 && "must be divisible by two! all memory location");
+    Disp = CurDAG->getSignedTargetConstant(AM.Disp/2, SDLoc(N), MVT::i16);
+  }
 
   return true;
 }

@@ -1652,7 +1652,6 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
         .addReg(MI.getOperand(1).getReg())
         .addReg(CPEN211::R4);
 
-    BB->dump();
     MI.eraseFromParent();
     return BB;
   default:

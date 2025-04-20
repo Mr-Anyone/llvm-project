@@ -122,6 +122,7 @@ CPEN211MCCodeEmitter::getMachineOpValue(const MCInst &MI, const MCOperand &MO,
 unsigned CPEN211MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
                                              SmallVectorImpl<MCFixup> &Fixups,
                                              const MCSubtargetInfo &STI) const {
+  llvm_unreachable("not yet implemented");
   const MCOperand &MO1 = MI.getOperand(Op);
   assert(MO1.isReg() && "Register operand expected");
   unsigned Reg = Ctx.getRegisterInfo()->getEncodingValue(MO1.getReg());

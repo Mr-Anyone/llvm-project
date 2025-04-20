@@ -61,7 +61,6 @@ def cc : Operand<i16>{
     let EncoderMethod = "getCCOpValue";
 }
 
-// TODO (for Vincent): does there need two be two different operand?
 def MemAsmOperand : AsmOperandClass {
   let Name = "Mem";
 }
@@ -161,7 +160,6 @@ def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;
 // complex pattern instead of just GR16, because we can also left shift as well!
 def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins memsrc:$Rn)
                     , "LDR\t{$Rd, [$Rn]}", [(set GR16:$Rd, (load addr:$Rn))]>;
-
 def STR16mr: MForm<0b100, 2, (outs), (ins memsrc:$Rd, GR16:$Rn)
                     , "STR\t{$Rn, [$Rd]}", [(store GR16:$Rn, addr:$Rd)]>;
 

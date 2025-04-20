@@ -138,6 +138,7 @@ static DecodeStatus DecodeCGImm(MCInst &MI, uint64_t Bits, uint64_t Address,
 static DecodeStatus DecodeMemOperand(MCInst &MI, uint64_t Bits,
                                      uint64_t Address,
                                      const MCDisassembler *Decoder) {
+  llvm_unreachable("not yet implemented");
   unsigned Reg = Bits & 15;
   unsigned Imm = Bits >> 4;
 

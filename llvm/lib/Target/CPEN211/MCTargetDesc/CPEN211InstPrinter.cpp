@@ -78,29 +78,7 @@ void CPEN211InstPrinter::printSrcMemOperand(const MCInst *MI, unsigned OpNo,
   assert(Disp.isImm() && "displacement have to me intermediate");
 
   const char *RegisterName = getRegisterName(Base.getReg());
-  O << RegisterName << "," << Disp.getImm();
-  // llvm_unreachable("this is not yet implemented for cpen 211"); // Print
-  // displacement first
-
-  // If the global address expression is a part of displacement field with a
-  // register base, we should not emit any prefix symbol here, e.g.
-  //   mov.w &foo, r1
-  // vs
-  //   mov.w glb(r1), r2
-  // Otherwise (!) msp430-as will silently miscompile the output :(
-  // if (Base.getReg() == CPEN211::SR)
-  //   O << '&';
-
-  // if (Disp.isExpr())
-  //   Disp.getExpr()->print(O, &MAI);
-  // else {
-  //   assert(Disp.isImm() && "Expected immediate in displacement field");
-  //   O << Disp.getImm();
-  // }
-
-  // // Print register base field
-  // if ((Base.getReg() != CPEN211::SR) && (Base.getReg() != CPEN211::PC))
-  //   O << '(' << getRegisterName(Base.getReg()) << ')';
+  O << RegisterName << ", #" << Disp.getImm();
 }
 
 void CPEN211InstPrinter::printIndRegOperand(const MCInst *MI, unsigned OpNo,
