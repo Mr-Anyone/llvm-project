@@ -34,32 +34,24 @@ void CPEN211InstrInfo::storeRegToStackSlot(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MI, Register SrcReg,
     bool isKill, int FrameIdx, const TargetRegisterClass *RC,
     const TargetRegisterInfo *TRI, Register VReg) const {
-  // DebugLoc DL;
-  // if (MI != MBB.end())
-  //   DL = MI->getDebugLoc();
-  // MachineFunction &MF = *MBB.getParent();
-  // MachineFrameInfo &MFI = MF.getFrameInfo();
+  DebugLoc DL;
+  if (MI != MBB.end())
+    DL = MI->getDebugLoc();
+  MachineFunction &MF = *MBB.getParent();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  // MachineMemOperand *MMO = MF.getMachineMemOperand(
-  //     MachinePointerInfo::getFixedStack(MF, FrameIdx),
-  //     MachineMemOperand::MOStore, MFI.getObjectSize(FrameIdx),
-  //     MFI.getObjectAlign(FrameIdx));
+  MachineMemOperand *MMO = MF.getMachineMemOperand(
+      MachinePointerInfo::getFixedStack(MF, FrameIdx),
+      MachineMemOperand::MOStore, MFI.getObjectSize(FrameIdx),
+      MFI.getObjectAlign(FrameIdx));
 
-  // if (RC == &CPEN211::GR16RegClass)
-  //   BuildMI(MBB, MI, DL, get(CPEN211::MOV16mr))
-  //       .addFrameIndex(FrameIdx)
-  //       .addImm(0)
-  //       .addReg(SrcReg, getKillRegState(isKill))
-  //       .addMemOperand(MMO);
-  // else if (RC == &CPEN211::GR8RegClass)
-  //   BuildMI(MBB, MI, DL, get(CPEN211::MOV8mr))
-  //       .addFrameIndex(FrameIdx)
-  //       .addImm(0)
-  //       .addReg(SrcReg, getKillRegState(isKill))
-  //       .addMemOperand(MMO);
-  // else
-  // llvm_unreachable("Cannot store this register to stack slot!");
-  llvm_unreachable("not yet implemented");
+  assert(MFI.getObjectAlign(FrameIdx).value() % 2 == 0);
+
+  BuildMI(MBB, MI, DL, get(CPEN211::STR16mr))
+      .addFrameIndex(FrameIdx)
+      .addImm(0)
+      .addReg(SrcReg, getKillRegState(isKill))
+      .addMemOperand(MMO);
 }
 
 void CPEN211InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
@@ -69,20 +61,24 @@ void CPEN211InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                             const TargetRegisterInfo *TRI,
                                             Register VReg) const {
 
-  llvm_unreachable("Not yet implemented!");
   DebugLoc DL;
   if (MI != MBB.end())
     DL = MI->getDebugLoc();
   MachineFunction &MF = *MBB.getParent();
   MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  LLVM_DEBUG(dbgs() << "Alignment is the following");
-  LLVM_DEBUG(dbgs() << MFI.getObjectAlign(FrameIdx).value());
-
   MachineMemOperand *MMO = MF.getMachineMemOperand(
       MachinePointerInfo::getFixedStack(MF, FrameIdx),
       MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIdx),
       MFI.getObjectAlign(FrameIdx));
+
+  assert(MFI.getObjectAlign(FrameIdx).value() % 2 == 0);
+
+  BuildMI(MBB, MI, DL, get(CPEN211::LDR16rm), DestReg)
+      .addFrameIndex(FrameIdx)
+      .addImm(0) // FIXME: is this even right?
+      // .addReg(DestReg)
+      .addMemOperand(MMO);
 }
 
 void CPEN211InstrInfo::copyPhysReg(MachineBasicBlock &MBB,

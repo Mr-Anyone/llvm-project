@@ -384,7 +384,7 @@ bool CPEN211FrameLowering::restoreCalleeSavedRegisters(
     BuildMI(MBB, MI, DL, TII.get(CPEN211::LDR16rm), I.getReg())
         .addFrameIndex(FrameIdx)
         .addImm(0) // FIXME: is this even right?
-        .addReg(I.getReg())
+        // .addReg(I.getReg())
         .addMemOperand(MMO);
   }
 

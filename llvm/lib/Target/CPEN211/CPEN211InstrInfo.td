@@ -141,7 +141,7 @@ let isBranch = 1, isTerminator=1 in {
 } // isBranch, isTerminator
 
 // FIXME: the cond is not correct, a jank hack as of current to speed development
-let isCall = 1, cond = 0b110, Defs=[LR], Uses=[SP] in {
+let isCall = 1, cond = 0b110, Defs=[LR, R1, R2, R3], Uses=[SP] in {
     def BL    : BForm<2, (outs), (ins i16imm:$imm),
                         "BL\t$imm", []>;
 }
