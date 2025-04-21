@@ -106,3 +106,65 @@ add_sum:                                ; @add_sum
                                         ; -- End function
         .section        ".note.GNU-stack","",@progbits
 ```
+
+Recursive FIB: 
+
+```
+int fib(int a){
+    if(a == 1 || a == 2){
+        return a;
+    }
+    return fib(a - 1) + fib(a -2);
+}
+```
+
+```
+        .file   "main.ll"
+        .text
+        .globl  fib                             ; -- Begin function fib
+        .type   fib,@function
+fib:                                    ; @fib
+        .cfi_startproc
+; %bb.0:
+        MOV     R4, #-3
+        ADD     R6, R4, R6
+        STR     R7, [R6, #2]                    ; 2-byte Folded Spill
+        STR     R0, [R6, #0]
+        MOV     R4, #1
+        CMP     R0, R4
+        BEQ     .LBB0_2
+        B       .LBB0_1
+.LBB0_1:
+        LDR     R0, [R6, #0]
+        MOV     R4, #2
+        CMP     R0, R4
+        BNE     .LBB0_3
+        B       .LBB0_2
+.LBB0_2:
+        LDR     R0, [R6, #0]
+        STR     R0, [R6, #1]
+        B       .LBB0_4
+.LBB0_3:
+        LDR     R0, [R6, #0]
+        MOV     R4, #-1
+        ADD     R0, R4, R0
+        BL      #fib
+        MOV     R1, R0
+        LDR     R0, [R6, #0]
+        MOV     R4, #-2
+        ADD     R0, R4, R0
+        BL      #fib
+        ADD     R0, R1, R0
+        STR     R0, [R6, #1]
+.LBB0_4:
+        LDR     R0, [R6, #1]
+        LDR     R7, [R6, #2]                    ; 2-byte Folded Reload
+        MOV     R4, #6
+        ADD     R6, R4, R6
+        BX      R7
+.Lfunc_end0:
+        .size   fib, .Lfunc_end0-fib
+        .cfi_endproc
+                                        ; -- End function
+        .section        ".note.GNU-stack","",@progbits
+```
