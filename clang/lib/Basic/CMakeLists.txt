@@ -121,6 +121,7 @@ add_clang_library(clangBasic
   Targets/X86.cpp
   Targets/XCore.cpp
   Targets/Xtensa.cpp
+  Targets/CPEN211.cpp
   TokenKinds.cpp
   TypeTraits.cpp
   Version.cpp

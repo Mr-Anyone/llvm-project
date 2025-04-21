@@ -82,6 +82,7 @@ void CPEN211MCCodeEmitter::encodeInstruction(const MCInst &MI,
                                              SmallVectorImpl<char> &CB,
                                              SmallVectorImpl<MCFixup> &Fixups,
                                              const MCSubtargetInfo &STI) const {
+  llvm_unreachable("");
   const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
   // Get byte count of instruction.
   unsigned Size = Desc.getSize();
@@ -146,8 +147,9 @@ unsigned CPEN211MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
     FixupKind = CPEN211::fixup_16_byte;
     break;
   }
-  Fixups.push_back(MCFixup::create(
-      Offset, MO2.getExpr(), static_cast<MCFixupKind>(FixupKind), MI.getLoc()));
+  // Fixups.push_back(MCFixup::create(
+  //     Offset, MO2.getExpr(), static_cast<MCFixupKind>(FixupKind),
+  //     MI.getLoc()));
   Offset += 2;
   return Reg;
 }
@@ -161,9 +163,9 @@ CPEN211MCCodeEmitter::getPCRelImmOpValue(const MCInst &MI, unsigned Op,
     return MO.getImm();
 
   assert(MO.isExpr() && "Expr operand expected");
-  Fixups.push_back(MCFixup::create(
-      0, MO.getExpr(), static_cast<MCFixupKind>(CPEN211::fixup_10_pcrel),
-      MI.getLoc()));
+  // Fixups.push_back(MCFixup::create(
+  //     0, MO.getExpr(), static_cast<MCFixupKind>(CPEN211::fixup_10_pcrel),
+  //     MI.getLoc()));
   return 0;
 }
 
@@ -224,6 +226,6 @@ MCCodeEmitter *createCPEN211MCCodeEmitter(const MCInstrInfo &MCII,
   return new CPEN211MCCodeEmitter(Ctx, MCII);
 }
 
-#include "CPEN211GenMCCodeEmitter.inc"
+// #include "CPEN211GenMCCodeEmitter.inc"
 
 } // end of namespace llvm

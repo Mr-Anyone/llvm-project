@@ -140,6 +140,7 @@ add_clang_library(clangCodeGen
   Targets/VE.cpp
   Targets/WebAssembly.cpp
   Targets/X86.cpp
+  Targets/CPEN211.cpp
   Targets/XCore.cpp
   VarBypassDetector.cpp
 

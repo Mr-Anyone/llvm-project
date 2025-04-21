@@ -19,6 +19,7 @@
 #include "Targets/ARM.h"
 #include "Targets/AVR.h"
 #include "Targets/BPF.h"
+#include "Targets/CPEN211.h"
 #include "Targets/CSKY.h"
 #include "Targets/DirectX.h"
 #include "Targets/Hexagon.h"
@@ -117,6 +118,8 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
   default:
     return nullptr;
 
+  case llvm::Triple::cpen211:
+    return std::make_unique<CPEN211TargetInfo>(Triple, Opts);
   case llvm::Triple::arc:
     return std::make_unique<ARCTargetInfo>(Triple, Opts);
 
@@ -455,8 +458,7 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
       return std::make_unique<FuchsiaTargetInfo<RISCV64TargetInfo>>(Triple,
                                                                     Opts);
     case llvm::Triple::Haiku:
-      return std::make_unique<HaikuTargetInfo<RISCV64TargetInfo>>(Triple,
-                                                                  Opts);
+      return std::make_unique<HaikuTargetInfo<RISCV64TargetInfo>>(Triple, Opts);
     case llvm::Triple::Linux:
       switch (Triple.getEnvironment()) {
       default:
@@ -694,17 +696,17 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
         !Triple.isOSBinFormatWasm())
       return nullptr;
     switch (os) {
-      case llvm::Triple::WASI:
+    case llvm::Triple::WASI:
       return std::make_unique<WASITargetInfo<WebAssembly32TargetInfo>>(Triple,
                                                                        Opts);
-      case llvm::Triple::Emscripten:
+    case llvm::Triple::Emscripten:
       return std::make_unique<EmscriptenTargetInfo<WebAssembly32TargetInfo>>(
           Triple, Opts);
-      case llvm::Triple::UnknownOS:
+    case llvm::Triple::UnknownOS:
       return std::make_unique<WebAssemblyOSTargetInfo<WebAssembly32TargetInfo>>(
           Triple, Opts);
-      default:
-        return nullptr;
+    default:
+      return nullptr;
     }
   case llvm::Triple::wasm64:
     if (Triple.getSubArch() != llvm::Triple::NoSubArch ||
@@ -712,17 +714,17 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
         !Triple.isOSBinFormatWasm())
       return nullptr;
     switch (os) {
-      case llvm::Triple::WASI:
+    case llvm::Triple::WASI:
       return std::make_unique<WASITargetInfo<WebAssembly64TargetInfo>>(Triple,
                                                                        Opts);
-      case llvm::Triple::Emscripten:
+    case llvm::Triple::Emscripten:
       return std::make_unique<EmscriptenTargetInfo<WebAssembly64TargetInfo>>(
           Triple, Opts);
-      case llvm::Triple::UnknownOS:
+    case llvm::Triple::UnknownOS:
       return std::make_unique<WebAssemblyOSTargetInfo<WebAssembly64TargetInfo>>(
           Triple, Opts);
-      default:
-        return nullptr;
+    default:
+      return nullptr;
     }
 
   case llvm::Triple::dxil:
@@ -795,8 +797,7 @@ TargetInfo::CreateTargetInfo(DiagnosticsEngine &Diags,
   }
 
   // Check the TuneCPU name if specified.
-  if (!Opts->TuneCPU.empty() &&
-      !Target->isValidTuneCPUName(Opts->TuneCPU)) {
+  if (!Opts->TuneCPU.empty() && !Target->isValidTuneCPUName(Opts->TuneCPU)) {
     Diags.Report(diag::err_target_unknown_cpu) << Opts->TuneCPU;
     SmallVector<StringRef, 32> ValidList;
     Target->fillValidTuneCPUList(ValidList);

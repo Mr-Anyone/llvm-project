@@ -29,6 +29,7 @@ add_clang_library(clangDriver
   SanitizerArgs.cpp
   Tool.cpp
   ToolChain.cpp
+  ToolChains/CPEN211.cpp
   ToolChains/Arch/AArch64.cpp
   ToolChains/Arch/ARM.cpp
   ToolChains/Arch/CSKY.cpp

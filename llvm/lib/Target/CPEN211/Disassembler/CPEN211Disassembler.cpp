@@ -63,38 +63,40 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeCPEN211Disassembler() {
                                          createCPEN211Disassembler);
 }
 
-static const unsigned GR8DecoderTable[] = {
-    CPEN211::PCB,  MSP430::SPB,  MSP430::SRB,  MSP430::CGB,
-    CPEN211::R4B,  MSP430::R5B,  MSP430::R6B,  MSP430::R7B,
-    CPEN211::R8B,  MSP430::R9B,  MSP430::R10B, MSP430::R11B,
-    CPEN211::R12B, MSP430::R13B, MSP430::R14B, MSP430::R15B};
+// static const unsigned GR8DecoderTable[] = {
+//     CPEN211::PCB,  MSP430::SPB,  MSP430::SRB,  MSP430::CGB,
+//     CPEN211::R4B,  MSP430::R5B,  MSP430::R6B,  MSP430::R7B,
+//     CPEN211::R8B,  MSP430::R9B,  MSP430::R10B, MSP430::R11B,
+//     CPEN211::R12B, MSP430::R13B, MSP430::R14B, MSP430::R15B};
 
 static DecodeStatus DecodeGR8RegisterClass(MCInst &MI, uint64_t RegNo,
                                            uint64_t Address,
                                            const MCDisassembler *Decoder) {
-  if (RegNo > 15)
-    return MCDisassembler::Fail;
-
-  unsigned Reg = GR8DecoderTable[RegNo];
-  MI.addOperand(MCOperand::createReg(Reg));
-  return MCDisassembler::Success;
+  llvm_unreachable("");
+  //   if (RegNo > 15)
+  //     return MCDisassembler::Fail;
+  //
+  //   unsigned Reg = GR8DecoderTable[RegNo];
+  //   MI.addOperand(MCOperand::createReg(Reg));
+  //   return MCDisassembler::Success;
 }
 
-static const unsigned GR16DecoderTable[] = {
-    CPEN211::PC,  MSP430::SP,  MSP430::SR,  MSP430::CG,
-    MSP430::R4,   MSP430::R5,  CPEN211::R6, MSP430::R7,
-    MSP430::R8,   MSP430::R9,  MSP430::R10, MSP430::R11,
-    CPEN211::R12, MSP430::R13, MSP430::R14, MSP430::R15};
+// static const unsigned GR16DecoderTable[] = {
+//     CPEN211::PC,  MSP430::SP,  MSP430::SR,  MSP430::CG,
+//     MSP430::R4,   MSP430::R5,  CPEN211::R6, MSP430::R7,
+//     MSP430::R8,   MSP430::R9,  MSP430::R10, MSP430::R11,
+//     CPEN211::R12, MSP430::R13, MSP430::R14, MSP430::R15};
 
 static DecodeStatus DecodeGR16RegisterClass(MCInst &MI, uint64_t RegNo,
                                             uint64_t Address,
                                             const MCDisassembler *Decoder) {
+  llvm_unreachable("");
   if (RegNo > 15)
     return MCDisassembler::Fail;
 
-  unsigned Reg = GR16DecoderTable[RegNo];
-  MI.addOperand(MCOperand::createReg(Reg));
-  return MCDisassembler::Success;
+  // unsigned Reg = GR16DecoderTable[RegNo];
+  // MI.addOperand(MCOperand::createReg(Reg));
+  // return MCDisassembler::Success;
 }
 
 static DecodeStatus DecodeCGImm(MCInst &MI, uint64_t Bits, uint64_t Address,
@@ -226,27 +228,28 @@ static AddrMode DecodeDstAddrMode(unsigned Insn) {
 }
 
 static const uint8_t *getDecoderTable(AddrMode SrcAM, unsigned Words) {
-  assert(0 < Words && Words < 4 && "Incorrect number of words");
-  switch (SrcAM) {
-  default:
-    llvm_unreachable("Invalid addressing mode");
-  case amRegister:
-    assert(Words < 3 && "Incorrect number of words");
-    return Words == 2 ? DecoderTableAlpha32 : DecoderTableAlpha16;
-  case amConstant:
-    assert(Words < 3 && "Incorrect number of words");
-    return Words == 2 ? DecoderTableBeta32 : DecoderTableBeta16;
-  case amIndexed:
-  case amSymbolic:
-  case amImmediate:
-  case amAbsolute:
-    assert(Words > 1 && "Incorrect number of words");
-    return Words == 2 ? DecoderTableGamma32 : DecoderTableGamma48;
-  case amIndirect:
-  case amIndirectPost:
-    assert(Words < 3 && "Incorrect number of words");
-    return Words == 2 ? DecoderTableDelta32 : DecoderTableDelta16;
-  }
+  llvm_unreachable("");
+  // assert(0 < Words && Words < 4 && "Incorrect number of words");
+  // switch (SrcAM) {
+  // default:
+  //   llvm_unreachable("Invalid addressing mode");
+  // case amRegister:
+  //   assert(Words < 3 && "Incorrect number of words");
+  //   return Words == 2 ? DecoderTableAlpha32 : DecoderTableAlpha16;
+  // case amConstant:
+  //   assert(Words < 3 && "Incorrect number of words");
+  //   return Words == 2 ? DecoderTableBeta32 : DecoderTableBeta16;
+  // case amIndexed:
+  // case amSymbolic:
+  // case amImmediate:
+  // case amAbsolute:
+  //   assert(Words > 1 && "Incorrect number of words");
+  //   return Words == 2 ? DecoderTableGamma32 : DecoderTableGamma48;
+  // case amIndirect:
+  // case amIndirectPost:
+  //   assert(Words < 3 && "Incorrect number of words");
+  //   return Words == 2 ? DecoderTableDelta32 : DecoderTableDelta16;
+  // }
 }
 
 DecodeStatus CPEN211Disassembler::getInstructionI(MCInst &MI, uint64_t &Size,
@@ -308,90 +311,94 @@ DecodeStatus CPEN211Disassembler::getInstructionII(MCInst &MI, uint64_t &Size,
                                                    ArrayRef<uint8_t> Bytes,
                                                    uint64_t Address,
                                                    raw_ostream &CStream) const {
-  uint64_t Insn = support::endian::read16le(Bytes.data());
-  AddrMode SrcAM = DecodeSrcAddrModeII(Insn);
-  if (SrcAM == amInvalid) {
-    Size = 2; // skip one word and let disassembler to try further
-    return MCDisassembler::Fail;
-  }
+  llvm_unreachable("");
+  //   uint64_t Insn = support::endian::read16le(Bytes.data());
+  //   AddrMode SrcAM = DecodeSrcAddrModeII(Insn);
+  //   if (SrcAM == amInvalid) {
+  //     Size = 2; // skip one word and let disassembler to try further
+  //     return MCDisassembler::Fail;
+  //   }
+  //
+  //   unsigned Words = 1;
+  //   switch (SrcAM) {
+  //   case amIndexed:
+  //   case amSymbolic:
+  //   case amImmediate:
+  //   case amAbsolute:
+  //     if (Bytes.size() < (Words + 1) * 2) {
+  //       Size = 2;
+  //       return DecodeStatus::Fail;
+  //     }
+  //     Insn |= (uint64_t)support::endian::read16le(Bytes.data() + 2) << 16;
+  //     ++Words;
+  //     break;
+  //   default:
+  //     break;
+  //   }
+  //
+  // const uint8_t *DecoderTable = Words == 2 ? DecoderTable32 : DecoderTable16;
+  // DecodeStatus Result =
+  //     decodeInstruction(DecoderTable, MI, Insn, Address, this, STI);
+  // if (Result != MCDisassembler::Fail) {
+  //   Size = Words * 2;
+  //   return Result;
+  // }
 
-  unsigned Words = 1;
-  switch (SrcAM) {
-  case amIndexed:
-  case amSymbolic:
-  case amImmediate:
-  case amAbsolute:
-    if (Bytes.size() < (Words + 1) * 2) {
-      Size = 2;
-      return DecodeStatus::Fail;
-    }
-    Insn |= (uint64_t)support::endian::read16le(Bytes.data() + 2) << 16;
-    ++Words;
-    break;
-  default:
-    break;
-  }
-
-  const uint8_t *DecoderTable = Words == 2 ? DecoderTable32 : DecoderTable16;
-  DecodeStatus Result =
-      decodeInstruction(DecoderTable, MI, Insn, Address, this, STI);
-  if (Result != MCDisassembler::Fail) {
-    Size = Words * 2;
-    return Result;
-  }
-
-  Size = 2;
-  return DecodeStatus::Fail;
+  // Size = 2;
+  // return DecodeStatus::Fail;
 }
 
 static CPEN211CC::CondCodes getCondCode(unsigned Cond) {
-  switch (Cond) {
-  case 0:
-    return CPEN211CC::COND_NE;
-  case 1:
-    return CPEN211CC::COND_E;
-  case 2:
-    return CPEN211CC::COND_LO;
-  case 3:
-    return CPEN211CC::COND_HS;
-  case 4:
-    return CPEN211CC::COND_N;
-  case 5:
-    return CPEN211CC::COND_GE;
-  case 6:
-    return CPEN211CC::COND_L;
-  case 7:
-    return CPEN211CC::COND_NONE;
-  default:
-    llvm_unreachable("Cond out of range");
-  }
+  llvm_unreachable("");
+  // switch (Cond) {
+  // case 0:
+  //   return CPEN211CC::COND_NE;
+  // case 1:
+  //   return CPEN211CC::COND_E;
+  // case 2:
+  //   return CPEN211CC::COND_LO;
+  // case 3:
+  //   return CPEN211CC::COND_HS;
+  // case 4:
+  //   return CPEN211CC::COND_N;
+  // case 5:
+  //   return CPEN211CC::COND_GE;
+  // case 6:
+  //   return CPEN211CC::COND_L;
+  // case 7:
+  //   return CPEN211CC::COND_NONE;
+  // default:
+  //   llvm_unreachable("Cond out of range");
+  // }
 }
 
 DecodeStatus CPEN211Disassembler::getInstructionCJ(MCInst &MI, uint64_t &Size,
                                                    ArrayRef<uint8_t> Bytes,
                                                    uint64_t Address,
                                                    raw_ostream &CStream) const {
-  uint64_t Insn = support::endian::read16le(Bytes.data());
-  unsigned Cond = fieldFromInstruction(Insn, 10, 3);
-  unsigned Offset = fieldFromInstruction(Insn, 0, 10);
+  llvm_unreachable("");
+  // uint64_t Insn = support::endian::read16le(Bytes.data());
+  // unsigned Cond = fieldFromInstruction(Insn, 10, 3);
+  // unsigned Offset = fieldFromInstruction(Insn, 0, 10);
 
-  MI.addOperand(MCOperand::createImm(SignExtend32(Offset, 10)));
+  // MI.addOperand(MCOperand::createImm(SignExtend32(Offset, 10)));
 
-  if (Cond == 7)
-    MI.setOpcode(CPEN211::JMP);
-  else {
-    MI.setOpcode(CPEN211::JCC);
-    MI.addOperand(MCOperand::createImm(getCondCode(Cond)));
-  }
+  // if (Cond == 7)
+  //   MI.setOpcode(CPEN211::JMP);
+  // else {
+  //   MI.setOpcode(CPEN211::JCC);
+  //   MI.addOperand(MCOperand::createImm(getCondCode(Cond)));
+  // }
 
-  Size = 2;
-  return DecodeStatus::Success;
+  // Size = 2;
+  // return DecodeStatus::Success;
 }
 
 DecodeStatus CPEN211Disassembler::getInstruction(MCInst &MI, uint64_t &Size,
                                                  ArrayRef<uint8_t> Bytes,
                                                  uint64_t Address,
                                                  raw_ostream &CStream) const {
+  llvm_unreachable("");
   if (Bytes.size() < 2) {
     Size = 0;
     return MCDisassembler::Fail;

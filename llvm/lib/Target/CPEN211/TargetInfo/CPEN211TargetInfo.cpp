@@ -17,6 +17,6 @@ Target &llvm::getTheCPEN211Target() {
 }
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeCPEN211TargetInfo() {
-  RegisterTarget<Triple::msp430> X(getTheCPEN211Target(), "cpen211",
+  RegisterTarget<Triple::cpen211> X(getTheCPEN211Target(), "cpen211",
                                    "CPEN211 [experimental]", "cpen211");
 }
