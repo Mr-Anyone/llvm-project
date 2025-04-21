@@ -119,52 +119,56 @@ int fib(int a){
 ```
 
 ```
-        .file   "main.ll"
+        .file   "main.c"
         .text
         .globl  fib                             ; -- Begin function fib
         .type   fib,@function
 fib:                                    ; @fib
-        .cfi_startproc
-; %bb.0:
-        MOV     R4, #-3
+; %bb.0:                                ; %entry
+        MOV     R4, #-5
         ADD     R6, R4, R6
-        STR     R7, [R6, #2]                    ; 2-byte Folded Spill
-        STR     R0, [R6, #0]
+        STR     R7, [R6, #3]                    ; 2-byte Folded Spill
+        STR     R3, [R6, #4]                    ; 2-byte Folded Spill
+        STR     R0, [R6, #1]
+        LDR     R0, [R6, #1]
         MOV     R4, #1
         CMP     R0, R4
         BEQ     .LBB0_2
         B       .LBB0_1
-.LBB0_1:
-        LDR     R0, [R6, #0]
+.LBB0_1:                                ; %lor.lhs.false
+        LDR     R0, [R6, #1]
         MOV     R4, #2
         CMP     R0, R4
         BNE     .LBB0_3
         B       .LBB0_2
-.LBB0_2:
-        LDR     R0, [R6, #0]
-        STR     R0, [R6, #1]
+.LBB0_2:                                ; %if.then
+        LDR     R0, [R6, #1]
+        STR     R0, [R6, #2]
         B       .LBB0_4
-.LBB0_3:
-        LDR     R0, [R6, #0]
+.LBB0_3:                                ; %if.end
+        LDR     R0, [R6, #1]
         MOV     R4, #-1
         ADD     R0, R4, R0
         BL      #fib
-        MOV     R1, R0
-        LDR     R0, [R6, #0]
+        STR     R0, [R6, #0]                    ; 2-byte Folded Spill
+        LDR     R0, [R6, #1]
         MOV     R4, #-2
         ADD     R0, R4, R0
         BL      #fib
+        LDR     R1, [R6, #0]                    ; 2-byte Folded Reload
         ADD     R0, R1, R0
-        STR     R0, [R6, #1]
-.LBB0_4:
-        LDR     R0, [R6, #1]
-        LDR     R7, [R6, #2]                    ; 2-byte Folded Reload
-        MOV     R4, #6
+        STR     R0, [R6, #2]
+        B       .LBB0_4
+.LBB0_4:                                ; %return
+        LDR     R0, [R6, #2]
+        LDR     R7, [R6, #3]                    ; 2-byte Folded Reload
+        LDR     R3, [R6, #4]                    ; 2-byte Folded Reload
+        MOV     R4, #10
         ADD     R6, R4, R6
         BX      R7
 .Lfunc_end0:
         .size   fib, .Lfunc_end0-fib
-        .cfi_endproc
                                         ; -- End function
+        .ident  "clang version 20.0.0git (git@github.com:Mr-Anyone/llvm-project.git df29327afaebbbf1f726d506b20a845f1163088a)"
         .section        ".note.GNU-stack","",@progbits
 ```

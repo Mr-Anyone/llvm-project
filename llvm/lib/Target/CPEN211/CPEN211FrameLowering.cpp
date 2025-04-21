@@ -213,7 +213,7 @@ void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
   uint64_t NumBytes = 0;
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::MOV16ri), CPEN211::R4)
-      .addImm(StackSize);
+      .addImm(StackSize/2);
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::ADD16rr), CPEN211::SP)
       .addReg(CPEN211::SP)
@@ -432,7 +432,6 @@ MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
     }
   }
 
-  MBB.dump();
   return MBB.erase(I);
 }
 
