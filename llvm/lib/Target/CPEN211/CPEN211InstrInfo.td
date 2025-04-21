@@ -22,7 +22,7 @@ def SDT_CPEN211CallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i16>, SDTCisVT<1, i16>]>
 def SDT_CPEN211Cmp          : SDTypeProfile<0, 2, [SDTCisSameAs<0, 1>]>;
 // TODO: as of current, there are no type constraint
 def SDT_CPEN211BrCC         : SDTypeProfile<0, 2, []>;
-// {TrueV, FalseV, TargetCC, Flag};, TargetCC is the enum in CPEN211CC:CondCoes
+// {TrueV, FalseV, TargetCC, Flag(Glue)};, TargetCC is the enum in CPEN211CC:CondCoes
 def SDT_CPEN211SelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
                                                   SDTCisSameAs<1, 2>,
                                                   SDTCisVT<3, i16>
@@ -141,7 +141,7 @@ let isBranch = 1, isTerminator=1 in {
 } // isBranch, isTerminator
 
 // FIXME: the cond is not correct, a jank hack as of current to speed development
-let isCall = 1, cond = 0b110 in {
+let isCall = 1, cond = 0b110, Defs=[LR], Uses=[SP] in {
     def BL    : BForm<2, (outs), (ins i16imm:$imm),
                         "BL\t$imm", []>;
 }

@@ -23,10 +23,12 @@
 
 using namespace llvm;
 
+#define DEBUG_TYPE "cpen211-framelowering"
+
 CPEN211FrameLowering::CPEN211FrameLowering(const CPEN211Subtarget &STI)
     // TODO (for Vincent): I don't think this is right?
     // LocalAreaOffset is -2? I am pretty sure this is 0 CHECK THIS!
-    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(1), 0),
+    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(2), 0),
       STI(STI), TII(*STI.getInstrInfo()), TRI(STI.getRegisterInfo()) {}
 
 bool CPEN211FrameLowering::hasFPImpl(const MachineFunction &MF) const {
@@ -43,7 +45,6 @@ bool CPEN211FrameLowering::hasReservedCallFrame(
 
 void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
-  // llvm_unreachable("this is not yet implemented!");
 
   assert(&MF.front() == &MBB && "Shrink-wrapping not yet supported");
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -53,15 +54,41 @@ void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
       *static_cast<const CPEN211InstrInfo *>(MF.getSubtarget().getInstrInfo());
 
   // this is another problem for future me
-  assert(CPEN211FI->getCalleeSavedFrameSize() == 0 &&
-         "this is another future problem for me!future");
+  CPEN211FI->getCalleeSavedFrameSize();
 
-  // MachineBasicBlock::iterator MBBI = MBB.begin();
-  // DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
+  // assert(CPEN211FI->getCalleeSavedFrameSize() == 0 &&
+  // "this is another future problem for me!future");
 
-  // // Get the number of bytes to allocate from the FrameInfo.
-  // uint64_t StackSize = MFI.getStackSize();
-  // int stackGrowth = -2;
+  MachineBasicBlock::iterator MBBI = MBB.begin();
+  DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
+
+  // Get the number of bytes to allocate from the FrameInfo.
+  uint64_t StackSize = MFI.getStackSize();
+  LLVM_DEBUG(dbgs() << "Framesize: " << CPEN211FI->getCalleeSavedFrameSize()
+                    << " Stack Size: " << StackSize << "\n");
+
+  // TODO: we also have to save link register?
+  assert(StackSize % 2 == 0);
+  uint64_t SubtractSize = StackSize / 2;
+
+  // SUB R1, R2, #10
+  // converts into the following:
+  // MOV R4, #-10
+  // ADD R1, R2, R4
+  BuildMI(MBB, MBBI, DL, TII.get(CPEN211::MOV16ri), CPEN211::R4)
+      .addImm(SubtractSize * -1);
+
+  BuildMI(MBB, MBBI, DL, TII.get(CPEN211::ADD16rr), CPEN211::SP)
+      .addReg(CPEN211::SP)
+      .addReg(CPEN211::R4);
+
+  // BuildMI(MBB, MBBI, DL, TII.get(CPEN211::SUB16ri), CPEN211::SP)
+  //     .addReg(CPEN211::SP)
+  //     .addImm(SubtractSize)
+  //     .setMIFlag(MachineInstr::FrameSetup);
+
+  // assert(StackSize % 2 == 0 && "must be divisible by two!");
+  // llvm_unreachable("error!");
 
   // uint64_t NumBytes = 0;
   // if (hasFP(MF)) {
@@ -184,7 +211,16 @@ void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
   uint64_t StackSize = MFI.getStackSize();
   unsigned CSSize = CPEN211FI->getCalleeSavedFrameSize();
   uint64_t NumBytes = 0;
-  assert(CSSize == 0 && "no idea how to restore the stack for now!");
+
+  BuildMI(MBB, MBBI, DL, TII.get(CPEN211::MOV16ri), CPEN211::R4)
+      .addImm(StackSize);
+
+  BuildMI(MBB, MBBI, DL, TII.get(CPEN211::ADD16rr), CPEN211::SP)
+      .addReg(CPEN211::SP)
+      .addReg(CPEN211::R4)
+      .setMIFlags(MachineInstr::FrameDestroy);
+
+  // assert(CSSize == 0 && "no idea how to restore the stack for now!");
 
   // MachineBasicBlock::iterator AfterPop = MBBI;
   // if (hasFP(MF)) {
@@ -301,100 +337,103 @@ bool CPEN211FrameLowering::spillCalleeSavedRegisters(
   CPEN211MachineFunctionInfo *MFI = MF.getInfo<CPEN211MachineFunctionInfo>();
   MFI->setCalleeSavedFrameSize(CSI.size() * 2);
 
+  for (const CalleeSavedInfo &I : llvm::reverse(CSI)) {
+    LLVM_DEBUG(dbgs() << "I have been called?. One Time?");
+    const int FrameIdx = I.getFrameIdx();
+    const MachineFrameInfo &MFI = MF.getFrameInfo();
+    MachineMemOperand *MMO = MF.getMachineMemOperand(
+        MachinePointerInfo::getFixedStack(MF, FrameIdx),
+        MachineMemOperand::MOStore, MFI.getObjectSize(FrameIdx), Align(2));
+
+    LLVM_DEBUG(dbgs() << "reg is: " << I.getReg().id()
+                      << " is physical: " << I.getReg().isPhysical() << "\n");
+
+    BuildMI(MBB, MI, DL, TII.get(CPEN211::STR16mr))
+        .addFrameIndex(FrameIdx)
+        .addImm(0) // FIXME: is this even right?
+        .addReg(I.getReg())
+        .addMemOperand(MMO);
+  }
+
   return true;
 }
 
 bool CPEN211FrameLowering::restoreCalleeSavedRegisters(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
     MutableArrayRef<CalleeSavedInfo> CSI, const TargetRegisterInfo *TRI) const {
-  llvm_unreachable("this is a impossible place to reach!!!");
-  // if (CSI.empty())
-  //   return false;
 
-  // DebugLoc DL;
-  // if (MI != MBB.end())
-  //   DL = MI->getDebugLoc();
+  if (CSI.empty())
+    return false;
 
-  // MachineFunction &MF = *MBB.getParent();
-  // const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
+  DebugLoc DL;
+  if (MI != MBB.end())
+    DL = MI->getDebugLoc();
 
-  // for (const CalleeSavedInfo &I : llvm::reverse(CSI))
-  //   BuildMI(MBB, MI, DL, TII.get(CPEN211::POP16r), I.getReg())
-  //       .setMIFlag(MachineInstr::FrameDestroy);
+  MachineFunction &MF = *MBB.getParent();
+  const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
 
-  // return true;
+  // popping the stack in reverse order
+  for (const CalleeSavedInfo &I : llvm::reverse(CSI)) {
+    assert(!I.isSpilledToReg() && "cannot be spilled to reg!");
+    const int FrameIdx = I.getFrameIdx();
+    const MachineFrameInfo &MFI = MF.getFrameInfo();
+    MachineMemOperand *MMO = MF.getMachineMemOperand(
+        MachinePointerInfo::getFixedStack(MF, FrameIdx),
+        MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIdx), Align(2));
+
+    BuildMI(MBB, MI, DL, TII.get(CPEN211::LDR16rm), I.getReg())
+        .addFrameIndex(FrameIdx)
+        .addImm(0) // FIXME: is this even right?
+        .addReg(I.getReg())
+        .addMemOperand(MMO);
+  }
+
+  return true;
 }
 
 MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
     MachineFunction &MF, MachineBasicBlock &MBB,
     MachineBasicBlock::iterator I) const {
-  llvm_unreachable("this is a impossible place to reach!!!");
-  // const CPEN211InstrInfo &TII =
-  //     *static_cast<const CPEN211InstrInfo
-  //     *>(MF.getSubtarget().getInstrInfo());
-  // if (!hasReservedCallFrame(MF)) {
-  //   // If the stack pointer can be changed after prologue, turn the
-  //   // adjcallstackup instruction into a 'sub SP, <amt>' and the
-  //   // adjcallstackdown instruction into 'add SP, <amt>'
-  //   // TODO: consider using push / pop instead of sub + store / add
-  //   MachineInstr &Old = *I;
-  //   uint64_t Amount = TII.getFrameSize(Old);
-  //   if (Amount != 0) {
-  //     // We need to keep the stack aligned properly.  To do this, we round
-  //     the
-  //     // amount of space needed for the outgoing arguments up to the next
-  //     // alignment boundary.
-  //     Amount = alignTo(Amount, getStackAlign());
+  // If the stack pointer can be changed after prologue, turn the
+  // adjcallstackup instruction into a 'sub SP, <amt>' and the
+  // adjcallstackdown instruction into 'add SP, <amt>'
+  MachineInstr &Old = *I;
+  uint64_t Amount = TII.getFrameSize(Old) / 2;
+  if (Amount != 0) {
+    // We need to keep the stack aligned properly.  To do this, we round the
+    // amount of space needed for the outgoing arguments up to the next
+    // alignment boundary.
+    assert(getStackAlign() == 2);
+    Amount = alignTo(Amount, getStackAlign());
 
-  //     MachineInstr *New = nullptr;
-  //     if (Old.getOpcode() == TII.getCallFrameSetupOpcode()) {
-  //       New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::SUB16ri),
-  //                     CPEN211::SP)
-  //                 .addReg(CPEN211::SP)
-  //                 .addImm(Amount);
-  //     } else {
-  //       assert(Old.getOpcode() == TII.getCallFrameDestroyOpcode());
-  //       // factor out the amount the callee already popped.
-  //       Amount -= TII.getFramePoppedByCallee(Old);
-  //       if (Amount)
-  //         New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::ADD16ri),
-  //                       CPEN211::SP)
-  //                   .addReg(CPEN211::SP)
-  //                   .addImm(Amount);
-  //     }
+    MachineInstr *New = nullptr;
+    if (Old.getOpcode() == TII.getCallFrameSetupOpcode()) {
+      New =
+          BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::SUB16ri), CPEN211::SP)
+              .addReg(CPEN211::SP)
+              .addImm(Amount);
+    } else {
+      assert(Old.getOpcode() == TII.getCallFrameDestroyOpcode());
+      // factor out the amount the callee already popped.
+      Amount -= TII.getFramePoppedByCallee(Old);
+      if (Amount)
+        New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::ADD16rr),
+                      CPEN211::SP)
+                  .addReg(CPEN211::SP)
+                  .addImm(Amount);
+    }
 
-  //     if (New) {
-  //       // The SRW implicit def is dead.
-  //       New->getOperand(3).setIsDead();
+    if (New) {
+      // The SRW implicit def is dead.
+      New->getOperand(3).setIsDead();
 
-  //       // Replace the pseudo instruction with a new instruction...
-  //       MBB.insert(I, New);
-  //     }
-  //   }
-  // } else if (I->getOpcode() == TII.getCallFrameDestroyOpcode()) {
-  //   // If we are performing frame pointer elimination and if the callee pops
-  //   // something off the stack pointer, add it back.
-  //   if (uint64_t CalleeAmt = TII.getFramePoppedByCallee(*I)) {
-  //     MachineInstr &Old = *I;
-  //     MachineInstr *New =
-  //         BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::SUB16ri),
-  //         CPEN211::SP)
-  //             .addReg(CPEN211::SP)
-  //             .addImm(CalleeAmt);
-  //     if (!hasFP(MF)) {
-  //       DebugLoc DL = I->getDebugLoc();
-  //       BuildCFI(MBB, I, DL,
-  //                MCCFIInstruction::createAdjustCfaOffset(nullptr,
-  //                CalleeAmt));
-  //     }
-  //     // The SRW implicit def is dead.
-  //     New->getOperand(3).setIsDead();
+      // Replace the pseudo instruction with a new instruction...
+      MBB.insert(I, New);
+    }
+  }
 
-  //     MBB.insert(I, New);
-  //   }
-  // }
-
-  // return MBB.erase(I);
+  MBB.dump();
+  return MBB.erase(I);
 }
 
 // do we even need this function call?
@@ -409,3 +448,5 @@ void CPEN211FrameLowering::processFunctionBeforeFrameFinalized(
   //          "Slot for FP register must be last in order to be found!");
   // }
 }
+
+#undef DEBUG_TYPE

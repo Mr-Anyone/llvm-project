@@ -1,6 +1,5 @@
 //===-- CPEN211InstrInfo.cpp - CPEN211 Instruction Information
 //--------------===//
-//
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -21,6 +20,8 @@ using namespace llvm;
 
 #define GET_INSTRINFO_CTOR_DTOR
 #include "CPEN211GenInstrInfo.inc"
+
+#define DEBUG_TYPE "cpen211-instrinfo"
 
 // Pin the vtable to this file.
 void CPEN211InstrInfo::anchor() {}
@@ -69,31 +70,19 @@ void CPEN211InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                             Register VReg) const {
 
   llvm_unreachable("Not yet implemented!");
-  // DebugLoc DL;
-  // if (MI != MBB.end())
-  //   DL = MI->getDebugLoc();
-  // MachineFunction &MF = *MBB.getParent();
-  // MachineFrameInfo &MFI = MF.getFrameInfo();
+  DebugLoc DL;
+  if (MI != MBB.end())
+    DL = MI->getDebugLoc();
+  MachineFunction &MF = *MBB.getParent();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  // MachineMemOperand *MMO = MF.getMachineMemOperand(
-  //     MachinePointerInfo::getFixedStack(MF, FrameIdx),
-  //     MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIdx),
-  //     MFI.getObjectAlign(FrameIdx));
+  LLVM_DEBUG(dbgs() << "Alignment is the following");
+  LLVM_DEBUG(dbgs() << MFI.getObjectAlign(FrameIdx).value());
 
-  // if (RC == &CPEN211::GR16RegClass)
-  //   BuildMI(MBB, MI, DL, get(CPEN211::MOV16rm))
-  //       .addReg(DestReg, getDefRegState(true))
-  //       .addFrameIndex(FrameIdx)
-  //       .addImm(0)
-  //       .addMemOperand(MMO);
-  // else if (RC == &CPEN211::GR8RegClass)
-  //   BuildMI(MBB, MI, DL, get(CPEN211::MOV8rm))
-  //       .addReg(DestReg, getDefRegState(true))
-  //       .addFrameIndex(FrameIdx)
-  //       .addImm(0)
-  //       .addMemOperand(MMO);
-  // else
-  //   llvm_unreachable("Cannot store this register to stack slot!");
+  MachineMemOperand *MMO = MF.getMachineMemOperand(
+      MachinePointerInfo::getFixedStack(MF, FrameIdx),
+      MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIdx),
+      MFI.getObjectAlign(FrameIdx));
 }
 
 void CPEN211InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
