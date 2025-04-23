@@ -14,7 +14,6 @@ The entire instruction set is basically self explanatory.
 - Software floating point support 
 - Lowering Shift 
 - Lower not in Selection DAG
-- Add Pseudo Instruction for NOT
 
 ## Technical Challenges
 

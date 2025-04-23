@@ -59,12 +59,13 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   setIndexedLoadAction(ISD::POST_INC, MVT::i16, Expand);
 
   for (MVT VT : MVT::integer_valuetypes()) {
-    setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Expand);
-    setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1, Expand);
-    setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1, Expand);
-    // setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8, Expand);
-    setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i16, Expand);
+    // setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Expand);
+    // setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1, Expand);
+    // setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1, Expand);
+    // setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8, Promote);
   }
+  // setLoadExtAction(ISD::SEXTLOAD, MVT::i8, MVT::i16, Promote);
+  // setLoadExtAction(ISD::SEXTLOAD, MVT::i16, MVT::i8, Promote);
 
   // We don't have any truncstores
   // setTruncStoreAction(MVT::i16, MVT::i8, Expand);
@@ -72,6 +73,8 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // setOperationAction(ISD::SRA, MVT::i8, Expand);
   // setOperationAction(ISD::SHL, MVT::i8, Expand);
   // setOperationAction(ISD::SRL, MVT::i8, Expand);
+  //  setOperationAction(ISD::NON_EXTLOAD, MVT::i16, Expand);
+
   setOperationAction(ISD::SRA, MVT::i16, Custom); // shift right arithmetic
   setOperationAction(ISD::SHL, MVT::i16, Custom); // shift left lowest bit 0
   setOperationAction(ISD::SRL, MVT::i16,
@@ -81,7 +84,7 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // setOperationAction(ISD::ROTR, MVT::i8, Expand);
   setOperationAction(ISD::ROTL, MVT::i16, Expand);
   setOperationAction(ISD::ROTR, MVT::i16, Expand);
-  setOperationAction(ISD::GlobalAddress, MVT::i16, Expand);
+  setOperationAction(ISD::GlobalAddress, MVT::i16, Custom);
   setOperationAction(ISD::ExternalSymbol, MVT::i16, Expand);
   setOperationAction(ISD::BlockAddress, MVT::i16, Expand);
   setOperationAction(ISD::BR_JT, MVT::Other, Expand);
@@ -350,16 +353,16 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
 SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
                                               SelectionDAG &DAG) const {
   switch (Op.getOpcode()) {
-  // case ISD::SHL: // FALLTHROUGH
-  // case ISD::SRL:
-  // case ISD::SRA:
-  //   return LowerShifts(Op, DAG);
-  // case ISD::GlobalAddress:
-  //   return LowerGlobalAddress(Op, DAG);
+  case ISD::SHL: // FALLTHROUGH
+  case ISD::SRL:
+  case ISD::SRA:
+    return LowerShifts(Op, DAG);
   // case ISD::BlockAddress:
   //   return LowerBlockAddress(Op, DAG);
   // case ISD::ExternalSymbol:
   //   return LowerExternalSymbol(Op, DAG);
+  case ISD::GlobalAddress:
+    return LowerGlobalAddress(Op, DAG);
   case ISD::SETCC:
     return LowerSETCC(Op, DAG);
   case ISD::BR_CC:
@@ -377,6 +380,7 @@ SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
   // case ISD::JumpTable:
   //   return LowerJumpTable(Op, DAG);
   default:
+    LLVM_DEBUG(dbgs() << "unimpleneted operand is " << Op.getOpcode());
     llvm_unreachable("unimplemented operand");
   }
 }
@@ -929,19 +933,36 @@ SDValue CPEN211TargetLowering::LowerCallResult(
 
 SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
                                            SelectionDAG &DAG) const {
-  llvm_unreachable("cannot lower shift for now!");
-  // unsigned Opc = Op.getOpcode();
-  // SDNode *N = Op.getNode();
-  // EVT VT = Op.getValueType();
-  // SDLoc dl(N);
+  // llvm_unreachable("cannot lower shift for now!");
+  LLVM_DEBUG(dbgs() << "");
+  unsigned Opc = Op.getOpcode();
+  assert(Opc == ISD::SHL);
 
-  //// Expand non-constant shifts to loops:
+  SDNode *N = Op.getNode();
+  SDLoc Loc(Op);
+  ConstantSDNode *ConstantNode = dyn_cast<ConstantSDNode>(N->getOperand(1));
+  if (!ConstantNode)
+    return Op;
+
+  SDLoc dl(N);
+  SDValue NewConstant = DAG.getConstant(ConstantNode->getSExtValue(), Loc,
+                                        MVT::i16); // shifted amount
+  SDValue By = Op.getOperand(0);                   // shifted by
+
+  SDValue newVal = DAG.getNode(CPEN211ISD::SHL, dl, MVT::i16, By, NewConstant);
+  return newVal;
+
+  // ConstantNode->getConstantIntValue();
+  // DAG.viewGraph();
+  // llvm_unreachable("gg");
+
+  // // Expand non-constant shifts to loops:
   // if (!isa<ConstantSDNode>(N->getOperand(1)))
   //   return Op;
 
   // uint64_t ShiftAmount = N->getConstantOperandVal(1);
 
-  //// Expand the stuff into sequence of shifts.
+  // // Expand the stuff into sequence of shifts.
   // SDValue Victim = N->getOperand(0);
 
   // if (ShiftAmount >= 8) {
@@ -984,15 +1005,14 @@ SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
 
 SDValue CPEN211TargetLowering::LowerGlobalAddress(SDValue Op,
                                                   SelectionDAG &DAG) const {
-  llvm_unreachable("this is not correct!");
+  // llvm_unreachable("this is not correct!");
   const GlobalValue *GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
   int64_t Offset = cast<GlobalAddressSDNode>(Op)->getOffset();
   EVT PtrVT = Op.getValueType();
 
   // Create the TargetGlobalAddress node, folding in the constant offset.
   SDValue Result = DAG.getTargetGlobalAddress(GV, SDLoc(Op), PtrVT, Offset);
-  return Result;
-  // return DAG.getNode(CPEN211ISD::Wrapper, SDLoc(Op), PtrVT, Result);
+  return DAG.getNode(CPEN211ISD::Wrapper, SDLoc(Op), PtrVT, Result);
 }
 
 SDValue CPEN211TargetLowering::LowerExternalSymbol(SDValue Op,
@@ -1376,6 +1396,10 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "CPEN211ISD::BR_CC";
   case llvm::CPEN211ISD::CALL:
     return "CPEN211ISD::CALL";
+  case llvm::CPEN211ISD::Wrapper:
+    return "CPEN211ISD::Wrapper";
+  case llvm::CPEN211ISD::SHL:
+    return "CPEN211ISD::SHL";
   default:
     llvm_unreachable("you forgot you add a node name here!");
   }
@@ -1653,6 +1677,9 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
         .addReg(CPEN211::R4);
 
     MI.eraseFromParent();
+    return BB;
+  case CPEN211::LDRshri:
+    // TODO: fixme!
     return BB;
   default:
     llvm_unreachable("You have used an operation that is unsupported!");

@@ -27,6 +27,10 @@ def SDT_CPEN211SelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
                                                   SDTCisSameAs<1, 2>,
                                                   SDTCisVT<3, i16>
                                                   ]>;
+def SDT_CPEN211Wrapper      : SDTypeProfile<1, 1, [SDTCisSameAs<0, 1>,
+                                                  SDTCisPtrTy<0>]>;
+def SDT_CPEN211shl          : SDTypeProfile<1, 2, [SDTCisSameAs<0, 1>,
+                                                  SDTCisVT<0, i16>]>;
 //===----------------------------------------------------------------------===//
 // CPEN211 Specific Node Definitions.
 //===----------------------------------------------------------------------===//
@@ -46,6 +50,9 @@ def CPEN211callseq_start :
 def CPEN211callseq_end :
                  SDNode<"ISD::CALLSEQ_END",   SDT_CPEN211CallSeqEnd,
                         [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
+// for global instruction, points to a globaladdr_t
+def CPEN211Wrapper : SDNode<"CPEN211ISD::Wrapper", SDT_CPEN211Wrapper>;
+def CPEN211shl     : SDNode<"CPEN211ISD::SHL", SDT_CPEN211shl, []>;
 //===----------------------------------------------------------------------===//
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
@@ -97,6 +104,9 @@ let Rn = 0b000 in {
                 , "MOV\t{$Rd, $value}", [(set GR16:$Rd, imm:$value)]>;
     }
 } // Rn
+
+// Global Address,
+def : Pat<(i16 (CPEN211Wrapper tglobaladdr:$dst)), (MOV16ri tglobaladdr:$dst)>;
 
 //===----------------------------------------------------------------------
 // ALU Instructions without cmp
@@ -199,4 +209,12 @@ let isCodeGenOnly = 1, usesCustomInserter = 1 in {
     def SUB16ri    : Pseudo<(outs GR16:$dst), (ins GR16:$rn, i16imm:$im), 
                             "# SUB PSEUDO", 
                             [(set GR16:$dst, (add GR16:$rn, imm:$im))]>;
+
+    // t6: i16,ch = load<(dereferenceable load (s16) from %ir.i)> t0, FrameIndex:i16<1>, undef:i16
+    //     t18: i16 = CPEN211ISD::SHL t6, Constant:i16<1>
+    //   t10: i16 = add FrameIndex:i16<3>, t18
+    // t11: i16,ch = load<(load (s16) from %ir.arrayidx)> t0, t10, undef:i16
+    def LDRshri : Pseudo<(outs GR16:$dst), (ins memsrc:$base, GR16:$offset, i16imm:$shift_amount), 
+        "# LDRshri Pseudo", [(set GR16:$dst, (load(add addr:$base, (CPEN211shl GR16:$offset, imm:$shift_amount))))]>; 
+    // , "LDR\t{$Rd, [$Rn]}", [(set GR16:$Rd, (load addr:$Rn))]>;
 } // isCodeGenOnly = 1

@@ -284,7 +284,7 @@ bool CPEN211DAGToDAGISel::SelectAddr(SDValue N, SDValue &Base, SDValue &Disp) {
                                          0 /*AM.SymbolFlags*/);
   } else {
     assert(AM.Disp % 2 == 0 && "must be divisible by two! all memory location");
-    Disp = CurDAG->getSignedTargetConstant(AM.Disp/2, SDLoc(N), MVT::i16);
+    Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
   }
 
   return true;
