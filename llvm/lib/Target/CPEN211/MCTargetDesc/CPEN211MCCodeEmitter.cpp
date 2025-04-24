@@ -35,10 +35,6 @@ class CPEN211MCCodeEmitter : public MCCodeEmitter {
   MCContext &Ctx;
   MCInstrInfo const &MCII;
 
-  // Offset keeps track of current word number being emitted
-  // inside a particular instruction.
-  mutable unsigned Offset;
-
   /// TableGen'erated function for getting the binary encoding for an
   /// instruction.
   uint64_t getBinaryCodeForInstr(const MCInst &MI,
@@ -82,14 +78,12 @@ void CPEN211MCCodeEmitter::encodeInstruction(const MCInst &MI,
                                              SmallVectorImpl<char> &CB,
                                              SmallVectorImpl<MCFixup> &Fixups,
                                              const MCSubtargetInfo &STI) const {
-  llvm_unreachable("");
   const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
   // Get byte count of instruction.
   unsigned Size = Desc.getSize();
 
   // Initialize fixup offset
-  Offset = 2;
-
+  assert(Size = 2);
   uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
   size_t WordCount = Size / 2;
 
@@ -108,50 +102,47 @@ CPEN211MCCodeEmitter::getMachineOpValue(const MCInst &MI, const MCOperand &MO,
     return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
 
   if (MO.isImm()) {
-    Offset += 2;
     return MO.getImm();
   }
 
   assert(MO.isExpr() && "Expected expr operand");
-  Fixups.push_back(MCFixup::create(
-      Offset, MO.getExpr(), static_cast<MCFixupKind>(CPEN211::fixup_16_byte),
-      MI.getLoc()));
-  Offset += 2;
   return 0;
 }
 
 unsigned CPEN211MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
                                              SmallVectorImpl<MCFixup> &Fixups,
                                              const MCSubtargetInfo &STI) const {
-  llvm_unreachable("not yet implemented");
+
+  // assert(false && "think more about this later");
   const MCOperand &MO1 = MI.getOperand(Op);
   assert(MO1.isReg() && "Register operand expected");
   unsigned Reg = Ctx.getRegisterInfo()->getEncodingValue(MO1.getReg());
 
-  const MCOperand &MO2 = MI.getOperand(Op + 1);
-  if (MO2.isImm()) {
-    Offset += 2;
-    return ((unsigned)MO2.getImm() << 4) | Reg;
-  }
-
-  assert(MO2.isExpr() && "Expr operand expected");
-  CPEN211::Fixups FixupKind;
-  switch (Reg) {
-  case 0:
-    FixupKind = CPEN211::fixup_16_pcrel_byte;
-    break;
-  case 2:
-    FixupKind = CPEN211::fixup_16_byte;
-    break;
-  default:
-    FixupKind = CPEN211::fixup_16_byte;
-    break;
-  }
-  // Fixups.push_back(MCFixup::create(
-  //     Offset, MO2.getExpr(), static_cast<MCFixupKind>(FixupKind),
-  //     MI.getLoc()));
-  Offset += 2;
   return Reg;
+  // const MCOperand &MO2 = MI.getOperand(Op + 1);
+  // if (MO2.isImm()) {
+  //   Offset += 2;
+  //   return ((unsigned)MO2.getImm() << 4) | Reg;
+  // }
+
+  // assert(MO2.isExpr() && "Expr operand expected");
+  // CPEN211::Fixups FixupKind;
+  // switch (Reg) {
+  // case 0:
+  //   FixupKind = CPEN211::fixup_16_pcrel_byte;
+  //   break;
+  // case 2:
+  //   FixupKind = CPEN211::fixup_16_byte;
+  //   break;
+  // default:
+  //   FixupKind = CPEN211::fixup_16_byte;
+  //   break;
+  // }
+  //// Fixups.push_back(MCFixup::create(
+  ////     Offset, MO2.getExpr(), static_cast<MCFixupKind>(FixupKind),
+  ////     MI.getLoc()));
+  // Offset += 2;
+  // return Reg;
 }
 
 unsigned
@@ -159,40 +150,14 @@ CPEN211MCCodeEmitter::getPCRelImmOpValue(const MCInst &MI, unsigned Op,
                                          SmallVectorImpl<MCFixup> &Fixups,
                                          const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(Op);
-  if (MO.isImm())
-    return MO.getImm();
-
+  // MI.dump();
+  MO.getExpr()->dump();
   assert(MO.isExpr() && "Expr operand expected");
-  // Fixups.push_back(MCFixup::create(
-  //     0, MO.getExpr(), static_cast<MCFixupKind>(CPEN211::fixup_10_pcrel),
-  //     MI.getLoc()));
+  // if (MO.isImm())
+  //   return MO.getImm();
+
+  Fixups.push_back(MCFixup::create(0, MO.getExpr(), FK_PCRel_1, MI.getLoc()));
   return 0;
-}
-
-unsigned
-CPEN211MCCodeEmitter::getCGImmOpValue(const MCInst &MI, unsigned Op,
-                                      SmallVectorImpl<MCFixup> &Fixups,
-                                      const MCSubtargetInfo &STI) const {
-  const MCOperand &MO = MI.getOperand(Op);
-  assert(MO.isImm() && "Expr operand expected");
-
-  int64_t Imm = MO.getImm();
-  switch (Imm) {
-  default:
-    llvm_unreachable("Invalid immediate value");
-  case 4:
-    return 0x22;
-  case 8:
-    return 0x32;
-  case 0:
-    return 0x03;
-  case 1:
-    return 0x13;
-  case 2:
-    return 0x23;
-  case -1:
-    return 0x33;
-  }
 }
 
 unsigned CPEN211MCCodeEmitter::getCCOpValue(const MCInst &MI, unsigned Op,
@@ -200,25 +165,18 @@ unsigned CPEN211MCCodeEmitter::getCCOpValue(const MCInst &MI, unsigned Op,
                                             const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(Op);
   assert(MO.isImm() && "Immediate operand expected");
-  llvm_unreachable("unimplemented function");
-  // switch (MO.getImm()) {
-  // case CPEN211CC::COND_NE:
-  //   return 0;
-  // case CPEN211CC::COND_E:
-  //   return 1;
-  // case CPEN211CC::COND_LO:
-  //   return 2;
-  // case CPEN211CC::COND_HS:
-  //   return 3;
-  // case CPEN211CC::COND_N:
-  //   return 4;
-  // case CPEN211CC::COND_GE:
-  //   return 5;
-  // case CPEN211CC::COND_L:
-  //   return 6;
-  // default:
-  //   llvm_unreachable("Unknown condition code");
-  // }
+  switch (MO.getImm()) {
+  case CPEN211CC::COND_EQ:
+    return 0b001;
+  case CPEN211CC::COND_NE:
+    return 0b010;
+  case CPEN211CC::COND_LT:
+    return 0b011;
+  case CPEN211CC::COND_LE:
+    return 0b100;
+  default:
+    llvm_unreachable("Unknown condition code");
+  }
 }
 
 MCCodeEmitter *createCPEN211MCCodeEmitter(const MCInstrInfo &MCII,
@@ -226,6 +184,6 @@ MCCodeEmitter *createCPEN211MCCodeEmitter(const MCInstrInfo &MCII,
   return new CPEN211MCCodeEmitter(Ctx, MCII);
 }
 
-// #include "CPEN211GenMCCodeEmitter.inc"
+#include "CPEN211GenMCCodeEmitter.inc"
 
 } // end of namespace llvm

@@ -25,7 +25,7 @@ class CPEN211ELFObjectWriter : public MCELFObjectTargetWriter {
 public:
   CPEN211ELFObjectWriter(uint8_t OSABI)
       // TODO (for Vincent): this is entirely wrong
-      : MCELFObjectTargetWriter(false, OSABI, ELF::EM_MSP430,
+      : MCELFObjectTargetWriter(/*is 64 bit*/false, OSABI, ELF::R_MSP430_NONE,
                                 /*HasRelocationAddend*/ true) {}
 
   ~CPEN211ELFObjectWriter() override = default;

@@ -21,16 +21,16 @@ CPEN211MCAsmInfo::CPEN211MCAsmInfo(const Triple &TT) {
   // also store 16-bit pointers as 32-bit pointers in DWARF, because using
   // 32-bit DWARF pointers is already a working and tested path for LLDB
   // as well.
-  CodePointerSize = 4;
+  CodePointerSize = 2;
   CalleeSaveStackSlotSize = 2;
 
-  CommentString = ";";
+  CommentString = "//";
   SeparatorString = "{";
 
   AlignmentIsInBytes = false;
   UsesELFSectionDirectiveForBSS = true;
 
-  SupportsDebugInformation = true;
+  SupportsDebugInformation = false;
 
-  ExceptionsType = ExceptionHandling::DwarfCFI;
+  // ExceptionsType = ExceptionHandling::DwarfCFI;
 }

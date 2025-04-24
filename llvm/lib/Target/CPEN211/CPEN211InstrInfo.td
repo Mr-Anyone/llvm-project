@@ -135,25 +135,27 @@ def CMP16rr : CPEN211Inst<(outs), (ins GR16:$Rn, GR16:$Rm), /*size*/ 2
 //===----------------------------------------------------------------------
 // Branch Type Instructions
 let isBranch = 1, isTerminator=1 in {
-    let isBarrier = 1, cond= 0b000 in {
+    let isBarrier = 1 in {
         // Branch to instruction
         def B   : BForm<2, (outs), (ins jmptarget:$dst)
-                        ,"B\t$dst",  [(br bb:$dst)]>;
+                        ,"B\t$dst",  [(br bb:$dst)]>{
+            let cond = 0b000;
+        }
     }
 
     // BCC are BEQ, BNE, BLT, and BLE
-    let cond = 0b001 in {
-        def BCC : BForm<2, (outs), (ins jmptarget:$dst, cc:$cond),
-                   "B$cond\t$dst", [(CPEN211brcc bb:$dst, imm:$cond)]>;
+    def BCC : BForm<2, (outs), (ins jmptarget:$dst, cc:$cond),
+               "B$cond\t$dst", [(CPEN211brcc bb:$dst, imm:$cond)]>{
     }
 
     
 } // isBranch, isTerminator
 
-// FIXME: the cond is not correct, a jank hack as of current to speed development
+// FIXME: this is not correct as of current!
+// we can only encode i8imm
 let isCall = 1, cond = 0b110, Defs=[LR, R1, R2, R3], Uses=[SP] in {
-    def BL    : BForm<2, (outs), (ins i16imm:$imm),
-                        "BL\t$imm", []>;
+    def BL    : BForm<2, (outs), (ins i16imm:$dst),
+                        "BL\t$dst", []>;
 }
 
 def : Pat<(CPEN211call (i16 tglobaladdr:$dst)),

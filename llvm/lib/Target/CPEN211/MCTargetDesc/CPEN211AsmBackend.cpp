@@ -60,21 +60,14 @@ public:
   }
 
   const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override {
+    // llvm_unreachable("gg");
+    // assert(false);
     const static MCFixupKindInfo Infos[CPEN211::NumTargetFixupKinds] = {
-        // This table must be in the same order of enum in CPEN211FixupKinds.h.
-        //
+        // This table must be in the same order of enum in
         // name            offset bits flags
-        {"fixup_32", 0, 32, 0},
-        {"fixup_10_pcrel", 0, 10, MCFixupKindInfo::FKF_IsPCRel},
-        {"fixup_16", 0, 16, 0},
-        {"fixup_16_pcrel", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
-        {"fixup_16_byte", 0, 16, 0},
-        {"fixup_16_pcrel_byte", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
-        {"fixup_2x_pcrel", 0, 10, MCFixupKindInfo::FKF_IsPCRel},
-        {"fixup_rl_pcrel", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
-        {"fixup_8", 0, 8, 0},
-        {"fixup_sym_diff", 0, 32, 0},
+        {"relocation pc offset", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
     };
+
     static_assert((std::size(Infos)) == CPEN211::NumTargetFixupKinds,
                   "Not all fixup kinds added to Infos array");
 
@@ -93,27 +86,30 @@ uint64_t CPEN211AsmBackend::adjustFixupValue(const MCFixup &Fixup,
                                              MCContext &Ctx) const {
   unsigned Kind = Fixup.getKind();
   switch (Kind) {
-  case CPEN211::fixup_10_pcrel: {
-    if (Value & 0x1)
-      Ctx.reportError(Fixup.getLoc(), "fixup value must be 2-byte aligned");
+    //  case CPEN211::fixup_10_pcrel: {
+    //    if (Value & 0x1)
+    //      Ctx.reportError(Fixup.getLoc(), "fixup value must be 2-byte
+    // ligned");
 
-    // Offset is signed
-    int16_t Offset = Value;
-    // Jumps are in words
-    Offset >>= 1;
-    // PC points to the next instruction so decrement by one
-    --Offset;
+    //    // Offset is signed
+    //    int16_t Offset = Value;
+    //    // Jumps are in words
+    //    Offset >>= 1;
+    //    // PC points to the next instruction so decrement by one
+    //    --Offset;
 
-    if (Offset < -512 || Offset > 511)
-      Ctx.reportError(Fixup.getLoc(), "fixup value out of range");
+    //    if (Offset < -512 || Offset > 511)
+    //      Ctx.reportError(Fixup.getLoc(), "fixup value out of range");
 
-    // Mask 10 bits
-    Offset &= 0x3ff;
+    //    // Mask 10 bits
+    //    Offset &= 0x3ff;
 
-    return Offset;
-  }
+    //    return Offset;
+    //  }
+  // default:
+  //   return Value;
   default:
-    return Value;
+    llvm_unreachable("implement this for now");
   }
 }
 
@@ -122,6 +118,8 @@ void CPEN211AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
                                    MutableArrayRef<char> Data, uint64_t Value,
                                    bool IsResolved,
                                    const MCSubtargetInfo *STI) const {
+  return;
+  llvm_unreachable("game over");
   Value = adjustFixupValue(Fixup, Value, Asm.getContext());
   MCFixupKindInfo Info = getFixupKindInfo(Fixup.getKind());
   if (!Value)
@@ -144,13 +142,13 @@ void CPEN211AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
 
 bool CPEN211AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
                                      const MCSubtargetInfo *STI) const {
+  // llvm_unreachable("implement this");
   if ((Count % 2) != 0)
     return false;
 
-  // The canonical nop on CPEN211 is mov #0, r3
   uint64_t NopCount = Count / 2;
   while (NopCount--)
-    OS.write("\x03\x43", 2);
+    OS.write("\x0\x0", 2);
 
   return true;
 }

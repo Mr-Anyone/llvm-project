@@ -1680,6 +1680,8 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
     return BB;
   case CPEN211::LDRshri:
     // TODO: fixme!
+    MI.dump();
+    llvm_unreachable("gg");
     return BB;
   default:
     llvm_unreachable("You have used an operation that is unsupported!");

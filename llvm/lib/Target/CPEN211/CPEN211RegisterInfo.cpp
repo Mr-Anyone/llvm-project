@@ -96,22 +96,15 @@ bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     Offset += 2; // Skip the saved FP
 
   // Fold imm into offset
-  LLVM_DEBUG(dbgs() << "========");
-  LLVM_DEBUG(dbgs() << " offset: " << MI.getOperand(FIOperandNum + 1).getImm()
-      << "\n";
-);
-MI.dump();
-LLVM_DEBUG(dbgs() << "========");
-MBB.dump();
-Offset += MI.getOperand(FIOperandNum + 1).getImm();
-assert(Offset % 2 == 0 && "Offset mus be divisible by two!");
-// TODO (for Vincent): is this even correct?
-Offset =
-    Offset / 2; // this is because of the weirdness of the CPEN211 memory model
+  Offset += MI.getOperand(FIOperandNum + 1).getImm();
+  assert(Offset % 2 == 0 && "Offset mus be divisible by two!");
+  // TODO (for Vincent): is this even correct?
+  Offset = Offset /
+           2; // this is because of the weirdness of the CPEN211 memory model
 
-MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
-MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
-return false;
+  MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
+  MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
+  return false;
 }
 
 Register

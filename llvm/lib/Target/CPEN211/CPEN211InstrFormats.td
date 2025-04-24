@@ -10,24 +10,6 @@
 //  Describe CPEN211 instructions format here
 //
 
-// class SourceMode<bits<2> val> {
-//   bits<2> Value = val;
-// }
-
-// def SrcReg      : SourceMode<0>; // r
-// def SrcMem      : SourceMode<1>; // m
-// def SrcImm      : SourceMode<2>; // i
-// def SrcIndReg   : SourceMode<2>; // n
-// def SrcPostInc  : SourceMode<3>; // p
-
-// class DestMode<bit val> {
-//   bit Value = val;
-// }
-
-// def DstReg      : DestMode<0>;   // r
-// def DstMem      : DestMode<1>;   // m
-
-// Generic CPEN211 Format
 class CPEN211Inst<dag outs, dag ins, int size, string asmstr> : Instruction {
   field bits<16> Inst;
   field bits<64> SoftFail = 0;
@@ -72,14 +54,10 @@ class BForm<int size, dag outs,
   let Inst{15-13} = 0b001;
   let Inst{12-11} = 0b00;
 
-  // TODO (for Vincent): how are we going to encode target?
-  // Currently, there is a jank hack to make the tblgen compiler happy 
-  // in a sense that cond is unique but doesn't map to the ISA as given 
-  // in the image
   bits<3> cond;
+  bits<8> dst;
   let Inst{10-8}  = cond;
-  // bits<8> target;
-  // let Inst{7-0}   = target;
+  let Inst{7-0}   = dst;
 }
 
 // LDR and STR instructions
