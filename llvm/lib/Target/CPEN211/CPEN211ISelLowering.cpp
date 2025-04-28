@@ -1052,21 +1052,32 @@ static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
     LLVM_DEBUG(dbgs() << "The unknonw value is: " << CC);
     llvm_unreachable("cannot be lower such comparisons as of current!");
   case ISD::SETEQ:
+    // SETEQ,     //   1 X 0 0 1       True if equal
     TCC = CPEN211CC::COND_EQ; // aka COND_Z
     break;
   case ISD::SETLT:
+    // SETLT,     //   1 X 1 0 0       True if less than
     TCC = CPEN211CC::COND_LT;
     break;
   case ISD::SETLE:
+    // SETLE,     //   1 X 1 0 1       True if less than or equal
     TCC = CPEN211CC::COND_LE;
     break;
   case ISD::SETNE:
+    // SETNE,     //   1 X 1 1 0       True if not equal
     TCC = CPEN211CC::COND_NE;
     break;
 
   case ISD::SETGE:
     // FIXME: you might have to do something like CMPir
     TCC = CPEN211CC::COND_LE;
+    std::swap(LHS, RHS);
+    break;
+
+  case ISD::SETGT:
+    // a > b => b < a 
+    // SETGT,     //   1 X 0 1 0       True if greater than
+    TCC = CPEN211CC::COND_LT;
     std::swap(LHS, RHS);
     break;
 
