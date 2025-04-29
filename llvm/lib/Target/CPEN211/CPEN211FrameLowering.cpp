@@ -71,6 +71,10 @@ void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
   assert(StackSize % 2 == 0);
   uint64_t SubtractSize = StackSize / 2;
 
+  //  don't have to do anything if there is nothing so subtract from
+  if (SubtractSize == 0)
+    return;
+
   // SUB R1, R2, #10
   // converts into the following:
   // MOV R4, #-10
@@ -209,11 +213,15 @@ void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
 
   // Get the number of bytes to allocate from the FrameInfo
   uint64_t StackSize = MFI.getStackSize();
+  //  don't have to do anything if there is nothing so subtract from
+  if (StackSize == 0)
+    return;
+
   unsigned CSSize = CPEN211FI->getCalleeSavedFrameSize();
   uint64_t NumBytes = 0;
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::MOV16ri), CPEN211::R4)
-      .addImm(StackSize/2);
+      .addImm(StackSize / 2);
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::ADD16rr), CPEN211::SP)
       .addReg(CPEN211::SP)

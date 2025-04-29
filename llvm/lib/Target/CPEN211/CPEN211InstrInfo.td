@@ -117,11 +117,16 @@ let isCommutable = true in {
     def AND16rr : IForm<0b101, 0b10, 2, (outs GR16:$Rd)
                         , (ins GR16:$Rm, GR16:$Rn), "AND\t{$Rd , $Rn, $Rm}", [(set GR16:$Rd, (and GR16:$Rn, GR16:$Rm))]>;
 
-    // TODO (for Vincent): how do you translate this instruction in llvm?
-    // def MVN16rr: IForm<0b101, 0b11, 2, (outs GR16:$Rd)
-    //                     , (ins GR16:$Rm), "MVN\t{$Rd,$Rm}", []>;
+}
+def MVN16rr: IForm<0b101, 0b11, 2, (outs GR16:$Rd)
+                    , (ins GR16:$Rm), "MVN\t{$Rd, $Rm}", []>{
+    let Rn = 0b000;
 }
 
+// A || B  => !A && !B
+def : Pat<(or GR16:$Rn, GR16:$Rm), 
+            (AND16rr (MVN16rr GR16:$Rn), (MVN16rr GR16:$Rm))>;
+        
 // CMP16rr is a native instructoin 
 // is the size 2?
 // FIXME: make a new instruction format?
@@ -209,9 +214,12 @@ let isCodeGenOnly = 1, usesCustomInserter = 1 in {
                           // true, false, cond_code
                           (CPEN211selectcc GR16:$src, GR16:$src2, imm:$cc))]>;
     def SUB16ri    : Pseudo<(outs GR16:$dst), (ins GR16:$rn, i16imm:$im), 
-                            "# SUB PSEUDO", 
+                            "# SUB IMM PSEUDO", 
                             [(set GR16:$dst, (add GR16:$rn, imm:$im))]>;
 
+    def SUB16rr    : Pseudo<(outs GR16:$dst), (ins GR16:$rn, GR16:$rm), 
+                            "# SUB RR PSEUDO", 
+                            [(set GR16:$dst, (sub GR16:$rn, GR16:$rm))]>;
     // t6: i16,ch = load<(dereferenceable load (s16) from %ir.i)> t0, FrameIndex:i16<1>, undef:i16
     //     t18: i16 = CPEN211ISD::SHL t6, Constant:i16<1>
     //   t10: i16 = add FrameIndex:i16<3>, t18

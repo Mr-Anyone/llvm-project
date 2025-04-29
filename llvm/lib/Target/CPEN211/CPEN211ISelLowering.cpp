@@ -1075,7 +1075,7 @@ static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
     break;
 
   case ISD::SETGT:
-    // a > b => b < a 
+    // a > b => b < a
     // SETGT,     //   1 X 0 1 0       True if greater than
     TCC = CPEN211CC::COND_LT;
     std::swap(LHS, RHS);
@@ -1166,7 +1166,6 @@ SDValue CPEN211TargetLowering::LowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 }
 
 SDValue CPEN211TargetLowering::LowerSETCC(SDValue Op, SelectionDAG &DAG) const {
-  LLVM_DEBUG(dbgs() << "I have been called?");
   SDValue LHS = Op.getOperand(0);
   SDValue RHS = Op.getOperand(1);
   SDLoc dl(Op);
@@ -1689,6 +1688,33 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
 
     MI.eraseFromParent();
     return BB;
+  case CPEN211::SUB16rr: {
+    // SUB R1, R2, R1
+
+    // turn into thi
+    // MVN R3, R3
+    // MOV R4, #1
+    // ADD R3, R3, R4
+    // ADD R1, R2, R3
+    // negate a number
+    MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
+    Register NegateReg = RegInfo.createVirtualRegister(&CPEN211::GR16RegClass);
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::MVN16rr), NegateReg)
+        .addReg(MI.getOperand(2).getReg());
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::MOV16ri), CPEN211::R4).addImm(1);
+    Register NegativeReg =
+        RegInfo.createVirtualRegister(&CPEN211::GR16RegClass);
+    RegInfo.createVirtualRegister(&CPEN211::GR16RegClass);
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::ADD16rr), NegativeReg)
+        .addReg(NegateReg)
+        .addReg(CPEN211::R4);
+    BuildMI(*BB, MI, dl, TII.get(CPEN211::ADD16rr), MI.getOperand(0).getReg())
+        .addReg(MI.getOperand(1).getReg())
+        .addReg(NegativeReg);
+    MI.eraseFromParent();
+    return BB;
+  }
+
   case CPEN211::LDRshri:
     // TODO: fixme!
     MI.dump();
