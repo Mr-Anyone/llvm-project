@@ -127,6 +127,10 @@ def MVN16rr: IForm<0b101, 0b11, 2, (outs GR16:$Rd)
 def : Pat<(or GR16:$Rn, GR16:$Rm), 
             (AND16rr (MVN16rr GR16:$Rn), (MVN16rr GR16:$Rm))>;
         
+// ~A is A^-1
+def : Pat<(xor GR16:$Rn, (i16 -1)), 
+            (MVN16rr GR16:$Rn)>;
+
 // CMP16rr is a native instructoin 
 // is the size 2?
 // FIXME: make a new instruction format?
