@@ -465,12 +465,6 @@ static void ParseFunctionArgs(const SmallVectorImpl<ArgT> &Args,
   }
 }
 
-void printVec(SmallVector<unsigned, 4> ArgPargs) {
-  for (int i = 0; i < ArgPargs.size(); ++i) {
-    std::cout << ArgPargs[i] << std::endl;
-  }
-}
-
 static inline void SingleSizeCheck(SmallVector<unsigned, 4> ArgsParts) {
   for (int i = 0; i < ArgsParts.size(); ++i) {
     assert(ArgsParts[i] == 1 &&
@@ -493,7 +487,8 @@ static void AnalyzeArguments(CCState &State,
   SmallVector<unsigned, 4> ArgsParts;
   ParseFunctionArgs(Args, ArgsParts);
   SingleSizeCheck(ArgsParts); // making sure that all of the arguments are one
-                              // size! (i.e. 8 bit or 16 most likely)
+                              // size! (i.e. 8 bit or 16 most likely), Also not
+                              // by Value as well. This is really important
 
   unsigned RegsLeft = NbRegs;
   unsigned ValNo = 0;
@@ -510,6 +505,8 @@ static void AnalyzeArguments(CCState &State,
     unsigned Parts = ArgsParts[i];
 
     if (Parts <= RegsLeft) {
+      assert(Parts == 1 &&
+             "don't know how to allocate type that need more that i16!");
       for (unsigned j = 0; j < Parts; j++) {
         MCRegister Reg = State.AllocateReg(RegList);
         assert(Reg != 0 && "did not succesfully allocate a register");
@@ -532,9 +529,9 @@ static void AnalyzeArguments(CCState &State,
       }
 
       // using the stack if we run out of regs
-      // for (unsigned j = 0; j < Parts; j++)
-      //   CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
-      //   State);
+      assert(!ArgFlags.isByVal());
+      // CC_CPEN211_AssignStack(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags,
+      // State);
     }
   }
 }
@@ -829,6 +826,7 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
       if (!StackPtr.getNode())
         StackPtr = DAG.getCopyFromReg(Chain, dl, CPEN211::SP, PtrVT);
 
+      // get the adjusted offset?
       SDValue PtrOff =
           DAG.getNode(ISD::ADD, dl, PtrVT, StackPtr,
                       DAG.getIntPtrConstant(VA.getLocMemOffset(), dl));
@@ -837,6 +835,7 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
       ISD::ArgFlagsTy Flags = Outs[i].Flags;
 
       if (Flags.isByVal()) {
+        assert(0 && "don't know how to hanlde by val yet");
         SDValue SizeNode = DAG.getConstant(Flags.getByValSize(), dl, MVT::i16);
         MemOp = DAG.getMemcpy(Chain, dl, PtrOff, Arg, SizeNode,
                               Flags.getNonZeroByValAlign(),
@@ -845,9 +844,9 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
                               /*CI=*/nullptr, std::nullopt,
                               MachinePointerInfo(), MachinePointerInfo());
       } else {
+        // storing arg into stack
         MemOp = DAG.getStore(Chain, dl, Arg, PtrOff, MachinePointerInfo());
       }
-
       MemOpChains.push_back(MemOp);
     }
   }

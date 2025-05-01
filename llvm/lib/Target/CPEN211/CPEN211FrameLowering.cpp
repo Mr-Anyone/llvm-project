@@ -19,6 +19,7 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Target/TargetOptions.h"
 
 using namespace llvm;
@@ -346,7 +347,6 @@ bool CPEN211FrameLowering::spillCalleeSavedRegisters(
   MFI->setCalleeSavedFrameSize(CSI.size() * 2);
 
   for (const CalleeSavedInfo &I : llvm::reverse(CSI)) {
-    LLVM_DEBUG(dbgs() << "I have been called?. One Time?");
     const int FrameIdx = I.getFrameIdx();
     const MachineFrameInfo &MFI = MF.getFrameInfo();
     MachineMemOperand *MMO = MF.getMachineMemOperand(
@@ -402,45 +402,59 @@ bool CPEN211FrameLowering::restoreCalleeSavedRegisters(
 MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
     MachineFunction &MF, MachineBasicBlock &MBB,
     MachineBasicBlock::iterator I) const {
+  MachineInstr &Old = *I;
+  // because of CPEN211 weird memory layout
+  uint64_t Amount = TII.getFrameSize(Old) / 2;
+
+  // Trivial cases
+  if (Amount == 0) {
+    return MBB.erase(I);
+  }
+
   // If the stack pointer can be changed after prologue, turn the
   // adjcallstackup instruction into a 'sub SP, <amt>' and the
   // adjcallstackdown instruction into 'add SP, <amt>'
-  MachineInstr &Old = *I;
-  uint64_t Amount = TII.getFrameSize(Old) / 2;
-  if (Amount != 0) {
-    // We need to keep the stack aligned properly.  To do this, we round the
-    // amount of space needed for the outgoing arguments up to the next
-    // alignment boundary.
-    assert(getStackAlign() == 2);
-    Amount = alignTo(Amount, getStackAlign());
+  // We need to keep the stack aligned properly.  To do this, we round the
+  // amount of space needed for the outgoing arguments up to the next
+  // alignment boundary.
+  assert(getStackAlign() == 2);
+  Amount = alignTo(Amount, getStackAlign());
 
-    MachineInstr *New = nullptr;
-    if (Old.getOpcode() == TII.getCallFrameSetupOpcode()) {
-      New =
-          BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::SUB16ri), CPEN211::SP)
-              .addReg(CPEN211::SP)
-              .addImm(Amount);
-    } else {
-      assert(Old.getOpcode() == TII.getCallFrameDestroyOpcode());
-      // factor out the amount the callee already popped.
-      Amount -= TII.getFramePoppedByCallee(Old);
-      if (Amount)
-        New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::ADD16rr),
-                      CPEN211::SP)
-                  .addReg(CPEN211::SP)
-                  .addImm(Amount);
-    }
+  MachineInstr *New = nullptr;
+  if (Old.getOpcode() == TII.getCallFrameSetupOpcode()) {
+    LLVM_DEBUG(dbgs() << "CallFrame Setup has been called!\n");
 
-    if (New) {
-      // The SRW implicit def is dead.
-      New->getOperand(3).setIsDead();
+    assert(Amount <= 128 &&
+           "MOV16ri only support intermediate value of less than 128");
+    New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::MOV16ri), CPEN211::R4)
+              .addImm(-Amount);
 
-      // Replace the pseudo instruction with a new instruction...
-      MBB.insert(I, New);
-    }
+    MBB.insert(I, New);
+    New =
+        BuildMI(MF, New->getDebugLoc(), TII.get(CPEN211::ADD16rr), CPEN211::SP)
+            .addReg(CPEN211::R4)
+            .addReg(CPEN211::SP);
+    MBB.insert(std::next(I), New);
+    MBB.erase(std::prev(std::prev(I)));
+    return MBB.erase(I);
+  } else {
+    LLVM_DEBUG(dbgs() << "Call Frame Destroy has been called!\n");
+    assert(Old.getOpcode() == TII.getCallFrameDestroyOpcode());
+    assert(TII.getFramePoppedByCallee(Old) == 0 &&
+           "callee doesn't pop things off");
+    assert(Amount % 2 == 0 &&
+           "amount have to be aligned on two bytes boundary");
+
+    New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::ADD16rr), CPEN211::SP)
+              .addImm(Amount)
+              .addReg(CPEN211::SP);
+
+    MBB.insert(I, New);
+    return MBB.erase(I);
   }
 
-  return MBB.erase(I);
+  // Replace the pseudo instruction with a new instruction...
+  // return MBB.erase(I);
 }
 
 // do we even need this function call?

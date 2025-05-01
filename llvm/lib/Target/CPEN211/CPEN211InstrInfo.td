@@ -62,7 +62,6 @@ def jmptarget : Operand<OtherVT> {
     let EncoderMethod = "getPCRelImmOpValue";
 }
 
-// TODO (for Vincent): I am not quite sure if this is right or not! is this i16 or i8? we might have to do something about this?
 def cc : Operand<i16>{
     let PrintMethod = "printCCOperand";
     let EncoderMethod = "getCCOpValue";
@@ -170,6 +169,9 @@ let isCall = 1, cond = 0b110, Defs=[LR, R1, R2, R3], Uses=[SP] in {
 def : Pat<(CPEN211call (i16 tglobaladdr:$dst)),
           (BL tglobaladdr:$dst)>;
 
+def : Pat<(CPEN211call (i16 texternalsym:$dst)),
+          (BL texternalsym:$dst)>;
+
 // complex pattern to select address or not? 
 // arguments:
 // ValueType, numops, string fn, roots, props
@@ -179,10 +181,10 @@ def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;
 // Memory Type Instructions
 // TODO: check the dag selection pattern matching! This might have to be a 
 // complex pattern instead of just GR16, because we can also left shift as well!
-def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins memsrc:$Rn)
-                    , "LDR\t{$Rd, [$Rn]}", [(set GR16:$Rd, (load addr:$Rn))]>;
-def STR16mr: MForm<0b100, 2, (outs), (ins memsrc:$Rd, GR16:$Rn)
-                    , "STR\t{$Rn, [$Rd]}", [(store GR16:$Rn, addr:$Rd)]>;
+def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins memsrc:$RnAndImm)
+                    , "LDR\t{$Rd, [$RnAndImm]}", [(set GR16:$Rd, (load addr:$RnAndImm))]>;
+def STR16mr: MForm<0b100, 2, (outs), (ins memsrc:$RnAndImm, GR16:$Rd)
+                    , "STR\t{$Rd, [$RnAndImm]}", [(store GR16:$Rd, addr:$RnAndImm)]>;
 
 // TOOD (for Vincent): create a register alias both the stack pointer and the link register  
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?

@@ -68,16 +68,16 @@ class MForm<bits<3> opcode, int size, dag outs,
     : CPEN211Inst<outs, ins, size, asmstr> {
   let Pattern = pattern;
 
-  bits<3> Rn;
+  // the low 3 bits will be register number
+  // , the high 5 bits will be intermediate
+  bits<8> RnAndImm;
   bits<3> Rd;
 
   let Inst{15-13} = opcode;
   let Inst{12-11} = 0b00;
-  let Inst{10-8}  = Rn;
+  let Inst{10-8}  = RnAndImm{2...0};
   let Inst{7-5}   = Rd;
-  // TODO (for Vincent): how are we going to fix imm?
-  // let Inst{4-3}   = 0b00; // TODO (for Vincent): shift is not necessary 0
-  // let Inst{2-0}   = Rm; 
+  let Inst{4-0}   = RnAndImm{7...3};
 }
 
 // Pseudo instructions 

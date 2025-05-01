@@ -115,10 +115,16 @@ unsigned CPEN211MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
 
   // assert(false && "think more about this later");
   const MCOperand &MO1 = MI.getOperand(Op);
+  const MCOperand &MO2 = MI.getOperand(Op + 1);
   assert(MO1.isReg() && "Register operand expected");
+  assert(MO2.isImm() && "Intermediate is expected");
+  assert(MO2.getImm() <= 15 && MO2.getImm() >= -16); 
+
+  // the low 3 bits
   unsigned Reg = Ctx.getRegisterInfo()->getEncodingValue(MO1.getReg());
 
-  return Reg;
+  // the low bit is the register number, and the high bit is the intermediate
+  return Reg | (MO2.getImm() << 3);
   // const MCOperand &MO2 = MI.getOperand(Op + 1);
   // if (MO2.isImm()) {
   //   Offset += 2;
