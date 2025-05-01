@@ -85,19 +85,14 @@ void CPEN211MCCodeEmitter::encodeInstruction(const MCInst &MI,
   // Initialize fixup offset
   assert(Size = 2);
   uint64_t BinaryOpCode = getBinaryCodeForInstr(MI, Fixups, STI);
-  size_t WordCount = Size / 2;
-
-  while (WordCount--) {
-    support::endian::write(CB, (uint16_t)BinaryOpCode,
-                           llvm::endianness::little);
-    BinaryOpCode >>= 16;
-  }
+  support::endian::write(CB, (uint16_t)BinaryOpCode, llvm::endianness::little);
 }
 
 unsigned
 CPEN211MCCodeEmitter::getMachineOpValue(const MCInst &MI, const MCOperand &MO,
                                         SmallVectorImpl<MCFixup> &Fixups,
                                         const MCSubtargetInfo &STI) const {
+  // assert(false && "not sure what this is?");
   if (MO.isReg())
     return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
 
@@ -118,37 +113,13 @@ unsigned CPEN211MCCodeEmitter::getMemOpValue(const MCInst &MI, unsigned Op,
   const MCOperand &MO2 = MI.getOperand(Op + 1);
   assert(MO1.isReg() && "Register operand expected");
   assert(MO2.isImm() && "Intermediate is expected");
-  assert(MO2.getImm() <= 15 && MO2.getImm() >= -16); 
+  assert(MO2.getImm() <= 15 && MO2.getImm() >= -16);
 
   // the low 3 bits
   unsigned Reg = Ctx.getRegisterInfo()->getEncodingValue(MO1.getReg());
 
   // the low bit is the register number, and the high bit is the intermediate
   return Reg | (MO2.getImm() << 3);
-  // const MCOperand &MO2 = MI.getOperand(Op + 1);
-  // if (MO2.isImm()) {
-  //   Offset += 2;
-  //   return ((unsigned)MO2.getImm() << 4) | Reg;
-  // }
-
-  // assert(MO2.isExpr() && "Expr operand expected");
-  // CPEN211::Fixups FixupKind;
-  // switch (Reg) {
-  // case 0:
-  //   FixupKind = CPEN211::fixup_16_pcrel_byte;
-  //   break;
-  // case 2:
-  //   FixupKind = CPEN211::fixup_16_byte;
-  //   break;
-  // default:
-  //   FixupKind = CPEN211::fixup_16_byte;
-  //   break;
-  // }
-  //// Fixups.push_back(MCFixup::create(
-  ////     Offset, MO2.getExpr(), static_cast<MCFixupKind>(FixupKind),
-  ////     MI.getLoc()));
-  // Offset += 2;
-  // return Reg;
 }
 
 unsigned
@@ -156,13 +127,10 @@ CPEN211MCCodeEmitter::getPCRelImmOpValue(const MCInst &MI, unsigned Op,
                                          SmallVectorImpl<MCFixup> &Fixups,
                                          const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(Op);
-  // MI.dump();
-  MO.getExpr()->dump();
   assert(MO.isExpr() && "Expr operand expected");
-  // if (MO.isImm())
-  //   return MO.getImm();
-
-  Fixups.push_back(MCFixup::create(0, MO.getExpr(), FK_PCRel_1, MI.getLoc()));
+  Fixups.push_back(MCFixup::create(0, MO.getExpr(),
+                                   static_cast<MCFixupKind>(CPEN211::fixup_8),
+                                   MI.getLoc()));
   return 0;
 }
 

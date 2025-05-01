@@ -8,16 +8,7 @@ The entire instruction set is basically self explanatory.
 
 # TODO 
 
-- Add a frame pointer support (**R5**), which is probably required by some calling conventions.
-- Define a structure calling conventions.
-- Lowering Shift 
-- Lower not in Selection DAG
-
-## Technical Challenges
-
-- Subtract requires a libcall which makes a lot of basic instruction hard to lower 
-- The CPEN211 memory model is an unconventional one, where one byte is 16 bit. 
-- Because one byte is 16 bit, it is hard to lower strings effectively. As of current, half of the memory space would not be used as a result!
+- [ ] Implement PC Relative 16 Jump as PSEUDO Instruction. The only way to do this as of current is for the linker to encode the absolute address!
 
 ## Calling Conventions Custom (C ABI)
 
@@ -45,9 +36,9 @@ At the beginning of the add, it is the caller's responsibility to lower the stac
 ```
 R0  :       int a
 R1  :       int b
-SP-2:       R7 // Link Register
-SP-1:       int c
-SP  :       int d
+FP-2:       int d
+FP-1:       int c
+FP  :       R7 (Link Register)
 ```
 ## Example code/Example Output
 

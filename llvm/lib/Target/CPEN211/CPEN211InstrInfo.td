@@ -92,17 +92,14 @@ def memsrc : Operand<i16> {
 let Rn = 0b000 in {
     def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm)
                 , "MOV\t{$Rd, $Rm}", []>;
-
-    // TODO (for Vincent): not all imm are valid? What should you do when imm is greater than 
-    // signed extended 8 bit
-    // TOOD (for Vincent): for greater than 8 bit, we must store this in the stack and 
-    // do a Pseudo instruction instead
-    // TOOD (for Vincent): find out why doesn't i8imm doesn't work?
-    let Rm=0b000 in {
-        def MOV16ri : IForm<0b110, 0b10, 2, (outs GR16:$Rd), (ins i16imm:$value)
-                , "MOV\t{$Rd, $value}", [(set GR16:$Rd, imm:$value)]>;
-    }
 } // Rn
+
+// TODO (for Vincent): not all imm are valid? What should you do when imm is greater than 
+// signed extended 8 bit
+// TOOD (for Vincent): for greater than 8 bit, we must store this in the stack and 
+// do a Pseudo instruction instead
+def MOV16ri : IFormImm<2, (outs GR16:$Rn), (ins i16imm:$value)
+                        , "MOV\t{$Rn, $value}", [(set GR16:$Rn, imm:$value)]>;
 
 // Global Address,
 def : Pat<(i16 (CPEN211Wrapper tglobaladdr:$dst)), (MOV16ri tglobaladdr:$dst)>;
@@ -161,7 +158,7 @@ let isBranch = 1, isTerminator=1 in {
 
 // FIXME: this is not correct as of current!
 // we can only encode i8imm
-let isCall = 1, cond = 0b110, Defs=[LR, R1, R2, R3], Uses=[SP] in {
+let isCall = 1, cond = 0b111, Defs=[LR, R1, R2, R3], Uses=[SP] in {
     def BL    : BForm<2, (outs), (ins i16imm:$dst),
                         "BL\t$dst", []>;
 }

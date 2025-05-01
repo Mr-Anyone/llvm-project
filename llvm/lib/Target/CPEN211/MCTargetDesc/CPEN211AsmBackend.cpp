@@ -22,8 +22,12 @@
 #include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include <bitset>
+#include <iostream>
 
 using namespace llvm;
+
+#define DEBUG_TYPE "cpen211-asmbackend"
 
 namespace {
 class CPEN211AsmBackend : public MCAsmBackend {
@@ -65,7 +69,7 @@ public:
     const static MCFixupKindInfo Infos[CPEN211::NumTargetFixupKinds] = {
         // This table must be in the same order of enum in
         // name            offset bits flags
-        {"relocation pc offset", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
+        {"fixup_8", 0, 8, MCFixupKindInfo::FKF_IsPCRel}, // fixup_8
     };
 
     static_assert((std::size(Infos)) == CPEN211::NumTargetFixupKinds,
@@ -86,30 +90,16 @@ uint64_t CPEN211AsmBackend::adjustFixupValue(const MCFixup &Fixup,
                                              MCContext &Ctx) const {
   unsigned Kind = Fixup.getKind();
   switch (Kind) {
-    //  case CPEN211::fixup_10_pcrel: {
-    //    if (Value & 0x1)
-    //      Ctx.reportError(Fixup.getLoc(), "fixup value must be 2-byte
-    // ligned");
-
-    //    // Offset is signed
-    //    int16_t Offset = Value;
-    //    // Jumps are in words
-    //    Offset >>= 1;
-    //    // PC points to the next instruction so decrement by one
-    //    --Offset;
-
-    //    if (Offset < -512 || Offset > 511)
-    //      Ctx.reportError(Fixup.getLoc(), "fixup value out of range");
-
-    //    // Mask 10 bits
-    //    Offset &= 0x3ff;
-
-    //    return Offset;
-    //  }
-  // default:
-  //   return Value;
+  case CPEN211::fixup_8: {
+    assert(Value % 2 == 0 && "Cannot have bl intermediate being at odd offset");
+    int32_t NewValue = (static_cast<int32_t>(Value) - 2) / 2;
+    assert(NewValue >= -128 && NewValue <= 127 &&
+           "imm8 must be in between -128 and 127");
+    return NewValue;
+  }
   default:
-    llvm_unreachable("implement this for now");
+    llvm_unreachable("not sure what this is?");
+    return Value;
   }
 }
 
@@ -118,26 +108,22 @@ void CPEN211AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
                                    MutableArrayRef<char> Data, uint64_t Value,
                                    bool IsResolved,
                                    const MCSubtargetInfo *STI) const {
-  return;
-  llvm_unreachable("game over");
+  assert(IsResolved && "Fixup must be resolved as of current! We don't support "
+                       "external symbols");
   Value = adjustFixupValue(Fixup, Value, Asm.getContext());
   MCFixupKindInfo Info = getFixupKindInfo(Fixup.getKind());
-  if (!Value)
-    return; // Doesn't change encoding.
+  LLVM_DEBUG(dbgs() << "Applying Fixup! Value: "
+                    << static_cast<signed int>(Value)
+                    << "\tData Size: " << Data.size()
+                    << "\tOffset is: " << Fixup.getOffset() << "\n");
 
   // Shift the value into position.
-  Value <<= Info.TargetOffset;
-
-  unsigned Offset = Fixup.getOffset();
+  // FIXME: this is not correct for some other allocation record
   unsigned NumBytes = alignTo(Info.TargetSize + Info.TargetOffset, 8) / 8;
+  assert(Info.TargetOffset == 0);
+  assert(NumBytes == 1 && "Offset must be one byte at most!");
 
-  assert(Offset + NumBytes <= Data.size() && "Invalid fixup offset!");
-
-  // For each byte of the fragment that the fixup touches, mask in the
-  // bits from the fixup value.
-  for (unsigned i = 0; i != NumBytes; ++i) {
-    Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
-  }
+  Data[Fixup.getOffset()] |= Value;
 }
 
 bool CPEN211AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
@@ -161,3 +147,5 @@ MCAsmBackend *llvm::createCPEN211MCAsmBackend(const Target &T,
                                               const MCTargetOptions &Options) {
   return new CPEN211AsmBackend(STI, ELF::ELFOSABI_STANDALONE);
 }
+
+#undef DEBUG_TYPE

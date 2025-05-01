@@ -70,10 +70,9 @@ MCELFStreamer &CPEN211TargetELFStreamer::getStreamer() {
 
 MCTargetStreamer *
 createCPEN211ObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
-  // const Triple &TT = STI.getTargetTriple();
-  // if (TT.isOSBinFormatELF())
-  //   return new CPEN211TargetELFStreamer(S, STI);
-  return nullptr;
+  const Triple &TT = STI.getTargetTriple();
+  if (TT.isOSBinFormatELF())
+    return new CPEN211TargetELFStreamer(S, STI);
 }
 
 } // namespace llvm

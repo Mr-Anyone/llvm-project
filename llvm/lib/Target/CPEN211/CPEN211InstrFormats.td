@@ -43,6 +43,22 @@ class IForm<bits<3> opcode, bits<2> op, int size, dag outs,
   let Inst{2-0}   = Rm; 
 }
 
+// IFormImm 
+// only for MOV16ri
+class IFormImm<int size, dag outs, 
+            dag ins, string asmstr, list<dag> pattern>
+    : CPEN211Inst<outs, ins, size, asmstr> {
+  let Pattern = pattern; 
+
+  bits<3> Rn;
+  bits<8> value;
+
+  let Inst{15-13} = 0b110;
+  let Inst{12-11} = 0b10;
+  let Inst{10-8}  = Rn;
+  let Inst{7-0}   = value;
+}
+
 // B Form instruction
 // See Table for cond, like BEQ, BNE, BLT, BLE, and B
 class BForm<int size, dag outs, 
