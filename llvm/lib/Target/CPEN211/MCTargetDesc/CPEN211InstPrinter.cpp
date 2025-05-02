@@ -40,7 +40,8 @@ void CPEN211InstPrinter::printInst(const MCInst *MI, uint64_t Address,
 
 void CPEN211InstPrinter::printBLTargetOpValue(const MCInst *MI, unsigned OpNo,
                                               raw_ostream &O) {
-    llvm_unreachable("unimplemented");
+  assert(MI->getOperand(0).isImm());
+  O << "#" << MI->getOperand(0).getImm();
 }
 
 void CPEN211InstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,
@@ -48,7 +49,7 @@ void CPEN211InstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isImm()) {
     int64_t Imm = Op.getImm() * 2 + 2;
-    O << "$";
+    O << "#PC";
     if (Imm >= 0)
       O << '+';
     O << Imm;
