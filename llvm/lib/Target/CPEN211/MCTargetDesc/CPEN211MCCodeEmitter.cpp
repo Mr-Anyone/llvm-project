@@ -65,6 +65,10 @@ class CPEN211MCCodeEmitter : public MCCodeEmitter {
                         SmallVectorImpl<MCFixup> &Fixups,
                         const MCSubtargetInfo &STI) const;
 
+  unsigned getBLTargetOpValue(const MCInst &MI, unsigned Op,
+                              SmallVectorImpl<MCFixup> &Fixups,
+                              const MCSubtargetInfo &STI) const;
+
 public:
   CPEN211MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
       : Ctx(ctx), MCII(MCII) {}
@@ -128,6 +132,17 @@ CPEN211MCCodeEmitter::getPCRelImmOpValue(const MCInst &MI, unsigned Op,
                                          const MCSubtargetInfo &STI) const {
   const MCOperand &MO = MI.getOperand(Op);
   assert(MO.isExpr() && "Expr operand expected");
+  Fixups.push_back(MCFixup::create(0, MO.getExpr(),
+                                   static_cast<MCFixupKind>(CPEN211::fixup_8),
+                                   MI.getLoc()));
+  return 0;
+}
+
+unsigned
+CPEN211MCCodeEmitter::getBLTargetOpValue(const MCInst &MI, unsigned Op,
+                                         SmallVectorImpl<MCFixup> &Fixups,
+                                         const MCSubtargetInfo &STI) const {
+  const MCOperand &MO = MI.getOperand(0);
   Fixups.push_back(MCFixup::create(0, MO.getExpr(),
                                    static_cast<MCFixupKind>(CPEN211::fixup_8),
                                    MI.getLoc()));

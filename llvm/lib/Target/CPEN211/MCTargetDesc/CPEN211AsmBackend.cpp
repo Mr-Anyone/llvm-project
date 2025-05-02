@@ -91,7 +91,6 @@ uint64_t CPEN211AsmBackend::adjustFixupValue(const MCFixup &Fixup,
   unsigned Kind = Fixup.getKind();
   switch (Kind) {
   case CPEN211::fixup_8: {
-    assert(Value % 2 == 0 && "Cannot have bl intermediate being at odd offset");
     int32_t NewValue = (static_cast<int32_t>(Value) - 2) / 2;
     assert(NewValue >= -128 && NewValue <= 127 &&
            "imm8 must be in between -128 and 127");
@@ -99,7 +98,6 @@ uint64_t CPEN211AsmBackend::adjustFixupValue(const MCFixup &Fixup,
   }
   default:
     llvm_unreachable("not sure what this is?");
-    return Value;
   }
 }
 
@@ -108,8 +106,6 @@ void CPEN211AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
                                    MutableArrayRef<char> Data, uint64_t Value,
                                    bool IsResolved,
                                    const MCSubtargetInfo *STI) const {
-  assert(IsResolved && "Fixup must be resolved as of current! We don't support "
-                       "external symbols");
   Value = adjustFixupValue(Fixup, Value, Asm.getContext());
   MCFixupKindInfo Info = getFixupKindInfo(Fixup.getKind());
   LLVM_DEBUG(dbgs() << "Applying Fixup! Value: "

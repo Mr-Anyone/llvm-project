@@ -22,7 +22,7 @@ namespace CPEN211 {
 // in CPEN211AsmBackend.cpp.
 //
 enum Fixups {
-  // 8 bit pc_relative fixup
+  // 8 bit pc_relative fixup, usually a target address
   fixup_8 = FirstTargetFixupKind,
 
   //// A 32 bit absolute fixup.

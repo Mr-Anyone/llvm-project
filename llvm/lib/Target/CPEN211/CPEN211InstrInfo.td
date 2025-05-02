@@ -57,6 +57,11 @@ def CPEN211shl     : SDNode<"CPEN211ISD::SHL", SDT_CPEN211shl, []>;
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
 
+def bl_target : Operand<i16> {
+    let PrintMethod = "printBLTargetOpValue";
+    let EncoderMethod = "getBLTargetOpValue";
+}
+
 def jmptarget : Operand<OtherVT> {
     let PrintMethod = "printPCRelImmOperand";
     let EncoderMethod = "getPCRelImmOpValue";
@@ -159,7 +164,7 @@ let isBranch = 1, isTerminator=1 in {
 // FIXME: this is not correct as of current!
 // we can only encode i8imm
 let isCall = 1, cond = 0b111, Defs=[LR, R1, R2, R3], Uses=[SP] in {
-    def BL    : BForm<2, (outs), (ins i16imm:$dst),
+    def BL    : BForm<2, (outs), (ins bl_target:$dst),
                         "BL\t$dst", []>;
 }
 

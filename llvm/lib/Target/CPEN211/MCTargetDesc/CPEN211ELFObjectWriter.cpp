@@ -14,8 +14,10 @@
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCValue.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 
+#define DEBUG_TYPE "cpen211-elfobjectwriter"
 using namespace llvm;
 
 namespace {
@@ -36,7 +38,15 @@ protected:
     // Translate fixup kind to ELF relocation type.
     switch (Fixup.getTargetKind()) {
     default:
+      LLVM_DEBUG(dbgs() << "The target kind is: " << Fixup.getTargetKind()
+                        << "\n");
+      LLVM_DEBUG(dbgs() << "is first target kind: "
+                        << (Fixup.getTargetKind() == FirstTargetFixupKind)
+                        << "\n");
       llvm_unreachable("this is not yet implemented!");
+    case CPEN211::fixup_8:
+      return ELF::R_ARM_PC24;
+
       // case FK_Data_1:
       //   return ELF::R_CPEN211_8;
       // case FK_Data_2:

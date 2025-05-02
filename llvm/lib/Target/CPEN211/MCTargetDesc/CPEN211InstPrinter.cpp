@@ -38,6 +38,11 @@ void CPEN211InstPrinter::printInst(const MCInst *MI, uint64_t Address,
   printAnnotation(O, Annot);
 }
 
+void CPEN211InstPrinter::printBLTargetOpValue(const MCInst *MI, unsigned OpNo,
+                                              raw_ostream &O) {
+    llvm_unreachable("unimplemented");
+}
+
 void CPEN211InstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,
                                               raw_ostream &O) {
   const MCOperand &Op = MI->getOperand(OpNo);
