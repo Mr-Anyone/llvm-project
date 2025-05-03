@@ -323,6 +323,7 @@ enum {
   EM_VE = 251,            // NEC SX-Aurora VE
   EM_CSKY = 252,          // C-SKY 32-bit processor
   EM_LOONGARCH = 258,     // LoongArch
+  EM_CPEN211 = 259        // CPEN211
 };
 
 // Object file classes.
@@ -1017,14 +1018,14 @@ enum : unsigned {
   // (commit hash 296de4def055c871809068e0816325a4ac04eb12)
 
   // Base ABI Modifiers
-  EF_LOONGARCH_ABI_SOFT_FLOAT    = 0x1,
-  EF_LOONGARCH_ABI_SINGLE_FLOAT  = 0x2,
-  EF_LOONGARCH_ABI_DOUBLE_FLOAT  = 0x3,
+  EF_LOONGARCH_ABI_SOFT_FLOAT = 0x1,
+  EF_LOONGARCH_ABI_SINGLE_FLOAT = 0x2,
+  EF_LOONGARCH_ABI_DOUBLE_FLOAT = 0x3,
   EF_LOONGARCH_ABI_MODIFIER_MASK = 0x7,
 
   // Object file ABI versions
-  EF_LOONGARCH_OBJABI_V0   = 0x0,
-  EF_LOONGARCH_OBJABI_V1   = 0x40,
+  EF_LOONGARCH_OBJABI_V0 = 0x0,
+  EF_LOONGARCH_OBJABI_V1 = 0x40,
   EF_LOONGARCH_OBJABI_MASK = 0xC0,
 };
 
@@ -1046,6 +1047,11 @@ enum : unsigned {
 // ELF Relocation types for Xtensa
 enum {
 #include "ELFRelocs/Xtensa.def"
+};
+
+// ELF Relocation for CPEN211
+enum {
+#include "ELFRelocs/CPEN211.def"
 };
 
 #undef ELF_RELOC

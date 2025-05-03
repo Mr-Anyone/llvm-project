@@ -27,7 +27,7 @@ class CPEN211ELFObjectWriter : public MCELFObjectTargetWriter {
 public:
   CPEN211ELFObjectWriter(uint8_t OSABI)
       // TODO (for Vincent): this is entirely wrong
-      : MCELFObjectTargetWriter(/*is 64 bit*/ false, OSABI, ELF::R_MSP430_NONE,
+      : MCELFObjectTargetWriter(/*is 64 bit*/ false, OSABI, ELF::EM_CPEN211,
                                 /*HasRelocationAddend*/ true) {}
 
   ~CPEN211ELFObjectWriter() override = default;
@@ -45,7 +45,7 @@ protected:
                         << "\n");
       llvm_unreachable("this is not yet implemented!");
     case CPEN211::fixup_8:
-      return ELF::R_ARM_PC24;
+      return ELF::R_CPEN211_PCREL8;
 
       // case FK_Data_1:
       //   return ELF::R_CPEN211_8;

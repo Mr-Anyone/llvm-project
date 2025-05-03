@@ -21,6 +21,7 @@ endif()
 add_lld_library(lldELF
   AArch64ErrataFix.cpp
   Arch/AArch64.cpp
+  Arch/CPEN211.cpp
   Arch/AMDGPU.cpp
   Arch/ARM.cpp
   Arch/AVR.cpp
