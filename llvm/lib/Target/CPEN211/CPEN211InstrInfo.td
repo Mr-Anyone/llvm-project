@@ -166,7 +166,11 @@ let isBranch = 1, isTerminator=1 in {
                "B$cond\t$dst", [(CPEN211brcc bb:$dst, imm:$cond)]>{
     }
 
-    
+    let Rn = 0b000 in  def BX  : BFormReg<0b00, (outs), (ins GR16:$Rd), 2, 
+                                "BX\t{$Rd}", []>;
+
+    let Rn = 0b111 in  def BLX : BFormReg<0b10, (outs), (ins GR16:$Rd), 2, 
+                                "BLX\t{$Rd}", []>;
 } // isBranch, isTerminator
 
 // FIXME: this is not correct as of current!
@@ -199,7 +203,9 @@ def STR16mr: MForm<0b100, 2, (outs), (ins memsrc:$RnAndImm, GR16:$Rd)
 // TOOD (for Vincent): create a register alias both the stack pointer and the link register  
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?
 let isReturn = 1, isTerminator = 1, isBarrier = 1 in def RET : Pseudo<(outs), (ins), 
-                "BX\tR7", [(CPEN211retglue)]>;
+                "BX\tR7", [(CPEN211retglue)]>{
+    field bits<16> Inst = {0b0100000011100000}; 
+}
 
 //===----------------------------------------------------------------------
 // Special type of instruction

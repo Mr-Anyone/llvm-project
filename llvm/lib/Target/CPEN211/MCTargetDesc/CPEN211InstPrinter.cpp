@@ -41,8 +41,10 @@ void CPEN211InstPrinter::printInst(const MCInst *MI, uint64_t Address,
 
 void CPEN211InstPrinter::printBLTargetOpValue(const MCInst *MI, unsigned OpNo,
                                               raw_ostream &O) {
-  if (MI->getOperand(0).isImm())
+  if (MI->getOperand(0).isImm()) {
     O << "#" << MI->getOperand(0).getImm();
+    return;
+  }
 
   assert(MI->getOperand(0).isExpr());
   const MCExpr *Target = MI->getOperand(0).getExpr();
