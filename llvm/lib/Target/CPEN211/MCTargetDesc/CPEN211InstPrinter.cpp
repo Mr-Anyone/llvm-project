@@ -17,6 +17,7 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/ErrorHandling.h"
 using namespace llvm;
 
@@ -40,8 +41,13 @@ void CPEN211InstPrinter::printInst(const MCInst *MI, uint64_t Address,
 
 void CPEN211InstPrinter::printBLTargetOpValue(const MCInst *MI, unsigned OpNo,
                                               raw_ostream &O) {
-  assert(MI->getOperand(0).isImm());
-  O << "#" << MI->getOperand(0).getImm();
+  if (MI->getOperand(0).isImm())
+    O << "#" << MI->getOperand(0).getImm();
+
+  assert(MI->getOperand(0).isExpr());
+  const MCExpr *Target = MI->getOperand(0).getExpr();
+  const MCSymbolRefExpr *SymbolTarget = cast<MCSymbolRefExpr>(Target);
+  O << "#" << SymbolTarget->getSymbol().getName();
 }
 
 void CPEN211InstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,

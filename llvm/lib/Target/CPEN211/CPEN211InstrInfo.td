@@ -137,6 +137,14 @@ def : Pat<(xor GR16:$Rn, (i16 -1)),
 // FIXME: make a new instruction format?
 def CMP16rr : CPEN211Inst<(outs), (ins GR16:$Rn, GR16:$Rm), /*size*/ 2
                         ,"CMP\t{$Rn, $Rm}"> {
+    let Inst{15-11} =   0b11010;
+    let Inst{7-5} =     0b000;
+
+    bits<3> Rn; 
+    bits<3> Rm; 
+    let Inst{10-8} =    Rn;
+    let Inst{2-0} =     Rm;
+
     let Pattern = [(CPEN211cmp GR16:$Rn, GR16:$Rm)];
     let Defs = [SR]; // prevent dead code optimization
 }
