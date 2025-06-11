@@ -9961,6 +9961,22 @@ static bool isOrIsDerivedFromSpecializationOf(CXXRecordDecl *RD,
   return !(NotSpecialization(RD) && RD->forallBases(NotSpecialization));
 }
 
+static bool haveTemplateTemplateDependency(TypeAliasTemplateDecl* Decl){
+    for(NamedDecl* TemplateParam: Decl->getTemplateParameters()->asArray()){
+        if(llvm::isa<TemplateTemplateParmDecl>(TemplateParam))
+            return true;
+    }
+
+    QualType TemplateUnderlyingType = Decl->getTemplatedDecl()->getUnderlyingType();
+    if(const TemplateSpecializationType* SpecializationType = TemplateUnderlyingType->getAs<TemplateSpecializationType>()){
+        TemplateDecl* TemplateDecl =  SpecializationType->getTemplateName().getAsTemplateDecl();
+        if(llvm::isa<TypeAliasTemplateDecl>(TemplateDecl))
+            return haveTemplateTemplateDependency(llvm::cast<TypeAliasTemplateDecl>(TemplateDecl));
+    }
+
+    return false;
+}
+
 QualType Sema::DeduceTemplateSpecializationFromInitializer(
     TypeSourceInfo *TSInfo, const InitializedEntity &Entity,
     const InitializationKind &Kind, MultiExprArg Inits) {
@@ -9981,6 +9997,15 @@ QualType Sema::DeduceTemplateSpecializationFromInitializer(
             TemplateName.getAsTemplateDecl())) {
       DiagCompat(Kind.getLocation(), diag_compat::ctad_for_alias_templates);
       LookupTemplateDecl = AliasTemplate;
+
+      if(haveTemplateTemplateDependency(AliasTemplate)){
+        Diag(Kind.getLocation(),
+             diag::err_deduced_non_class_or_alias_template_specialization_type)
+            << (int)getTemplateNameKindForDiagnostics(TemplateName) << TemplateName;
+
+        return QualType();
+      }
+
       auto UnderlyingType = AliasTemplate->getTemplatedDecl()
                                 ->getUnderlyingType()
                                 .getCanonicalType();
