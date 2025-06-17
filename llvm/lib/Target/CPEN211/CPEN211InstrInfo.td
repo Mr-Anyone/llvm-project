@@ -52,7 +52,13 @@ def CPEN211callseq_end :
                         [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
 // for global instruction, points to a globaladdr_t
 def CPEN211Wrapper : SDNode<"CPEN211ISD::Wrapper", SDT_CPEN211Wrapper>;
+def CPEN211Load    : SDNode<"CPEN211ISD::LOAD", SDTLoad,
+                        [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
+def CPEN211Store   : SDNode<"CPEN211ISD::STORE", SDTStore,
+                        [SDNPHasChain, SDNPMayStore, SDNPMemOperand]>;
 def CPEN211shl     : SDNode<"CPEN211ISD::SHL", SDT_CPEN211shl, []>;
+def CPEN211shr     : SDNode<"CPEN211ISD::SHR", SDT_CPEN211shl, []>; // notes that shl and shr should 
+                                                                    // have the same constraint
 //===----------------------------------------------------------------------===//
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
@@ -196,9 +202,9 @@ def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;
 // TODO: check the dag selection pattern matching! This might have to be a 
 // complex pattern instead of just GR16, because we can also left shift as well!
 def LDR16rm: MForm<0b011, 2, (outs GR16:$Rd), (ins memsrc:$RnAndImm)
-                    , "LDR\t{$Rd, [$RnAndImm]}", [(set GR16:$Rd, (load addr:$RnAndImm))]>;
+                    , "LDR\t{$Rd, [$RnAndImm]}", [(set GR16:$Rd, (CPEN211Load addr:$RnAndImm))]>;
 def STR16mr: MForm<0b100, 2, (outs), (ins memsrc:$RnAndImm, GR16:$Rd)
-                    , "STR\t{$Rd, [$RnAndImm]}", [(store GR16:$Rd, addr:$RnAndImm)]>;
+                    , "STR\t{$Rd, [$RnAndImm]}", [(CPEN211Store GR16:$Rd, addr:$RnAndImm)]>;
 
 // TOOD (for Vincent): create a register alias both the stack pointer and the link register  
 // TODO (for Vincent): maybe this is also not the play in a sense that it should be created as a instruction alias?
@@ -242,11 +248,4 @@ let isCodeGenOnly = 1, usesCustomInserter = 1 in {
     def SUB16rr    : Pseudo<(outs GR16:$dst), (ins GR16:$rn, GR16:$rm), 
                             "# SUB RR PSEUDO", 
                             [(set GR16:$dst, (sub GR16:$rn, GR16:$rm))]>;
-    // t6: i16,ch = load<(dereferenceable load (s16) from %ir.i)> t0, FrameIndex:i16<1>, undef:i16
-    //     t18: i16 = CPEN211ISD::SHL t6, Constant:i16<1>
-    //   t10: i16 = add FrameIndex:i16<3>, t18
-    // t11: i16,ch = load<(load (s16) from %ir.arrayidx)> t0, t10, undef:i16
-    def LDRshri : Pseudo<(outs GR16:$dst), (ins memsrc:$base, GR16:$offset, i16imm:$shift_amount), 
-        "# LDRshri Pseudo", [(set GR16:$dst, (load(add addr:$base, (CPEN211shl GR16:$offset, imm:$shift_amount))))]>; 
-    // , "LDR\t{$Rd, [$Rn]}", [(set GR16:$Rd, (load addr:$Rn))]>;
 } // isCodeGenOnly = 1

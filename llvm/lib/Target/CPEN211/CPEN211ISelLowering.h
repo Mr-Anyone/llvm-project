@@ -39,8 +39,14 @@ enum NodeType : unsigned {
   Wrapper,
 
   // to_be_shifted, amount
-  SHL
+  SHL, 
+  SHR, 
 
+  // chain, location
+  STORE, 
+
+  // chain, location
+  LOAD
 };
 }
 
@@ -65,6 +71,8 @@ public:
   /// DAG node.
   const char *getTargetNodeName(unsigned Opcode) const override;
 
+  SDValue LowerStore(SDValue Op, SelectionDAG& DAG) const;
+  SDValue LowerLoad(SDValue Op, SelectionDAG& DAG) const;
   SDValue LowerShifts(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerBlockAddress(SDValue Op, SelectionDAG &DAG) const;

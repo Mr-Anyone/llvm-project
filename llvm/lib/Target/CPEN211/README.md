@@ -1,5 +1,8 @@
 # The CPEN211 Backend 
 
+## Bugs
+- [] Currently, signed and unsigned comparison is just incorrect .
+
 This is the dead simple backend of CPEN211 ISA:
 
 ![CPEN211 ISA](ISA.png)

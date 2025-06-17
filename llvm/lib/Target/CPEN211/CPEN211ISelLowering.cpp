@@ -1,5 +1,4 @@
-//===-- CPEN211ISelLowering.cpp - CPEN211 DAG Lowering Implementation
-//------===//
+//===-- CPEN211ISelLowering.cpp - CPEN211 DAG Lowering Implementation------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -34,10 +33,6 @@
 using namespace llvm;
 
 #define DEBUG_TYPE "cpen211-lower"
-// static cl::opt<bool> CPEN211NoLegalImmediate(
-//     "msp430-no-legal-immediate", cl::Hidden,
-//     cl::desc("Enable non legal immediates (for testing purposes only)"),
-//     cl::init(false));
 
 CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
                                              const CPEN211Subtarget &STI)
@@ -55,69 +50,48 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   setBooleanVectorContents(ZeroOrOneBooleanContent); // FIXME: Is this correct?
 
   // We have post-incremented loads / stores.
-  // setIndexedLoadAction(ISD::POST_INC, MVT::i8, Expand);
   setIndexedLoadAction(ISD::POST_INC, MVT::i16, Expand);
 
-  for (MVT VT : MVT::integer_valuetypes()) {
-    // setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Expand);
-    // setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1, Expand);
-    // setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1, Expand);
-    // setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i8, Promote);
-  }
-  // setLoadExtAction(ISD::SEXTLOAD, MVT::i8, MVT::i16, Promote);
-  // setLoadExtAction(ISD::SEXTLOAD, MVT::i16, MVT::i8, Promote);
-
-  // We don't have any truncstores
-  // setTruncStoreAction(MVT::i16, MVT::i8, Expand);
-
-  // setOperationAction(ISD::SRA, MVT::i8, Expand);
-  // setOperationAction(ISD::SHL, MVT::i8, Expand);
-  // setOperationAction(ISD::SRL, MVT::i8, Expand);
-  //  setOperationAction(ISD::NON_EXTLOAD, MVT::i16, Expand);
+  // Memory Type operation will be set to custom
+  setOperationAction(ISD::LOAD, MVT::i16, Custom);
+  setOperationAction(ISD::STORE, MVT::i16, Custom);
 
   setOperationAction(ISD::SRA, MVT::i16, Custom); // shift right arithmetic
   setOperationAction(ISD::SHL, MVT::i16, Custom); // shift left lowest bit 0
   setOperationAction(ISD::SRL, MVT::i16,
                      Custom); // shift right left lowest bit 0, rotate
 
-  // setOperationAction(ISD::ROTL, MVT::i8, Expand);
-  // setOperationAction(ISD::ROTR, MVT::i8, Expand);
   setOperationAction(ISD::ROTL, MVT::i16, Expand);
   setOperationAction(ISD::ROTR, MVT::i16, Expand);
   setOperationAction(ISD::GlobalAddress, MVT::i16, Custom);
   setOperationAction(ISD::ExternalSymbol, MVT::i16, Expand);
   setOperationAction(ISD::BlockAddress, MVT::i16, Expand);
   setOperationAction(ISD::BR_JT, MVT::Other, Expand);
-  // setOperationAction(ISD::BR_CC, MVT::i8, Expand);
   setOperationAction(ISD::BR_CC, MVT::i16, Custom);
   setOperationAction(ISD::BRCOND, MVT::Other, Custom);
-  // setOperationAction(ISD::SETCC, MVT::i8, Expand);
   setOperationAction(ISD::SETCC, MVT::i16, Custom);
-  // setOperationAction(ISD::SELECT, MVT::i8, Expand);
   setOperationAction(ISD::SELECT, MVT::i16, Expand);
-  // setOperationAction(ISD::SELECT_CC, MVT::i8, Expand);
   setOperationAction(ISD::SELECT_CC, MVT::i16, Custom);
   setOperationAction(ISD::SIGN_EXTEND, MVT::i16, Expand);
-  // setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i8, Expand);
   setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i16, Expand);
   setOperationAction(ISD::STACKSAVE, MVT::Other, Expand);
   setOperationAction(ISD::STACKRESTORE, MVT::Other, Expand);
 
-  // setOperationAction(ISD::CTTZ, MVT::i8, Expand);
   setOperationAction(ISD::CTTZ, MVT::i16, Expand);
-  // setOperationAction(ISD::CTLZ, MVT::i8, Expand);
   setOperationAction(ISD::CTLZ, MVT::i16, Expand);
-  // setOperationAction(ISD::CTPOP, MVT::i8, Expand);
   setOperationAction(ISD::CTPOP, MVT::i16, Expand);
 
-  // setOperationAction(ISD::SHL_PARTS, MVT::i8, Expand);
   setOperationAction(ISD::SHL_PARTS, MVT::i16, Expand);
-  // setOperationAction(ISD::SRL_PARTS, MVT::i8, Expand);
   setOperationAction(ISD::SRL_PARTS, MVT::i16, Expand);
-  // setOperationAction(ISD::SRA_PARTS, MVT::i8, Expand);
   setOperationAction(ISD::SRA_PARTS, MVT::i16, Expand);
 
   setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1, Expand);
+
+  // TODO (for Vincent): Check this!
+  // this really doesn't matter because we have just fill it with
+  setMinFunctionAlignment(Align(1));
+  setPrefFunctionAlignment(Align(1));
+  setMaxAtomicSizeInBitsSupported(0);
 
   //********************************************************************
   //********************************************************************
@@ -350,6 +324,90 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   setMaxAtomicSizeInBitsSupported(0);
 }
 
+static bool isConstantAndIsOne(SDValue Value){
+    ConstantSDNode* Constant = nullptr;
+    if((Constant = dyn_cast<ConstantSDNode>(Value))){
+        if(Constant->getSExtValue() == 1){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
+    // add(base, offset) -> add (base, offset >> 1) which 
+    // divides by two
+
+    // don't touch FrameIndex!
+    if(isa<FrameIndexSDNode>(Address))
+        return Address;
+
+    if(Address.getOpcode() == ISD::ADD){
+        SDValue Base = Address.getOperand(0);
+        SDValue Offset = Address.getOperand(1); // shl
+
+        // edge case one: the add is behind a shift with a known constant offset
+        // we may be able to just remove the shift entirely
+        if(Offset.getOpcode() == CPEN211ISD::SHL || Offset.getOpcode() == ISD::SHL){
+            if(isConstantAndIsOne(Offset.getOperand(1))){
+                SDValue NewOffset = DAG.getNode(ISD::ADD, SDLoc(Address),
+                        MVT::i16, Address.getOperand(0), Offset.getOperand(0));
+                return NewOffset; 
+            }
+
+            llvm_unreachable("fix this later please");
+        }
+        assert((Offset.getOpcode() != CPEN211ISD::SHL || Offset.getOpcode()!= ISD::SHL )&& 
+                "preventing fall through");
+        SDValue One = DAG.getConstant(1, SDLoc(Offset), MVT::i16);
+        SDValue NewOffset = DAG.getNode(CPEN211ISD::SHR, SDLoc(Offset), MVT::i16, 
+                Offset, One);
+
+        return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, NewOffset);
+    }
+
+    // SDValue NewOffset = DAG.getNode(CPEN211ISD::SHL, SDLoc(Offset), MVT::i16, Offset);
+    Address->dump();
+    llvm_unreachable("game over");
+    return SDValue();
+}
+
+SDValue CPEN211TargetLowering::LowerLoad(SDValue Op, SelectionDAG& DAG) const {
+    SDValue Chain = Op.getOperand(0);
+    SDValue Address = Op.getOperand(1);
+    SDValue Undef = Op.getOperand(2);
+
+    // don't do anything to frame index
+    if(isa<FrameIndexSDNode>(Address)){
+        SDValue NewLoad = 
+            DAG.getNode(CPEN211ISD::LOAD, SDLoc(Op), {MVT::i16, MVT::i16}, {Chain, Address, Undef});
+        return NewLoad; 
+    }
+
+    SDValue NewAddress = RecalculateAddress(Address, DAG);
+
+    // TODO (for Vincent): is this even correct?
+    // It seems that ISD::Load requires two value?  
+    SDValue NewLoad = 
+        DAG.getNode(CPEN211ISD::LOAD, SDLoc(Op), {MVT::i16, MVT::i16}, {Chain, NewAddress, Undef});
+
+    return NewLoad;
+}
+
+SDValue CPEN211TargetLowering::LowerStore(SDValue Op,SelectionDAG& DAG ) const {
+    assert(Op.getNumOperands() == 4 && "must have 4 operands");
+    assert(Op.getValueType() == MVT::Other && "I am not sure how this is not true");
+    // There are two cases
+
+    SDValue Chain = Op.getOperand(0);
+    SDValue Value = Op.getOperand(1);
+    SDValue Loc = RecalculateAddress(Op.getOperand(2), DAG);
+    SDValue NotSure = Op.getOperand(3);
+
+    return DAG.getNode(CPEN211ISD::STORE, SDLoc(Op), MVT::Other, Chain, Value, Loc, NotSure);
+}
+
 SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
                                               SelectionDAG &DAG) const {
   switch (Op.getOpcode()) {
@@ -369,16 +427,10 @@ SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
     return LowerBR_CC(Op, DAG);
   case ISD::SELECT_CC:
     return LowerSELECT_CC(Op, DAG);
-  // case ISD::SIGN_EXTEND:
-  //   return LowerSIGN_EXTEND(Op, DAG);
-  // case ISD::RETURNADDR:
-  //   return LowerRETURNADDR(Op, DAG);
-  // case ISD::FRAMEADDR:
-  //   return LowerFRAMEADDR(Op, DAG);
-  // case ISD::VASTART:
-  //   return LowerVASTART(Op, DAG);
-  // case ISD::JumpTable:
-  //   return LowerJumpTable(Op, DAG);
+  case ISD::STORE: 
+    return LowerStore(Op, DAG);
+  case ISD::LOAD:
+    return LowerLoad(Op, DAG);
   default:
     LLVM_DEBUG(dbgs() << "unimpleneted operand is " << Op.getOpcode());
     llvm_unreachable("unimplemented operand");
@@ -719,13 +771,8 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
   assert(!isVarArg && "don't know how to lower Return that is variadic!");
 
   MachineFunction &MF = DAG.getMachineFunction();
-
   // CCValAssign - represent the assignment of the return value to a location
   SmallVector<CCValAssign, 16> RVLocs;
-
-  // ISRs cannot return any value.
-  if (CallConv == CallingConv::MSP430_INTR && !Outs.empty())
-    report_fatal_error("ISRs cannot return any value");
 
   // CCState - Info about the registers and stack slot.
   CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), RVLocs,
@@ -777,6 +824,7 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
     const SmallVectorImpl<SDValue> &OutVals,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
     SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
+assert(!isVarArg && !isTailCall && "both tail call and variadic are not supported");
   // // Analyze operands of the call, assigning locations to each operand.
   SmallVector<CCValAssign, 16> ArgLocs;
   CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
@@ -1072,7 +1120,6 @@ static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
     TCC = CPEN211CC::COND_LE;
     std::swap(LHS, RHS);
     break;
-
   case ISD::SETGT:
     // a > b => b < a
     // SETGT,     //   1 X 0 1 0       True if greater than
@@ -1394,7 +1441,8 @@ bool CPEN211TargetLowering::getPostIndexedAddressParts(
 const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
   switch ((CPEN211ISD::NodeType)Opcode) {
   case CPEN211ISD::FIRST_NUMBER:
-    break;
+      llvm_unreachable_internal("this should not be possible");
+    return "CPEN211ISD::Invalid";
   case CPEN211ISD::RET_GLUE:
     return "CPEN211ISD::RET_GLUE";
   case llvm::CPEN211ISD::CMP:
@@ -1409,6 +1457,12 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "CPEN211ISD::Wrapper";
   case llvm::CPEN211ISD::SHL:
     return "CPEN211ISD::SHL";
+  case llvm::CPEN211ISD::STORE:
+    return "CPEN211ISD::STORE";
+  case llvm::CPEN211ISD::LOAD:
+    return "CPEN211ISD::LOAD";
+  case llvm::CPEN211ISD::SHR:
+    return "CPEN211ISD::SHR";
   default:
     llvm_unreachable("you forgot you add a node name here!");
   }
@@ -1713,12 +1767,6 @@ MachineBasicBlock *CPEN211TargetLowering::EmitInstrWithCustomInserter(
     MI.eraseFromParent();
     return BB;
   }
-
-  case CPEN211::LDRshri:
-    // TODO: fixme!
-    MI.dump();
-    llvm_unreachable("gg");
-    return BB;
   default:
     llvm_unreachable("You have used an operation that is unsupported!");
   }
