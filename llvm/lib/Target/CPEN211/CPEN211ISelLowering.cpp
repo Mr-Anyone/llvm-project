@@ -980,24 +980,27 @@ SDValue CPEN211TargetLowering::LowerCallResult(
 
 SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
                                            SelectionDAG &DAG) const {
-  // llvm_unreachable("cannot lower shift for now!");
-  LLVM_DEBUG(dbgs() << "");
   unsigned Opc = Op.getOpcode();
   assert(Opc == ISD::SHL);
 
   SDNode *N = Op.getNode();
   SDLoc Loc(Op);
   ConstantSDNode *ConstantNode = dyn_cast<ConstantSDNode>(N->getOperand(1));
-  if (!ConstantNode)
-    return Op;
+  if (!ConstantNode){
+      SDValue NonConstantNode =  
+          DAG.getNode(CPEN211ISD::SHL, SDLoc(Op), MVT::i16, Op.getOperand(0), Op.getOperand(1));  
+      assert(NonConstantNode.getOperand(0).getValueType() == MVT::i16 && "must be i17");
+      assert(NonConstantNode.getOperand(1).getValueType() == MVT::i16 && "must be i16");
+      return NonConstantNode;
+  }
 
-  SDLoc dl(N);
+  // Constant Case
+  SDLoc DL(N);
   SDValue NewConstant = DAG.getConstant(ConstantNode->getSExtValue(), Loc,
                                         MVT::i16); // shifted amount
   SDValue By = Op.getOperand(0);                   // shifted by
-
-  SDValue newVal = DAG.getNode(CPEN211ISD::SHL, dl, MVT::i16, By, NewConstant);
-  return newVal;
+  SDValue NewVal = DAG.getNode(CPEN211ISD::SHL, DL, MVT::i16, By, NewConstant);
+  return NewVal;
 
   // ConstantNode->getConstantIntValue();
   // DAG.viewGraph();

@@ -107,6 +107,28 @@ void CPEN211InstPrinter::printPostIndRegOperand(const MCInst *MI, unsigned OpNo,
   O << "@" << getRegisterName(Base.getReg()) << "+";
 }
 
+void CPEN211InstPrinter::printShiftOperand(const MCInst *MI, unsigned OpNo,
+                                        raw_ostream &O) {
+  unsigned CC = MI->getOperand(OpNo).getImm();
+  assert(CC <= 3 && CC >= 0 
+          && "Shift Operand must be invalid range. See CPEN211InstrInfo.td for  more information");
+  switch(CC){
+      case 0: 
+          break;
+      case 1:
+          O << "LSL #1";
+          break;
+      case 2:
+          O << "LSR #1";
+          break; 
+      case 3: 
+          O << "ASR #1";
+          break;
+      default:
+          llvm_unreachable("invalid shift operand");
+  }
+}
+
 void CPEN211InstPrinter::printCCOperand(const MCInst *MI, unsigned OpNo,
                                         raw_ostream &O) {
   unsigned CC = MI->getOperand(OpNo).getImm();

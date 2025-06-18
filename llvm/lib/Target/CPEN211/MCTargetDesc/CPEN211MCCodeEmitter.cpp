@@ -45,6 +45,9 @@ class CPEN211MCCodeEmitter : public MCCodeEmitter {
   ///
   /// If an operand requires relocation, the relocation is recorded
   /// and zero is returned.
+
+  // TODO (for Vincent): it seems that most of these are unused 
+  // please clean up!
   unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
                              SmallVectorImpl<MCFixup> &Fixups,
                              const MCSubtargetInfo &STI) const;
@@ -69,6 +72,9 @@ class CPEN211MCCodeEmitter : public MCCodeEmitter {
                               SmallVectorImpl<MCFixup> &Fixups,
                               const MCSubtargetInfo &STI) const;
 
+  unsigned encodeShiftOperand(const MCInst &MI, unsigned Op,
+                              SmallVectorImpl<MCFixup> &Fixups,
+                              const MCSubtargetInfo &STI) const;
 public:
   CPEN211MCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
       : Ctx(ctx), MCII(MCII) {}
@@ -166,6 +172,15 @@ unsigned CPEN211MCCodeEmitter::getCCOpValue(const MCInst &MI, unsigned Op,
   default:
     llvm_unreachable("Unknown condition code");
   }
+}
+
+unsigned CPEN211MCCodeEmitter::encodeShiftOperand(const MCInst &MI, unsigned Op,
+                                            SmallVectorImpl<MCFixup> &Fixups,
+                                            const MCSubtargetInfo &STI) const {
+  uint64_t Value = MI.getOperand(Op).getImm();
+  assert(Value >= 0 && Value <= 3 && "Invalid shift operand");
+  return  Value;
+
 }
 
 MCCodeEmitter *createCPEN211MCCodeEmitter(const MCInstrInfo &MCII,

@@ -57,7 +57,7 @@ public:
                                  const CPEN211Subtarget &STI);
 
   MVT getScalarShiftAmountTy(const DataLayout &, EVT) const override {
-    return MVT::i8;
+    return MVT::i16;
   }
 
   MVT::SimpleValueType getCmpLibcallReturnType() const override {

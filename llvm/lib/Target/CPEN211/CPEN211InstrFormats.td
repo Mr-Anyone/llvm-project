@@ -47,12 +47,13 @@ class IForm<bits<3> opcode, bits<2> op, int size, dag outs,
   bits<3> Rm;
   bits<3> Rn;
   bits<3> Rd;
+  bits<2> shift;
 
   let Inst{15-13} = opcode;
   let Inst{12-11} = op;
   let Inst{10-8}  = Rn;
   let Inst{7-5}   = Rd;
-  let Inst{4-3}   = 0b00; // TODO (for Vincent): shift is not necessary 0
+  let Inst{4-3}   = shift;
   let Inst{2-0}   = Rm; 
 }
 

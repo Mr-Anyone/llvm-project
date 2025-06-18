@@ -78,6 +78,17 @@ def cc : Operand<i16>{
     let EncoderMethod = "getCCOpValue";
 }
 
+// In CPEN211, we can only either shift by 
+// This is essentially an enum, 
+// 0 - no shift
+// 1 - left shift
+// 2 - logical right shift
+// 3 - arithmetic right shift
+def shift: Operand<i16>{
+    let PrintMethod = "printShiftOperand";
+    let EncoderMethod = "encodeShiftOperand";
+}
+
 def MemAsmOperand : AsmOperandClass {
   let Name = "Mem";
 }
@@ -101,9 +112,12 @@ def memsrc : Operand<i16> {
 // TODO (for Vincent): we need let llvm know that we can do a shift as well!
 // TODO (for Vincent): is the size 2?
 let Rn = 0b000 in {
-    def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm)
-                , "MOV\t{$Rd, $Rm}", []>;
-} // Rn
+    def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm, shift:$shift)
+                , "MOV\t{$Rd, $Rm, $shift}", []>;
+}
+
+def : Pat<(CPEN211shl GR16:$Rn, (i16 1)), 
+            (MOV16rr GR16:$Rn, (i16 1))>;
 
 // TODO (for Vincent): not all imm are valid? What should you do when imm is greater than 
 // signed extended 8 bit
@@ -117,7 +131,7 @@ def : Pat<(i16 (CPEN211Wrapper tglobaladdr:$dst)), (MOV16ri tglobaladdr:$dst)>;
 
 //===----------------------------------------------------------------------
 // ALU Instructions without cmp
-let isCommutable = true in {
+let isCommutable = true, shift =0b00 in {
     def ADD16rr : IForm<0b101, 0b00, 2, (outs GR16:$Rd)
                         , (ins GR16:$Rm, GR16:$Rn), "ADD\t{$Rd, $Rn, $Rm}", [(set GR16:$Rd, (add GR16:$Rn, GR16:$Rm))]>;
 
@@ -128,6 +142,7 @@ let isCommutable = true in {
 def MVN16rr: IForm<0b101, 0b11, 2, (outs GR16:$Rd)
                     , (ins GR16:$Rm), "MVN\t{$Rd, $Rm}", []>{
     let Rn = 0b000;
+    let shift = 0b00;
 }
 
 // A || B  => !A && !B

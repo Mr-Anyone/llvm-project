@@ -41,6 +41,9 @@ public:
 private:
   void printOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O,
                     const char *Modifier = nullptr);
+
+  // TODO (for Vincent): clean the following up
+  // most of these are actually unused and are legacy code from MPS430 
   void printPCRelImmOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
   void printBLTargetOpValue(const MCInst *MI, unsigned OpNo, raw_ostream &O);
   void printSrcMemOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O,
@@ -48,6 +51,7 @@ private:
   void printIndRegOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
   void printPostIndRegOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
   void printCCOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
+  void printShiftOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
 };
 } // namespace llvm
 
