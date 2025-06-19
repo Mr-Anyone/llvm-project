@@ -52,39 +52,40 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // We have post-incremented loads / stores.
   setIndexedLoadAction(ISD::POST_INC, MVT::i16, Expand);
 
+  //================== CUSTOM ==================
   // Memory Type operation will be set to custom
   setOperationAction(ISD::LOAD, MVT::i16, Custom);
   setOperationAction(ISD::STORE, MVT::i16, Custom);
   setOperationAction(ISD::SRA, MVT::i16, Custom); // shift right arithmetic
   setOperationAction(ISD::SHL, MVT::i16, Custom); // shift left lowest bit 0
-  setOperationAction(ISD::SRL, MVT::i16,
-                     Custom); // shift right left lowest bit 0, rotate
-
-  setOperationAction(ISD::ROTL, MVT::i16, Expand);
-  setOperationAction(ISD::ROTR, MVT::i16, Expand);
+  setOperationAction(ISD::SRL, MVT::i16, Custom); // shift right left lowest bit 0, rotate
   setOperationAction(ISD::GlobalAddress, MVT::i16, Custom);
-  setOperationAction(ISD::ExternalSymbol, MVT::i16, Expand);
-  setOperationAction(ISD::BlockAddress, MVT::i16, Expand);
-  setOperationAction(ISD::BR_JT, MVT::Other, Expand);
   setOperationAction(ISD::BR_CC, MVT::i16, Custom);
   setOperationAction(ISD::BRCOND, MVT::Other, Custom);
   setOperationAction(ISD::SETCC, MVT::i16, Custom);
-  setOperationAction(ISD::SELECT, MVT::i16, Expand);
   setOperationAction(ISD::SELECT_CC, MVT::i16, Custom);
+
+  setOperationAction(ISD::ROTL, MVT::i16, Expand);
+  setOperationAction(ISD::ROTR, MVT::i16, Expand);
+  setOperationAction(ISD::ExternalSymbol, MVT::i16, Expand);
+  setOperationAction(ISD::BlockAddress, MVT::i16, Expand);
+  setOperationAction(ISD::BR_JT, MVT::Other, Expand);
+  setOperationAction(ISD::SELECT, MVT::i16, Expand);
   setOperationAction(ISD::SIGN_EXTEND, MVT::i16, Expand);
   setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i16, Expand);
   setOperationAction(ISD::STACKSAVE, MVT::Other, Expand);
   setOperationAction(ISD::STACKRESTORE, MVT::Other, Expand);
-
   setOperationAction(ISD::CTTZ, MVT::i16, Expand);
   setOperationAction(ISD::CTLZ, MVT::i16, Expand);
   setOperationAction(ISD::CTPOP, MVT::i16, Expand);
-
-  setOperationAction(ISD::SHL_PARTS, MVT::i16, Expand);
-  setOperationAction(ISD::SRL_PARTS, MVT::i16, Expand);
-  setOperationAction(ISD::SRA_PARTS, MVT::i16, Expand);
-
+  // setOperationAction(ISD::SHL_PARTS, MVT::i16, Expand);
+  // setOperationAction(ISD::SRL_PARTS, MVT::i16, Expand);
+  // setOperationAction(ISD::SRA_PARTS, MVT::i16, Expand);
   setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1, Expand);
+
+  //================== LIBCALL ==================
+  setOperationAction(ISD::UREM, MVT::i16, LibCall);
+  setOperationAction(ISD::SREM, MVT::i16, LibCall);
 
   // TODO (for Vincent): Check this!
   // this really doesn't matter because we have just fill it with
@@ -899,7 +900,7 @@ assert(!isVarArg && !isTailCall && "both tail call and variadic are not supporte
   for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
     Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
                              RegsToPass[i].second, InGlue);
-    InGlue = Chain.getValue(1);
+    InGlue = Chain.getValue(1); 
   }
 
   // If the callee is a GlobalAddress node (quite common, every direct cal is)
@@ -994,11 +995,25 @@ SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
   // FIXME: we have to emit a function call instead!
   // I think we need to emit a function call instead!
   if (!ConstantNode){
-      SDValue NonConstantNode =  
-          DAG.getNode(NewISDCode , SDLoc(Op), MVT::i16, Op.getOperand(0), Op.getOperand(1));  
-      assert(NonConstantNode.getOperand(0).getValueType() == MVT::i16 && "must be i16");
-      assert(NonConstantNode.getOperand(1).getValueType() == MVT::i16 && "must be i16");
-      return NonConstantNode;
+      MakeLibCallOptions CallOptions;
+      // Getting the Library Name
+      RTLIB::Libcall RTLibName = [](unsigned int Op){
+          switch(Op){
+              case ISD::SHL: 
+                  return RTLIB::Libcall::SHL_I16;
+              case ISD::SRL:
+                  return RTLIB::Libcall::SHL_I16;
+              case ISD::SRA:
+                  return RTLIB::Libcall::SRA_I16;
+              default:
+                  llvm_unreachable("Invalid op code was provided");
+          }
+      }(Op.getOpcode());
+
+      SDValue LibCalLResult = makeLibCall(DAG, RTLibName, MVT::i16, 
+              {Op.getOperand(0), Op.getOperand(1)}, CallOptions, Loc).first;
+
+      return LibCalLResult;
   }
 
   // Constant Case

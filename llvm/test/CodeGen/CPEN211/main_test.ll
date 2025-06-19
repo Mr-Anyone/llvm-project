@@ -6,7 +6,7 @@ define dso_local void @void_function() #0 {
 entry:
   ret void
 }
-; CHECK: void_function:
+; CHECK-LABEL: void_function:
 
 define dso_local i16 @fib(i16 noundef %a) #0 {
 entry:
@@ -43,7 +43,7 @@ return:                                           ; preds = %if.end, %if.then
   ret i16 %5
 }
 
-; CHECK: fib:
+; CHECK-LABEL: fib:
 define dso_local i16 @fib_two(i16 noundef %a) local_unnamed_addr #0 {
 entry:
   %or.cond8 = icmp ult i16 %a, 2
@@ -65,25 +65,46 @@ return:                                           ; preds = %if.end, %entry
   %accumulator.ret.tr = add nsw i16 %a.tr.lcssa, %accumulator.tr.lcssa
   ret i16 %accumulator.ret.tr
 }
-; CHECK: fib_two:
+; CHECK-LABEL: fib_two:
 
 define dso_local i16 @logical_shift_left_one(i16 %0){
 main:
     %2  = shl i16 %0, 1
     ret i16 %2
 }
-; CHECK: logical_shift_left_one:
+; CHECK-LABEL: logical_shift_left_one:
 
 define dso_local i16 @logical_shift_right_one(i16 %0){
 main:
     %2  = lshr i16 %0, 1
     ret i16 %2
 }
-; CHECK: logical_shift_right_one:
+; CHECK-LABEL: logical_shift_right_one:
 
 define dso_local i16 @arithmetic_shift_right_one(i16 %0){
 main:
     %2  = ashr i16 %0, 1
     ret i16 %2
 }
-; CHECK: arithmetic_shift_right_one:
+; CHECK-LABEL: arithmetic_shift_right_one:
+
+define dso_local i16 @shift_left_two(i16 %0, i16 %1){
+main:
+    %2 = shl i16 %0, %1
+    ret i16 %2
+} 
+; CHECK-LABEL: shift_left_two:
+
+define dso_local i16 @shift_right_two(i16 %0, i16 %1){
+main:
+    %2 = lshr i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: shift_right_two:
+
+define dso_local i16 @shift_right_arithmetic_two(i16 %0, i16 %1){
+main:
+    %2 = ashr i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: shift_right_arithmetic_two:
