@@ -332,17 +332,16 @@ static bool isConstantAndIsOne(SDValue Value){
     return false;
 }
 
+// offset, offset >> 1
 static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
-    // add(base, offset) -> add (base, offset >> 1) which 
-    // divides by two
 
     // don't touch FrameIndex!
     if(isa<FrameIndexSDNode>(Address))
         return Address;
 
     if(Address.getOpcode() == ISD::ADD){
-        SDValue Base = Address.getOperand(0);
-        SDValue Offset = Address.getOperand(1); // shl
+        SDValue Base = Address.getOperand(0); // base
+        SDValue Offset = Address.getOperand(1); // offset
 
         // edge case one: the add is behind a shift with a known constant offset
         // we may be able to just remove the shift entirely
@@ -365,10 +364,14 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
         return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, NewOffset);
     }
 
-    // SDValue NewOffset = DAG.getNode(CPEN211ISD::SHL, SDLoc(Offset), MVT::i16, Offset);
-    Address->dump();
-    llvm_unreachable("game over");
-    return SDValue();
+    // If it is absolute address, we don't do anything!
+    if(Address.getOpcode() == ISD::LOAD  || Address.getOpcode() == ISD::CopyFromReg)
+        return Address;
+
+    Address.dump();
+    DAG.viewGraph();
+    llvm_unreachable("don't know what to do");
+    // return NewOffset;
 }
 
 SDValue CPEN211TargetLowering::LowerLoad(SDValue Op, SelectionDAG& DAG) const {
