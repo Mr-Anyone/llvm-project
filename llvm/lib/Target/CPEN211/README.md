@@ -1,13 +1,15 @@
 # The CPEN211 Backend 
 
-## Bugs
-- [] Currently, signed and unsigned comparison is just incorrect .
 
 This is the dead simple backend of CPEN211 ISA:
 
 ![CPEN211 ISA](ISA.png)
 
 The entire instruction set is basically self explanatory. 
+
+## Bugs
+- [] Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
+ISD::SETLT and ISD::SETULT are the same thing.
 
 # TODO 
 

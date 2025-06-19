@@ -40,7 +40,8 @@ enum NodeType : unsigned {
 
   // to_be_shifted, amount
   SHL, 
-  SHR, 
+  SRL,  // logical right shift 
+  SRA,  // arithmetic right shift
 
   // chain, location
   STORE, 

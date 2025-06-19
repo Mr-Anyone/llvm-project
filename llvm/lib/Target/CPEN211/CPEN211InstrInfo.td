@@ -57,8 +57,9 @@ def CPEN211Load    : SDNode<"CPEN211ISD::LOAD", SDTLoad,
 def CPEN211Store   : SDNode<"CPEN211ISD::STORE", SDTStore,
                         [SDNPHasChain, SDNPMayStore, SDNPMemOperand]>;
 def CPEN211shl     : SDNode<"CPEN211ISD::SHL", SDT_CPEN211shl, []>;
-def CPEN211shr     : SDNode<"CPEN211ISD::SHR", SDT_CPEN211shl, []>; // notes that shl and shr should 
+def CPEN211srl     : SDNode<"CPEN211ISD::SRL", SDT_CPEN211shl, []>; // notes that shl and shr should 
                                                                     // have the same constraint
+def CPEN211sra     : SDNode<"CPEN211ISD::SRA", SDT_CPEN211shl, []>; // ^^ same as above!
 //===----------------------------------------------------------------------===//
 // CPEN211 Operand Definitions.
 //===----------------------------------------------------------------------===//
@@ -117,6 +118,10 @@ let Rn = 0b000 in {
 // Logical shift left
 def : Pat<(CPEN211shl GR16:$Rn, (i16 1)), 
             (MOV16rr GR16:$Rn, (i16 1))>;
+def : Pat<(CPEN211srl GR16:$Rn, (i16 1)), 
+            (MOV16rr GR16:$Rn, (i16 2))>;
+def : Pat<(CPEN211sra GR16:$Rn, (i16 1)), 
+            (MOV16rr GR16:$Rn, (i16 3))>;
 
 def mov16_ri_immleaf  : ImmLeaf<i16, [{ return Imm >= -128&& Imm <= 127; }]>;
 

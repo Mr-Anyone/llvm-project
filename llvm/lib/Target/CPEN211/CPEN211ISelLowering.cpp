@@ -55,7 +55,6 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // Memory Type operation will be set to custom
   setOperationAction(ISD::LOAD, MVT::i16, Custom);
   setOperationAction(ISD::STORE, MVT::i16, Custom);
-
   setOperationAction(ISD::SRA, MVT::i16, Custom); // shift right arithmetic
   setOperationAction(ISD::SHL, MVT::i16, Custom); // shift left lowest bit 0
   setOperationAction(ISD::SRL, MVT::i16,
@@ -353,10 +352,10 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
 
             llvm_unreachable("fix this later please");
         }
-        assert((Offset.getOpcode() != CPEN211ISD::SHL || Offset.getOpcode()!= ISD::SHL )&& 
+        assert((Offset.getOpcode() != CPEN211ISD::SHL || Offset.getOpcode()!= ISD::SRL)&& 
                 "preventing fall through");
         SDValue One = DAG.getConstant(1, SDLoc(Offset), MVT::i16);
-        SDValue NewOffset = DAG.getNode(CPEN211ISD::SHR, SDLoc(Offset), MVT::i16, 
+        SDValue NewOffset = DAG.getNode(CPEN211ISD::SRL, SDLoc(Offset), MVT::i16, 
                 Offset, One);
 
         return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, NewOffset);
@@ -410,10 +409,6 @@ SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
   case ISD::SRL:
   case ISD::SRA:
     return LowerShifts(Op, DAG);
-  // case ISD::BlockAddress:
-  //   return LowerBlockAddress(Op, DAG);
-  // case ISD::ExternalSymbol:
-  //   return LowerExternalSymbol(Op, DAG);
   case ISD::GlobalAddress:
     return LowerGlobalAddress(Op, DAG);
   case ISD::SETCC:
@@ -565,7 +560,6 @@ static void AnalyzeArguments(CCState &State,
       assert(Parts == 1 &&
              "don't know how to allocate type that need more that i16!");
       if (LocVT == MVT::i16) {
-
         // although things are aligned on 2 bytes, we divided by two when
         // accessing elements because of awkwardness
         int64_t Offset1 = State.AllocateStack(2, Align(2));
@@ -634,13 +628,10 @@ CPEN211TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   switch (CallConv) {
   default:
     report_fatal_error("Unsupported calling convention");
-    // case CallingConv::CPEN211_BUILTIN:
   case CallingConv::Fast:
   case CallingConv::C:
     return LowerCCCCallTo(Chain, Callee, CallConv, isVarArg, isTailCall, Outs,
                           OutVals, Ins, dl, DAG, InVals);
-    // case CallingConv::CPEN211_INTR:
-    // report_fatal_error("ISRs cannot be called directly");
   }
 }
 
@@ -975,18 +966,37 @@ SDValue CPEN211TargetLowering::LowerCallResult(
   return Chain;
 }
 
+CPEN211ISD::NodeType GetShiftCode(unsigned Code){
+    switch(Code){
+        default: 
+            llvm_unreachable("This shift code is curretnly unsupported!");
+        case ISD::SHL: 
+            return CPEN211ISD::SHL;
+        case ISD::SRL: 
+            return CPEN211ISD::SRL; 
+        case ISD::SRA: 
+            return CPEN211ISD::SRA;
+    }
+}
+
 SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
                                            SelectionDAG &DAG) const {
   unsigned Opc = Op.getOpcode();
-  assert(Opc == ISD::SHL);
+  assert((Opc == ISD::SHL || Opc == ISD::SRA || Opc == ISD::SRL)
+          && "these are the only shift that are currently supported!");
+
+  CPEN211ISD::NodeType NewISDCode = GetShiftCode(Opc);
 
   SDNode *N = Op.getNode();
   SDLoc Loc(Op);
   ConstantSDNode *ConstantNode = dyn_cast<ConstantSDNode>(N->getOperand(1));
+
+  // FIXME: we have to emit a function call instead!
+  // I think we need to emit a function call instead!
   if (!ConstantNode){
       SDValue NonConstantNode =  
-          DAG.getNode(CPEN211ISD::SHL, SDLoc(Op), MVT::i16, Op.getOperand(0), Op.getOperand(1));  
-      assert(NonConstantNode.getOperand(0).getValueType() == MVT::i16 && "must be i17");
+          DAG.getNode(NewISDCode , SDLoc(Op), MVT::i16, Op.getOperand(0), Op.getOperand(1));  
+      assert(NonConstantNode.getOperand(0).getValueType() == MVT::i16 && "must be i16");
       assert(NonConstantNode.getOperand(1).getValueType() == MVT::i16 && "must be i16");
       return NonConstantNode;
   }
@@ -995,59 +1005,9 @@ SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
   SDLoc DL(N);
   SDValue NewConstant = DAG.getConstant(ConstantNode->getSExtValue(), Loc,
                                         MVT::i16); // shifted amount
-  SDValue By = Op.getOperand(0);                   // shifted by
-  SDValue NewVal = DAG.getNode(CPEN211ISD::SHL, DL, MVT::i16, By, NewConstant);
+  SDValue By = Op.getOperand(0);                   // shifted y
+  SDValue NewVal = DAG.getNode(NewISDCode, DL, MVT::i16, By, NewConstant);
   return NewVal;
-
-  // ConstantNode->getConstantIntValue();
-  // DAG.viewGraph();
-  // llvm_unreachable("gg");
-
-  // // Expand non-constant shifts to loops:
-  // if (!isa<ConstantSDNode>(N->getOperand(1)))
-  //   return Op;
-
-  // uint64_t ShiftAmount = N->getConstantOperandVal(1);
-
-  // // Expand the stuff into sequence of shifts.
-  // SDValue Victim = N->getOperand(0);
-
-  // if (ShiftAmount >= 8) {
-  //   assert(VT == MVT::i16 && "Can not shift i8 by 8 and more");
-  //   switch (Opc) {
-  //   default:
-  //     llvm_unreachable("Unknown shift");
-  //   case ISD::SHL:
-  //     // foo << (8 + N) => swpb(zext(foo)) << N
-  //     Victim = DAG.getZeroExtendInReg(Victim, dl, MVT::i8);
-  //     Victim = DAG.getNode(ISD::BSWAP, dl, VT, Victim);
-  //     break;
-  //   case ISD::SRA:
-  //   case ISD::SRL:
-  //     // foo >> (8 + N) => sxt(swpb(foo)) >> N
-  //     Victim = DAG.getNode(ISD::BSWAP, dl, VT, Victim);
-  //     Victim = (Opc == ISD::SRA)
-  //                  ? DAG.getNode(ISD::SIGN_EXTEND_INREG, dl, VT, Victim,
-  //                                DAG.getValueType(MVT::i8))
-  //                  : DAG.getZeroExtendInReg(Victim, dl, MVT::i8);
-  //     break;
-  //   }
-  //   ShiftAmount -= 8;
-  // }
-
-  // if (Opc == ISD::SRL && ShiftAmount) {
-  //   // Emit a special goodness here:
-  //   // srl A, 1 => clrc; rrc A
-  //   Victim = DAG.getNode(CPEN211ISD::RRCL, dl, VT, Victim);
-  //   ShiftAmount -= 1;
-  // }
-
-  // while (ShiftAmount--)
-  //   Victim = DAG.getNode((Opc == ISD::SHL ? CPEN211ISD::RLA :
-  //   CPEN211ISD::RRA),
-  //                        dl, VT, Victim);
-
-  // return Victim;
 }
 
 SDValue CPEN211TargetLowering::LowerGlobalAddress(SDValue Op,
@@ -1102,94 +1062,33 @@ static SDValue EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
     // SETEQ,     //   1 X 0 0 1       True if equal
     TCC = CPEN211CC::COND_EQ; // aka COND_Z
     break;
+  case ISD::SETULT:
   case ISD::SETLT:
     // SETLT,     //   1 X 1 0 0       True if less than
     TCC = CPEN211CC::COND_LT;
     break;
+  case ISD::SETULE:
   case ISD::SETLE:
     // SETLE,     //   1 X 1 0 1       True if less than or equal
     TCC = CPEN211CC::COND_LE;
     break;
+  case ISD::SETUNE:
   case ISD::SETNE:
     // SETNE,     //   1 X 1 1 0       True if not equal
     TCC = CPEN211CC::COND_NE;
     break;
-
+  case ISD::SETUGE:
   case ISD::SETGE:
-    // FIXME: you might have to do something like CMPir
     TCC = CPEN211CC::COND_LE;
     std::swap(LHS, RHS);
     break;
+  case ISD::SETUGT:
   case ISD::SETGT:
     // a > b => b < a
     // SETGT,     //   1 X 0 1 0       True if greater than
     TCC = CPEN211CC::COND_LT;
     std::swap(LHS, RHS);
     break;
-
-    //   case ISD::SETNE:
-    //     TCC = CPEN211CC::COND_NE; // aka COND_NZ
-    //     // Minor optimization: if LHS is a constant, swap operands, then the
-    //     // constant can be folded into comparison.
-    //     if (LHS.getOpcode() == ISD::Constant)
-    //       std::swap(LHS, RHS);
-    //     break;
-    //   case ISD::SETULE:
-    //     std::swap(LHS, RHS);
-    //     [[fallthrough]];
-    //   case ISD::SETUGE:
-    //     // Turn lhs u>= rhs with lhs constant into rhs u< lhs+1, this allows
-    //     us to
-    //         // fold constant into instruction.
-    //         if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-    //       LHS = RHS;
-    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
-    //       C->getValueType(0)); TCC = CPEN211CC::COND_LO; break;
-    //     }
-    //     TCC = CPEN211CC::COND_HS; // aka COND_C
-    //     break;
-    //   case ISD::SETUGT:
-    //     std::swap(LHS, RHS);
-    //     [[fallthrough]];
-    //   case ISD::SETULT:
-    //     // Turn lhs u< rhs with lhs constant into rhs u>= lhs+1, this allows
-    //     us to
-    //         // fold constant into instruction.
-    //         if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-    //       LHS = RHS;
-    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
-    //       C->getValueType(0)); TCC = CPEN211CC::COND_HS; break;
-    //     }
-    //     TCC = CPEN211CC::COND_LO; // aka COND_NC
-    //     break;
-    //   case ISD::SETLE:
-    //     std::swap(LHS, RHS);
-    //     [[fallthrough]];
-    //   case ISD::SETGE:
-    //     // Turn lhs >= rhs with lhs constant into rhs < lhs+1, this allows us
-    //     to
-    //     // fold constant into instruction.
-    //     if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-    //       LHS = RHS;
-    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
-    //       C->getValueType(0)); TCC = CPEN211CC::COND_L; break;
-    //     }
-    //     TCC = CPEN211CC::COND_GE;
-    //     break;
-    //   case ISD::SETGT:
-    //     std::swap(LHS, RHS);
-    //     [[fallthrough]];
-    //   case ISD::SETLT:
-    //     // Turn lhs < rhs with lhs constant into rhs >= lhs+1, this allows us
-    //     to
-    //     // fold constant into instruction.
-    //     if (const ConstantSDNode *C = dyn_cast<ConstantSDNode>(LHS)) {
-    //       LHS = RHS;
-    //       RHS = DAG.getConstant(C->getSExtValue() + 1, dl,
-    //       C->getValueType(0)); TCC = CPEN211CC::COND_GE; break;
-    //     }
-    //     TCC = CPEN211CC::COND_L;
-    //     break;
   }
 
   TargetCC = DAG.getConstant(TCC, dl, MVT::i16);
@@ -1461,8 +1360,10 @@ const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "CPEN211ISD::STORE";
   case llvm::CPEN211ISD::LOAD:
     return "CPEN211ISD::LOAD";
-  case llvm::CPEN211ISD::SHR:
-    return "CPEN211ISD::SHR";
+  case llvm::CPEN211ISD::SRL:
+    return "CPEN211ISD::SRL";
+  case llvm::CPEN211ISD::SRA:
+    return "CPEN211ISD::SRA";
   default:
     llvm_unreachable("you forgot you add a node name here!");
   }
