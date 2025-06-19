@@ -388,8 +388,7 @@ bool CPEN211DAGToDAGISel::tryIndexedBinOp(SDNode *Op, SDValue N1, SDValue N2,
 }
 
 void CPEN211DAGToDAGISel::Select(SDNode *Node) {
-  SDLoc dl(Node);
-
+  // SDLoc dl(Node);
   // If we have a custom node, we already have selected!
   // if (Node->isMachineOpcode()) {
   //   LLVM_DEBUG(errs() << "== "; Node->dump(CurDAG); errs() << "\n");

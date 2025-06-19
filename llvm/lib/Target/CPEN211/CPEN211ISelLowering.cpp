@@ -316,12 +316,6 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // setLibcallCallingConv(RTLIB::OLE_F64, CallingConv::CPEN211_BUILTIN);
   // setLibcallCallingConv(RTLIB::OGT_F64, CallingConv::CPEN211_BUILTIN);
   // TODO: __mspabi_srall, __mspabi_srlll, __mspabi_sllll
-
-  // TODO (for Vincent): Check this!
-  // this really doesn't matter because we have just fill it with
-  setMinFunctionAlignment(Align(1));
-  setPrefFunctionAlignment(Align(1));
-  setMaxAtomicSizeInBitsSupported(0);
 }
 
 static bool isConstantAndIsOne(SDValue Value){
@@ -350,6 +344,7 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
         // edge case one: the add is behind a shift with a known constant offset
         // we may be able to just remove the shift entirely
         if(Offset.getOpcode() == CPEN211ISD::SHL || Offset.getOpcode() == ISD::SHL){
+            // in this case we remove the SHL
             if(isConstantAndIsOne(Offset.getOperand(1))){
                 SDValue NewOffset = DAG.getNode(ISD::ADD, SDLoc(Address),
                         MVT::i16, Address.getOperand(0), Offset.getOperand(0));
@@ -767,7 +762,6 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                                    const SmallVectorImpl<ISD::OutputArg> &Outs,
                                    const SmallVectorImpl<SDValue> &OutVals,
                                    const SDLoc &dl, SelectionDAG &DAG) const {
-
   assert(!isVarArg && "don't know how to lower Return that is variadic!");
 
   MachineFunction &MF = DAG.getMachineFunction();
@@ -780,6 +774,10 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
   // Analize return values.
   AnalyzeReturnValues(CCInfo, RVLocs, Outs);
+
+  if(Outs.size() == 0)
+      return DAG.getNode(CPEN211ISD::RET_GLUE, dl, MVT::Other, Chain);
+
   assert(Outs.size() == 1 && RVLocs.size() == 1 &&
          "don't know how to return stuff with size that are more than one?");
 
@@ -794,7 +792,6 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
     CCValAssign &VA = RVLocs[i];
     assert(VA.isRegLoc() && "Can only return in registers!");
 
-    // std::cout <<VA.getLocReg().isVirtual();
     Chain = DAG.getCopyToReg(Chain, dl, VA.getLocReg(), OutVals[i], Glue);
 
     // Guarantee that all emitted copies are stuck together,

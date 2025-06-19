@@ -109,22 +109,21 @@ def memsrc : Operand<i16> {
 //===----------------------------------------------------------------------
 //Move Instructions
 
-// TODO (for Vincent): we need let llvm know that we can do a shift as well!
-// TODO (for Vincent): is the size 2?
 let Rn = 0b000 in {
     def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm, shift:$shift)
                 , "MOV\t{$Rd, $Rm, $shift}", []>;
 }
 
+// Logical shift left
 def : Pat<(CPEN211shl GR16:$Rn, (i16 1)), 
             (MOV16rr GR16:$Rn, (i16 1))>;
 
-// TODO (for Vincent): not all imm are valid? What should you do when imm is greater than 
-// signed extended 8 bit
+def mov16_ri_immleaf  : ImmLeaf<i16, [{ return Imm >= -128&& Imm <= 127; }]>;
+
 // TOOD (for Vincent): for greater than 8 bit, we must store this in the stack and 
 // do a Pseudo instruction instead
 def MOV16ri : IFormImm<2, (outs GR16:$Rn), (ins i16imm:$value)
-                        , "MOV\t{$Rn, $value}", [(set GR16:$Rn, imm:$value)]>;
+                        , "MOV\t{$Rn, $value}", [(set GR16:$Rn, mov16_ri_immleaf:$value)]>;
 
 // Global Address,
 def : Pat<(i16 (CPEN211Wrapper tglobaladdr:$dst)), (MOV16ri tglobaladdr:$dst)>;
@@ -207,9 +206,7 @@ def : Pat<(CPEN211call (i16 tglobaladdr:$dst)),
 def : Pat<(CPEN211call (i16 texternalsym:$dst)),
           (BL texternalsym:$dst)>;
 
-// complex pattern to select address or not? 
-// arguments:
-// ValueType, numops, string fn, roots, props
+// two operands: base, and addition
 def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;
 
 //===----------------------------------------------------------------------
