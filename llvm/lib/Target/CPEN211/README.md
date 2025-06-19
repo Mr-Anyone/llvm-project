@@ -1,6 +1,5 @@
 # The CPEN211 Backend 
 
-
 This is the dead simple backend of CPEN211 ISA:
 
 ![CPEN211 ISA](ISA.png)
@@ -8,11 +7,77 @@ This is the dead simple backend of CPEN211 ISA:
 The entire instruction set is basically self explanatory. 
 
 ## Bugs
+
 - [] Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
 ISD::SETLT and ISD::SETULT are the same thing.
 
 # TODO 
 
+## Instructions
+
+General guidance  and necessarily accurate because some llvm instruction gets transformed differently  into selection DAG, so we don't have ISD::*. One such example is GEP.
+
+## Priority I
+- [x] ret 
+- [x] br
+- [x] icmp 
+- [x] add
+- [x] sub
+- [x] mul
+- [x] udiv
+- [x] sdiv
+- [x] urem
+- [x] srem
+- [x] ashr
+- [x] shl
+- [x] lshr
+- [x] and
+- [x] or
+- [x] load
+- [x] store
+- [x] xor
+- [x] select
+- [x] phi
+- [x] call
+
+## Priority II
+
+- [ ] switch
+- [ ] invoke
+- [ ] callbr
+- [ ] resume 
+- [ ] catchswitch
+- [ ] catchret
+- [ ] cleanupret
+- [ ] unreachable
+- [ ] zext
+- [ ] sext
+- [ ] fsub
+- [ ] fadd
+- [ ] fmul
+- [ ] fdiv
+- [ ] frem
+- [ ] trunc
+- [ ] fptrunc
+- [ ] fpext
+- [ ] ptoui
+- [ ] fptosi
+- [ ] uitofp
+- [ ] sitofp
+- [ ] ptrtoint
+- [ ] inttoptr
+- [ ] bitcast
+- [ ] addrspacecast
+- [ ] fcmp
+- [ ] freeze
+- [ ] va_arg
+- [ ] landingpad
+- [ ] catchpad
+- [ ] cleanuppad
+
+ [ ] fneg
+
+## General
 - [ ] Implement PC Relative 16 Jump as PSEUDO Instruction. The only way to do this as of current is for the linker to encode the absolute address!
 
 ## Calling Conventions Custom (C ABI)
