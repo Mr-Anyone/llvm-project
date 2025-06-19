@@ -23,11 +23,11 @@ General guidance  and necessarily accurate because some llvm instruction gets tr
 - [x] icmp 
 - [x] add
 - [x] sub
-- [x] mul
-- [x] udiv
-- [x] sdiv
-- [x] urem
-- [x] srem
+- [X] mul
+- [X] udiv
+- [X] sdiv
+- [X] urem
+- [X] srem
 - [x] ashr
 - [x] shl
 - [x] lshr
@@ -74,11 +74,11 @@ General guidance  and necessarily accurate because some llvm instruction gets tr
 - [ ] landingpad
 - [ ] catchpad
 - [ ] cleanuppad
-
- [ ] fneg
+- [ ] fneg
 
 ## General
 - [ ] Implement PC Relative 16 Jump as PSEUDO Instruction. The only way to do this as of current is for the linker to encode the absolute address!
+- [ ] Implement peeophole for MachineBasicBlock and the following: ```B some_label some_lable:...```
 
 ## Calling Conventions Custom (C ABI)
 

@@ -110,18 +110,25 @@ def memsrc : Operand<i16> {
 //===----------------------------------------------------------------------
 //Move Instructions
 
+def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm)
+            , "MOV\t{$Rd, $Rm}", []>{
+    let shift= 0b00;
+    let Rn = 0b000;
+}
+
 let Rn = 0b000 in {
-    def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm, shift:$shift)
+
+    def MOV16Shiftrr: IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm, shift:$shift)
                 , "MOV\t{$Rd, $Rm, $shift}", []>;
 }
 
 // Logical shift left
 def : Pat<(CPEN211shl GR16:$Rn, (i16 1)), 
-            (MOV16rr GR16:$Rn, (i16 1))>;
+            (MOV16Shiftrr GR16:$Rn, (i16 1))>;
 def : Pat<(CPEN211srl GR16:$Rn, (i16 1)), 
-            (MOV16rr GR16:$Rn, (i16 2))>;
+            (MOV16Shiftrr GR16:$Rn, (i16 2))>;
 def : Pat<(CPEN211sra GR16:$Rn, (i16 1)), 
-            (MOV16rr GR16:$Rn, (i16 3))>;
+            (MOV16Shiftrr GR16:$Rn, (i16 3))>;
 
 def mov16_ri_immleaf  : ImmLeaf<i16, [{ return Imm >= -128&& Imm <= 127; }]>;
 

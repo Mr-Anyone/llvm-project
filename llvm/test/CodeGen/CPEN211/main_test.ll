@@ -108,3 +108,38 @@ main:
     ret i16 %2
 }
 ; CHECK-LABEL: shift_right_arithmetic_two:
+
+define dso_local i16 @testing_mul(i16 %0, i16 %1){
+main:
+    %2 = mul i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: testing_mul:
+
+define dso_local i16 @testing_sdiv(i16 %0, i16 %1){
+main:
+    %2 = sdiv i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: testing_sdiv:
+
+define dso_local i16 @testing_udiv(i16 %0, i16 %1){
+main:
+    %2 = udiv i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: testing_udiv:
+
+define dso_local i16 @testing_urem(i16 %0, i16 %1){
+main:
+    %2 = urem i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: testing_urem:
+
+define dso_local i16 @testing_srem(i16 %0, i16 %1){
+main:
+    %2 = srem i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: testing_srem:

@@ -86,6 +86,9 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   //================== LIBCALL ==================
   setOperationAction(ISD::UREM, MVT::i16, LibCall);
   setOperationAction(ISD::SREM, MVT::i16, LibCall);
+  setOperationAction(ISD::MUL, MVT::i16, LibCall);
+  setOperationAction(ISD::SDIV, MVT::i16, LibCall);
+  setOperationAction(ISD::UDIV, MVT::i16, LibCall);
 
   // TODO (for Vincent): Check this!
   // this really doesn't matter because we have just fill it with
