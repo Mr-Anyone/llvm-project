@@ -156,13 +156,29 @@ def MVN16rr: IForm<0b101, 0b11, 2, (outs GR16:$Rd)
     let shift = 0b00;
 }
 
-// A || B  => !A && !B
+// A || B  => !(!A && !B)
 def : Pat<(or GR16:$Rn, GR16:$Rm), 
-            (AND16rr (MVN16rr GR16:$Rn), (MVN16rr GR16:$Rm))>;
+            (MVN16rr (AND16rr (MVN16rr GR16:$Rn), (MVN16rr GR16:$Rm)))>;
         
 // ~A is A^-1
 def : Pat<(xor GR16:$Rn, (i16 -1)), 
             (MVN16rr GR16:$Rn)>;
+
+// https://math.stackexchange.com/questions/38473/is-xor-a-combination-of-and-and-not-operators
+// A XOR B = (A NAND (A NAND B)) NAND (B NAND (A NAND B))
+def : Pat<(xor GR16:$Rd, GR16: $Rn), 
+            (MVN16rr // (A NAND (A NAND B)) NAND (B NAND (A NAND B)) 
+                (AND16rr
+                    (MVN16rr ( // A NAND (A NAND B)                              
+                        AND16rr 
+                        GR16:$Rd, 
+                        (MVN16rr (AND16rr GR16:$Rd, GR16:$Rn))     // (A NAND B)
+                    )),
+                    (MVN16rr (// (B NAND (A NAND B))
+                        AND16rr GR16:$Rn,  // B
+                        (MVN16rr (AND16rr GR16:$Rd, GR16:$Rn))     // (A NAND B)
+
+                    ))))>;
 
 // CMP16rr is a native instructoin 
 // is the size 2?

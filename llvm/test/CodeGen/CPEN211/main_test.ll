@@ -143,3 +143,10 @@ main:
     ret i16 %2
 }
 ; CHECK-LABEL: testing_srem:
+
+define dso_local i16 @test_xor(i16 %0, i16 %1) #0 {
+main:
+    %2 = xor i16 %0, %1
+    ret i16 %2
+}
+; CHECK-LABEL: test_xor:
