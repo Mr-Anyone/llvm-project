@@ -59,7 +59,8 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::STORE, MVT::i16, Custom);
   setOperationAction(ISD::SRA, MVT::i16, Custom); // shift right arithmetic
   setOperationAction(ISD::SHL, MVT::i16, Custom); // shift left lowest bit 0
-  setOperationAction(ISD::SRL, MVT::i16, Custom); // shift right left lowest bit 0, rotate
+  setOperationAction(ISD::SRL, MVT::i16,
+                     Custom); // shift right left lowest bit 0, rotate
   setOperationAction(ISD::GlobalAddress, MVT::i16, Custom);
   setOperationAction(ISD::BR_CC, MVT::i16, Custom);
   setOperationAction(ISD::BRCOND, MVT::Other, Custom);
@@ -322,93 +323,100 @@ CPEN211TargetLowering::CPEN211TargetLowering(const TargetMachine &TM,
   // TODO: __mspabi_srall, __mspabi_srlll, __mspabi_sllll
 }
 
-static bool isConstantAndIsOne(SDValue Value){
-    ConstantSDNode* Constant = nullptr;
-    if((Constant = dyn_cast<ConstantSDNode>(Value))){
-        if(Constant->getSExtValue() == 1){
-            return true;
-        }
+static bool isConstantAndIsOne(SDValue Value) {
+  ConstantSDNode *Constant = nullptr;
+  if ((Constant = dyn_cast<ConstantSDNode>(Value))) {
+    if (Constant->getSExtValue() == 1) {
+      return true;
     }
+  }
 
-    return false;
+  return false;
 }
 
 // offset, offset >> 1
-static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
+static SDValue RecalculateAddress(SDValue Address, SelectionDAG &DAG) {
 
+  if (Address.getOpcode() == ISD::ADD) {
+    SDValue Base = Address.getOperand(0);   // base
+    SDValue Offset = Address.getOperand(1); // offset
 
-    if(Address.getOpcode() == ISD::ADD){
-        SDValue Base = Address.getOperand(0); // base
-        SDValue Offset = Address.getOperand(1); // offset
+    // edge case one: the add is behind a shift with a known constant offset
+    // we may be able to just remove the shift entirely
+    if (Offset.getOpcode() == CPEN211ISD::SHL ||
+        Offset.getOpcode() == ISD::SHL) {
+      // in this case we remove the SHL
+      if (isConstantAndIsOne(Offset.getOperand(1))) {
+        SDValue NewOffset =
+            DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16,
+                        Address.getOperand(0), Offset.getOperand(0));
+        return NewOffset;
+      }
 
-        // edge case one: the add is behind a shift with a known constant offset
-        // we may be able to just remove the shift entirely
-        if(Offset.getOpcode() == CPEN211ISD::SHL || Offset.getOpcode() == ISD::SHL){
-            // in this case we remove the SHL
-            if(isConstantAndIsOne(Offset.getOperand(1))){
-                SDValue NewOffset = DAG.getNode(ISD::ADD, SDLoc(Address),
-                        MVT::i16, Address.getOperand(0), Offset.getOperand(0));
-                return NewOffset; 
-            }
-
-            llvm_unreachable("fix this later please");
-        }
-        assert((Offset.getOpcode() != CPEN211ISD::SHL || Offset.getOpcode()!= ISD::SRL)&& 
-                "preventing fall through");
-        SDValue One = DAG.getConstant(1, SDLoc(Offset), MVT::i16);
-        SDValue NewOffset = DAG.getNode(CPEN211ISD::SRL, SDLoc(Offset), MVT::i16, 
-                Offset, One);
-
-        return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, NewOffset);
+      llvm_unreachable("fix this later please");
     }
+    assert((Offset.getOpcode() != CPEN211ISD::SHL ||
+            Offset.getOpcode() != ISD::SRL) &&
+           "preventing fall through");
+    SDValue One = DAG.getConstant(1, SDLoc(Offset), MVT::i16);
+    SDValue NewOffset =
+        DAG.getNode(CPEN211ISD::SRL, SDLoc(Offset), MVT::i16, Offset, One);
 
-    if(isa<FrameIndexSDNode>(Address)){
-        return Address;
-    }
+    return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, NewOffset);
+  }
 
-    // If it is absolute address, we don't do anything!
-    if(Address.getOpcode() == ISD::LOAD  || Address.getOpcode() == ISD::CopyFromReg)
-        return Address;
+  if (isa<FrameIndexSDNode>(Address)) {
+    return Address;
+  }
 
-    Address.dump();
-    DAG.viewGraph();
-    llvm_unreachable("don't know what to do");
-    // return NewOffset;
+  // If it is absolute address, we don't do anything!
+  if (Address.getOpcode() == ISD::LOAD ||
+      Address.getOpcode() == ISD::CopyFromReg)
+    return Address;
+
+  Address.dump();
+  DAG.viewGraph();
+  llvm_unreachable("don't know what to do");
+  // return NewOffset;
 }
 
-SDValue CPEN211TargetLowering::LowerLoad(SDValue Op, SelectionDAG& DAG) const {
-    SDValue Chain = Op.getOperand(0);
-    SDValue Address = Op.getOperand(1);
-    SDValue Undef = Op.getOperand(2);
+SDValue CPEN211TargetLowering::LowerLoad(SDValue Op, SelectionDAG &DAG) const {
+  SDValue Chain = Op.getOperand(0);
+  SDValue Address = Op.getOperand(1);
+  SDValue Undef = Op.getOperand(2);
 
-    // don't do anything to frame index
-    if(isa<FrameIndexSDNode>(Address)){
-        SDValue NewLoad = 
-            DAG.getNode(CPEN211ISD::LOAD, SDLoc(Op), {MVT::i16, MVT::i16}, {Chain, Address, Undef});
-        return NewLoad; 
-    }
-
-    SDValue NewAddress = RecalculateAddress(Address, DAG);
-
-    // TODO (for Vincent): is this even correct?
-    // It seems that ISD::Load requires two value?  
-    SDValue NewLoad = 
-        DAG.getNode(CPEN211ISD::LOAD, SDLoc(Op), {MVT::i16, MVT::i16}, {Chain, NewAddress, Undef});
-
+  // don't do anything to frame index
+  if (isa<FrameIndexSDNode>(Address)) {
+    SDValue NewLoad =
+        DAG.getNode(CPEN211ISD::LOAD, SDLoc(Op), {MVT::i16, MVT::i16},
+                    {Chain, Address, Undef});
     return NewLoad;
+  }
+
+  SDValue NewAddress = RecalculateAddress(Address, DAG);
+
+  // TODO (for Vincent): is this even correct?
+  // It seems that ISD::Load requires two value?
+  SDValue NewLoad =
+      DAG.getNode(CPEN211ISD::LOAD, SDLoc(Op), {MVT::i16, MVT::i16},
+                  {Chain, NewAddress, Undef});
+
+  return NewLoad;
 }
 
-SDValue CPEN211TargetLowering::LowerStore(SDValue Op, SelectionDAG& DAG) const {
-    assert(Op.getNumOperands() == 4 && "must have 4 operands");
-    assert(Op.getValueType() == MVT::Other && "I am not sure how this is not true");
-    // There are two cases
+SDValue CPEN211TargetLowering::LowerStore(SDValue Op, SelectionDAG &DAG) const {
+  assert(Op.getNumOperands() == 4 && "must have 4 operands");
+  assert(Op.getValueType() == MVT::Other &&
+         "I am not sure how this is not true");
+  // There are two cases
 
-    SDValue Chain = Op.getOperand(0);
-    SDValue Value = Op.getOperand(1);
-    SDValue Loc = RecalculateAddress(Op.getOperand(2), DAG);
-    SDValue NotSure = Op.getOperand(3);
+  SDValue Chain = Op.getOperand(0);
+  SDValue Value = Op.getOperand(1);
+  SDValue Loc = RecalculateAddress(Op.getOperand(2), DAG);
+  SDValue NotSure = Op.getOperand(3);
 
-    return DAG.getNode(CPEN211ISD::STORE, SDLoc(Op), MVT::Other, Chain, Value, Loc, NotSure);
+  return DAG.getNode(CPEN211ISD::STORE, SDLoc(Op), MVT::Other, Chain, Value,
+                     Loc, NotSure);
 }
 
 SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
@@ -426,7 +434,7 @@ SDValue CPEN211TargetLowering::LowerOperation(SDValue Op,
     return LowerBR_CC(Op, DAG);
   case ISD::SELECT_CC:
     return LowerSELECT_CC(Op, DAG);
-  case ISD::STORE: 
+  case ISD::STORE:
     return LowerStore(Op, DAG);
   case ISD::LOAD:
     return LowerLoad(Op, DAG);
@@ -775,8 +783,8 @@ CPEN211TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
   // Analize return values.
   AnalyzeReturnValues(CCInfo, RVLocs, Outs);
 
-  if(Outs.size() == 0)
-      return DAG.getNode(CPEN211ISD::RET_GLUE, dl, MVT::Other, Chain);
+  if (Outs.size() == 0)
+    return DAG.getNode(CPEN211ISD::RET_GLUE, dl, MVT::Other, Chain);
 
   assert(Outs.size() == 1 && RVLocs.size() == 1 &&
          "don't know how to return stuff with size that are more than one?");
@@ -821,7 +829,8 @@ SDValue CPEN211TargetLowering::LowerCCCCallTo(
     const SmallVectorImpl<SDValue> &OutVals,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
     SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
-assert(!isVarArg && !isTailCall && "both tail call and variadic are not supported");
+  assert(!isVarArg && !isTailCall &&
+         "both tail call and variadic are not supported");
   // // Analyze operands of the call, assigning locations to each operand.
   SmallVector<CCValAssign, 16> ArgLocs;
   CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
@@ -908,7 +917,7 @@ assert(!isVarArg && !isTailCall && "both tail call and variadic are not supporte
   for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
     Chain = DAG.getCopyToReg(Chain, dl, RegsToPass[i].first,
                              RegsToPass[i].second, InGlue);
-    InGlue = Chain.getValue(1); 
+    InGlue = Chain.getValue(1);
   }
 
   // If the callee is a GlobalAddress node (quite common, every direct cal is)
@@ -961,7 +970,7 @@ SDValue CPEN211TargetLowering::LowerCallResult(
 
   AnalyzeReturnValues(CCInfo, RVLocs, Ins);
 
-  assert((RVLocs.size() == 1 || RVLocs.size() == 0)&&
+  assert((RVLocs.size() == 1 || RVLocs.size() == 0) &&
          "as of current. Only support return value of size one or 0! ");
 
   // Copy all of the result registers out of their specified physreg.
@@ -976,26 +985,39 @@ SDValue CPEN211TargetLowering::LowerCallResult(
   return Chain;
 }
 
-CPEN211ISD::NodeType GetShiftCode(unsigned Code){
-    switch(Code){
-        default: 
-            llvm_unreachable("This shift code is curretnly unsupported!");
-        case ISD::SHL: 
-            return CPEN211ISD::SHL;
-        case ISD::SRL: 
-            return CPEN211ISD::SRL; 
-        case ISD::SRA: 
-            return CPEN211ISD::SRA;
-    }
+CPEN211ISD::NodeType GetShiftCode(unsigned Code) {
+  switch (Code) {
+  default:
+    llvm_unreachable("This shift code is curretnly unsupported!");
+  case ISD::SHL:
+    return CPEN211ISD::SHL;
+  case ISD::SRL:
+    return CPEN211ISD::SRL;
+  case ISD::SRA:
+    return CPEN211ISD::SRA;
+  }
 }
 
 SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
                                            SelectionDAG &DAG) const {
   unsigned Opc = Op.getOpcode();
-  assert((Opc == ISD::SHL || Opc == ISD::SRA || Opc == ISD::SRL)
-          && "these are the only shift that are currently supported!");
+  assert((Opc == ISD::SHL || Opc == ISD::SRA || Opc == ISD::SRL) &&
+         "these are the only shift that are currently supported!");
 
   CPEN211ISD::NodeType NewISDCode = GetShiftCode(Opc);
+  // Getting the Library Name
+  RTLIB::Libcall RTLibName = [](unsigned int Op) {
+    switch (Op) {
+    case ISD::SHL:
+      return RTLIB::Libcall::SHL_I16;
+    case ISD::SRL:
+      return RTLIB::Libcall::SHL_I16;
+    case ISD::SRA:
+      return RTLIB::Libcall::SRA_I16;
+    default:
+      llvm_unreachable("Invalid op code was provided");
+    }
+  }(Op.getOpcode());
 
   SDNode *N = Op.getNode();
   SDLoc Loc(Op);
@@ -1003,27 +1025,28 @@ SDValue CPEN211TargetLowering::LowerShifts(SDValue Op,
 
   // FIXME: we have to emit a function call instead!
   // I think we need to emit a function call instead!
-  if (!ConstantNode){
-      MakeLibCallOptions CallOptions;
-      // Getting the Library Name
-      RTLIB::Libcall RTLibName = [](unsigned int Op){
-          switch(Op){
-              case ISD::SHL: 
-                  return RTLIB::Libcall::SHL_I16;
-              case ISD::SRL:
-                  return RTLIB::Libcall::SHL_I16;
-              case ISD::SRA:
-                  return RTLIB::Libcall::SRA_I16;
-              default:
-                  llvm_unreachable("Invalid op code was provided");
-          }
-      }(Op.getOpcode());
+  if (!ConstantNode) {
+    MakeLibCallOptions CallOptions;
+    SDValue LibCalLResult =
+        makeLibCall(DAG, RTLibName, MVT::i16,
+                    {Op.getOperand(0), Op.getOperand(1)}, CallOptions, Loc)
+            .first;
 
-      SDValue LibCalLResult = makeLibCall(DAG, RTLibName, MVT::i16, 
-              {Op.getOperand(0), Op.getOperand(1)}, CallOptions, Loc).first;
+    return LibCalLResult;
+  }
+
+  // Constant Node but not one case! requires
+  // requires a libcall
+  if (ConstantNode)
+    if (ConstantNode->getSExtValue() != 1) {
+      MakeLibCallOptions CallOptions;
+      SDValue LibCalLResult =
+          makeLibCall(DAG, RTLibName, MVT::i16,
+                      {Op.getOperand(0), Op.getOperand(1)}, CallOptions, Loc)
+              .first;
 
       return LibCalLResult;
-  }
+    }
 
   // Constant Case
   SDLoc DL(N);
@@ -1364,7 +1387,7 @@ bool CPEN211TargetLowering::getPostIndexedAddressParts(
 const char *CPEN211TargetLowering::getTargetNodeName(unsigned Opcode) const {
   switch ((CPEN211ISD::NodeType)Opcode) {
   case CPEN211ISD::FIRST_NUMBER:
-      llvm_unreachable_internal("this should not be possible");
+    llvm_unreachable_internal("this should not be possible");
     return "CPEN211ISD::Invalid";
   case CPEN211ISD::RET_GLUE:
     return "CPEN211ISD::RET_GLUE";

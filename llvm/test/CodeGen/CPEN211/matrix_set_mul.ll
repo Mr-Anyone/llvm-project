@@ -1,4 +1,5 @@
-; ModuleID = 'main.c'
+; RUN: llc < %s | FileCheck %s
+
 source_filename = "main.c"
 target datalayout = "e-p:16:16-i16:16"
 target triple = "cpen211"
@@ -29,6 +30,7 @@ for.body4:                                        ; preds = %for.cond1.preheader
   %cmp2 = icmp samesign ult i16 %j.015, 9
   br i1 %cmp2, label %for.body4, label %for.cond.cleanup3, !llvm.loop !10
 }
+; CHECK-LABEL: set_matrix:
 
 ; Function Attrs: nofree norecurse nosync nounwind memory(argmem: readwrite)
 define dso_local void @matrix_2d_add(ptr nocapture noundef writeonly %a, ptr nocapture noundef readonly %b, ptr nocapture noundef readonly %c) local_unnamed_addr #1 {
@@ -61,11 +63,15 @@ for.body4:                                        ; preds = %for.cond1.preheader
   br i1 %cmp2, label %for.body4, label %for.cond.cleanup3, !llvm.loop !12
 }
 
+; CHECK-LABEL: matrix_2d_add:
+
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none)
 define dso_local noundef i16 @main() local_unnamed_addr #2 {
 entry:
   ret i16 0
 }
+
+; CHECK-LABEL: main
 
 attributes #0 = { nofree norecurse nosync nounwind memory(argmem: write) "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
 attributes #1 = { nofree norecurse nosync nounwind memory(argmem: readwrite) "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }

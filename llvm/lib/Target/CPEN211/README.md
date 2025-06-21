@@ -10,7 +10,7 @@ The entire instruction set is basically self explanatory.
 
 - Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
 ISD::SETLT and ISD::SETULT are the same thing.
-- Massive array such as `int a [10][10]` break code gen, because LDR and STR instruction doesn't support indexing of values that are pretty massive
+- It seems that two dimensional array doesn't work.
 
 # TODO 
 
