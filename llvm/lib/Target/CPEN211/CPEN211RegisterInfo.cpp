@@ -72,7 +72,6 @@ CPEN211RegisterInfo::getPointerRegClass(const MachineFunction &MF,
 bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                               int SPAdj, unsigned FIOperandNum,
                                               RegScavenger *RS) const {
-  // llvm_unreachable("this is not yet implemented");
   assert(SPAdj == 0 && "Unexpected");
 
   MachineInstr &MI = *II;
@@ -101,6 +100,53 @@ bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // TODO (for Vincent): is this even correct?
   Offset = Offset /
            2; // this is because of the weirdness of the CPEN211 memory model
+
+  // We have select AddFrame instruction, so
+  // This is the case where we need to calculate the frame index instead!
+  if (MI.getOpcode() == CPEN211::AddFrame) {
+    // This is actually "load effective address" of the stack slot
+    // instruction. We have only two-address instructions, thus we need to
+    // expand it into mov + add
+    assert(MI.getOperand(FIOperandNum + 1).getImm() == 0 &&
+           "offset must be zero");
+
+    const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
+    MI.setDesc(TII.get(CPEN211::MOV16rr));
+    MI.getOperand(FIOperandNum).ChangeToRegister(CPEN211::SP, false);
+    MI.removeOperand(FIOperandNum + 1); // remove the offset, which
+
+    assert(Offset > 0 && "offset must be gerater than 0!");
+
+    Register DstReg = MI.getOperand(FIOperandNum - 1).getReg();
+
+    BuildMI(MBB, std::next(II), dl, TII.get(CPEN211::MOV16ri), CPEN211::R4)
+        .addImm(Offset);
+    II = std::next(II);
+    if (Offset > 0)
+      BuildMI(MBB, std::next(II), dl, TII.get(CPEN211::ADD16rr), DstReg)
+          .addReg(CPEN211::R4)
+          .addReg(CPEN211::SP);
+
+    return false;
+  }
+
+  // for the typical normal case, if the offset is way too big
+  // STR or LDR requires the offset to be in between -16 <= Offset <= 15
+  // trying moving into a intermediate register and adding it up
+  if (Offset > 15 || Offset < -16) {
+    const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
+    // Address calculation STR R0, [Base, offset] 
+    BuildMI(MBB, II, dl, TII.get(CPEN211::MOV16ri), CPEN211::R4)
+        .addImm(Offset);
+
+    BuildMI(MBB, II, dl,  TII.get(CPEN211::ADD16rr), CPEN211::R4)
+        .addReg(CPEN211::R4)
+        .addReg(BasePtr);
+
+    MI.getOperand(FIOperandNum).ChangeToRegister(CPEN211::R4, false);
+    MI.getOperand(FIOperandNum + 1).ChangeToImmediate(0);
+    return false;
+  }
 
   MI.getOperand(FIOperandNum).ChangeToRegister(BasePtr, false);
   MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);

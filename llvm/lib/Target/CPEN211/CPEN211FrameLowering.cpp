@@ -40,8 +40,8 @@ bool CPEN211FrameLowering::hasFPImpl(const MachineFunction &MF) const {
 
 bool CPEN211FrameLowering::hasReservedCallFrame(
     const MachineFunction &MF) const {
-  // assume infinite stack is a bad idea?
-  return false;
+    // Fixed size stack should be ok!
+  return !MF.getFrameInfo().hasVarSizedObjects();
 }
 
 void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
@@ -81,11 +81,13 @@ void CPEN211FrameLowering::emitPrologue(MachineFunction &MF,
   // MOV R4, #-10
   // ADD R1, R2, R4
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::MOV16ri), CPEN211::R4)
-      .addImm(SubtractSize * -1);
+      .addImm(SubtractSize * -1)
+      .setMIFlags(MachineInstr::FrameSetup);
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::ADD16rr), CPEN211::SP)
       .addReg(CPEN211::SP)
-      .addReg(CPEN211::R4);
+      .addReg(CPEN211::R4)
+      .setMIFlags(MachineInstr::FrameSetup);
 
   // BuildMI(MBB, MBBI, DL, TII.get(CPEN211::SUB16ri), CPEN211::SP)
   //     .addReg(CPEN211::SP)
@@ -222,7 +224,8 @@ void CPEN211FrameLowering::emitEpilogue(MachineFunction &MF,
   uint64_t NumBytes = 0;
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::MOV16ri), CPEN211::R4)
-      .addImm(StackSize / 2);
+      .addImm(StackSize / 2)
+      .setMIFlags(MachineInstr::FrameDestroy);
 
   BuildMI(MBB, MBBI, DL, TII.get(CPEN211::ADD16rr), CPEN211::SP)
       .addReg(CPEN211::SP)
@@ -403,10 +406,11 @@ MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
     MachineFunction &MF, MachineBasicBlock &MBB,
     MachineBasicBlock::iterator I) const {
   MachineInstr &Old = *I;
-  // because of CPEN211 weird memory layout
-  uint64_t Amount = TII.getFrameSize(Old) / 2;
 
   // Trivial cases
+  uint64_t Amount = TII.getFrameSize(Old);
+  assert(Amount % 2 == 0 && "amount have to be aligned on two bytes boundary");
+  Amount = Amount / 2; // because of weird CPEN211 memory layout
   if (Amount == 0) {
     return MBB.erase(I);
   }
@@ -418,14 +422,14 @@ MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
   // amount of space needed for the outgoing arguments up to the next
   // alignment boundary.
   assert(getStackAlign() == 2);
-  Amount = alignTo(Amount, getStackAlign());
+  // because of CPEN211 weird memory layout
+  assert(TII.getFrameSize(Old) % 2 == 0);
 
   MachineInstr *New = nullptr;
+  assert(TII.getCallFrameSetupOpcode() == CPEN211::ADJCALLSTACKDOWN);
   if (Old.getOpcode() == TII.getCallFrameSetupOpcode()) {
     LLVM_DEBUG(dbgs() << "CallFrame Setup has been called!\n");
 
-    assert(Amount <= 128 &&
-           "MOV16ri only support intermediate value of less than 128");
     New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::MOV16ri), CPEN211::R4)
               .addImm(-Amount);
 
@@ -436,21 +440,23 @@ MachineBasicBlock::iterator CPEN211FrameLowering::eliminateCallFramePseudoInstr(
             .addReg(CPEN211::SP);
     MBB.insert(std::next(I), New);
     MBB.erase(std::prev(std::prev(I)));
-    return MBB.erase(I);
+    auto After = MBB.erase(I);
+    return After;
   } else {
     LLVM_DEBUG(dbgs() << "Call Frame Destroy has been called!\n");
     assert(Old.getOpcode() == TII.getCallFrameDestroyOpcode());
     assert(TII.getFramePoppedByCallee(Old) == 0 &&
            "callee doesn't pop things off");
-    assert(Amount % 2 == 0 &&
-           "amount have to be aligned on two bytes boundary");
+
 
     New = BuildMI(MF, Old.getDebugLoc(), TII.get(CPEN211::ADD16rr), CPEN211::SP)
               .addImm(Amount)
               .addReg(CPEN211::SP);
 
     MBB.insert(I, New);
-    return MBB.erase(I);
+
+    auto After = MBB.erase(I);
+    return After;
   }
 
   // Replace the pseudo instruction with a new instruction...

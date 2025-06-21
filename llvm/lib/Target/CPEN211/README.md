@@ -8,8 +8,9 @@ The entire instruction set is basically self explanatory.
 
 ## Bugs
 
-- [] Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
+- Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
 ISD::SETLT and ISD::SETULT are the same thing.
+- Massive array such as `int a [10][10]` break code gen, because LDR and STR instruction doesn't support indexing of values that are pretty massive
 
 # TODO 
 

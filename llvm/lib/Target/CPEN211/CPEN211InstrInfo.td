@@ -117,9 +117,8 @@ def MOV16rr : IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm)
 }
 
 let Rn = 0b000 in {
-
     def MOV16Shiftrr: IForm<0b110, 0b00, 2, (outs GR16:$Rd), (ins GR16:$Rm, shift:$shift)
-                , "MOV\t{$Rd, $Rm, $shift}", []>;
+                ,"MOV\t{$Rd, $Rm, $shift}", []>;
 }
 
 // Logical shift left
@@ -255,7 +254,7 @@ let isReturn = 1, isTerminator = 1, isBarrier = 1 in def RET : Pseudo<(outs), (i
 
 //===----------------------------------------------------------------------
 // Special type of instruction
-let isCodeGenOnly = 1, Defs = [SP, SP], Uses = [SP] in {
+let isCodeGenOnly = 1, Defs = [SP], Uses = [SP] in {
     def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i16imm:$amt1, i16imm:$amt2),
                                   "#ADJCALLSTACKDOWN $amt1 $amt2",
                                   // TODO (for Vincent): this is in corrent!
@@ -267,6 +266,12 @@ let isCodeGenOnly = 1, Defs = [SP, SP], Uses = [SP] in {
                                   [(CPEN211callseq_end timm:$amt1, timm:$amt2)]>;
                                   //[]>;
 } // isCodeGenOnly = 1
+
+// From the look of things, sometime FrameIndex will need to be selected some how
+// A lot of backend use this feature as a way to select FrameIndex
+// Although the offset is always zero, we still need this operand beacuse eliminateFrameIndex 
+// requires us to do so!
+let isCodeGenOnly  = 1 in def AddFrame : Pseudo<(outs  GR16:$dst), (ins i16imm:$base, i16imm:$offset), "# AddFrame Pseudo", []>;
 
 let isCodeGenOnly = 1, usesCustomInserter = 1 in {
     // this is a pseudo because we have to move the intermediate into 

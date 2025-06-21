@@ -15,6 +15,7 @@
 #include "CPEN211Subtarget.h"
 #include "CPEN211TargetMachine.h"
 #include "llvm/CodeGen/CallingConvLower.h"
+#include "llvm/CodeGen/ISDOpcodes.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
@@ -335,9 +336,6 @@ static bool isConstantAndIsOne(SDValue Value){
 // offset, offset >> 1
 static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
 
-    // don't touch FrameIndex!
-    if(isa<FrameIndexSDNode>(Address))
-        return Address;
 
     if(Address.getOpcode() == ISD::ADD){
         SDValue Base = Address.getOperand(0); // base
@@ -362,6 +360,10 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG& DAG){
                 Offset, One);
 
         return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, NewOffset);
+    }
+
+    if(isa<FrameIndexSDNode>(Address)){
+        return Address;
     }
 
     // If it is absolute address, we don't do anything!
@@ -396,7 +398,7 @@ SDValue CPEN211TargetLowering::LowerLoad(SDValue Op, SelectionDAG& DAG) const {
     return NewLoad;
 }
 
-SDValue CPEN211TargetLowering::LowerStore(SDValue Op,SelectionDAG& DAG ) const {
+SDValue CPEN211TargetLowering::LowerStore(SDValue Op, SelectionDAG& DAG) const {
     assert(Op.getNumOperands() == 4 && "must have 4 operands");
     assert(Op.getValueType() == MVT::Other && "I am not sure how this is not true");
     // There are two cases
@@ -958,8 +960,9 @@ SDValue CPEN211TargetLowering::LowerCallResult(
                  *DAG.getContext());
 
   AnalyzeReturnValues(CCInfo, RVLocs, Ins);
-  assert(RVLocs.size() == 1 &&
-         "as of current. Only support return value of size one! ");
+
+  assert((RVLocs.size() == 1 || RVLocs.size() == 0)&&
+         "as of current. Only support return value of size one or 0! ");
 
   // Copy all of the result registers out of their specified physreg.
   for (unsigned i = 0; i != RVLocs.size(); ++i) {
