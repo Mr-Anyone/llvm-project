@@ -677,6 +677,21 @@ DeclSpec::TST Sema::isTagName(IdentifierInfo &II, Scope *S) {
 
   return DeclSpec::TST_unspecified;
 }
+static bool IsInStandardLibraryNamespace(CXXScopeSpec* SS){
+    if(!SS->isValid())
+        return false; 
+
+    NestedNameSpecifier* Specifier = SS->getScopeRep();
+    if(Specifier->getKind() != NestedNameSpecifier::SpecifierKind::Namespace)
+        return false;
+
+    // preventing some_type_name::std ... where std is not the first nested name
+    if(Specifier->getPrefix())
+        return false;
+
+    return Specifier->getAsNamespace()->getName() == "std";
+
+}
 
 bool Sema::isMicrosoftMissingTypename(const CXXScopeSpec *SS, Scope *S) {
   if (CurContext->isRecord()) {
@@ -804,6 +819,14 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
   } else {
     assert(SS && SS->isInvalid() &&
            "Invalid scope specifier has already been diagnosed");
+  }
+
+  // Diagnose standard library includes fix me's
+  if(getLangOpts().CPlusPlus && IsInStandardLibraryNamespace(SS)){
+      // try to find the header file
+      const std::string IncludeString = "stack";
+    Diag(IILoc, diag::note_standard_lib_include_suggestion)
+        << IncludeString << II << SS->getRange();
   }
 }
 
