@@ -62,6 +62,7 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/ADT/StringSwitch.h"
 #include "llvm/Frontend/HLSL/HLSLRootSignature.h"
 #include "llvm/Support/SaveAndRestore.h"
 #include "llvm/TargetParser/Triple.h"
@@ -823,11 +824,23 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
 
   // Diagnose standard library includes fix me's
   if(getLangOpts().CPlusPlus && IsInStandardLibraryNamespace(SS)){
-      // try to find the header file
-      const std::string IncludeString = "stack";
-    Diag(IILoc, diag::note_standard_lib_include_suggestion)
-        << IncludeString << II << SS->getRange();
+      NoteCPlusPlusSTDIncludes(II, IILoc, SS);
   }
+}
+
+void Sema::NoteCPlusPlusSTDIncludes(IdentifierInfo *II, SourceLocation IILoc, const CXXScopeSpec* SS){
+    // try to find the header file
+    // TODO: maybe use table gen to generate this string switch statement?
+    StringRef IncludeName = llvm::StringSwitch<const char*>(II->getName())
+            .Case("stack", "stack")
+            .Case("string", "string")
+            .Default("");
+
+    if(IncludeName.empty())
+        return;
+
+    Diag(IILoc, diag::note_standard_lib_include_suggestion)
+        << IncludeName << II << SS->getRange();
 }
 
 /// Determine whether the given result set contains either a type name
