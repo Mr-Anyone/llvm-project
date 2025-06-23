@@ -228,6 +228,8 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
 
   // Preferred type might change when parsing qualifiers, we need the original.
   auto SavedType = PreferredType;
+  std::string FullName = ""; 
+  bool FailedNesatedNameBuilding = false;
   while (true) {
     if (HasScopeSpecifier) {
       if (Tok.is(tok::code_completion)) {
@@ -454,6 +456,9 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
       // We have an identifier followed by a '::'. Lookup this name
       // as the name in a nested-name-specifier.
       Token Identifier = Tok;
+      FullName += Identifier.getIdentifierInfo()->getName();
+      FullName += "::";
+
       SourceLocation IdLoc = ConsumeToken();
       assert(Tok.isOneOf(tok::coloncolon, tok::colon) &&
              "NextToken() not working properly!");
@@ -465,6 +470,7 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
       if (Actions.ActOnCXXNestedNameSpecifier(
               getCurScope(), IdInfo, EnteringContext, SS, CorrectionFlagPtr,
               OnlyNamespace)) {
+          FailedNesatedNameBuilding = true;
         // Identifier is not recognized as a nested name, but we can have
         // mistyped '::' instead of ':'.
         if (CorrectionFlagPtr && IsCorrectedToColon) {
@@ -553,6 +559,12 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
     // nested-name-specifier, so we're done.
     break;
   }
+
+    if(FailedNesatedNameBuilding && Tok.getKind() == tok::identifier){
+        Actions.NoteCPlusPlusSTDIncludes(Tok.getIdentifierInfo()->getName(), 
+                Tok.getLocation(), 
+                FullName);
+    }
 
   // Even if we didn't see any pieces of a nested-name-specifier, we
   // still check whether there is a tilde in this position, which

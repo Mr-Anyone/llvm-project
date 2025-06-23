@@ -830,6 +830,27 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
   NoteCPlusPlusSTDIncludes(II->getName(), IILoc, SS);
 }
 
+void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, StringRef Namespace){
+    if(Namespace != "std::")
+        return;
+
+    // try to find the header file
+    // TODO: maybe use table gen to generate this string switch statement?
+    StringRef IncludeName = llvm::StringSwitch<StringRef>(SymbolName)
+            .Case("stack", "stack")
+            .Case("string", "string")
+            .Case("unique_ptr", "memory")
+            .Case("unordered_map", "unordered_map")
+            .Default("");
+
+    if(IncludeName.empty())
+        return;
+
+    Diag(IILoc, diag::note_standard_lib_include_suggestion)
+        << IncludeName << SymbolName;
+}
+
+// FIXME: use the function above instead. We should try and only use one function.
 void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, const CXXScopeSpec* SS){
     if(!IsInStandardLibraryNamespace(SS))
         return;
