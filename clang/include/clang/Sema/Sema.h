@@ -3612,7 +3612,8 @@ public:
                                bool IsTemplateName = false);
 
   /// Tries to recommend missing c++ includes
-  void NoteCPlusPlusSTDIncludes(IdentifierInfo *II, SourceLocation IILoc, const CXXScopeSpec* SS);
+  void NoteCPlusPlusSTDIncludes(StringRef SymbolName, 
+          SourceLocation IILoc, const CXXScopeSpec* SS);
 
   /// Attempt to behave like MSVC in situations where lookup of an unqualified
   /// type name has failed in a dependent context. In these situations, we

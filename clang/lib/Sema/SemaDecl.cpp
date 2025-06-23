@@ -678,7 +678,8 @@ DeclSpec::TST Sema::isTagName(IdentifierInfo &II, Scope *S) {
 
   return DeclSpec::TST_unspecified;
 }
-static bool IsInStandardLibraryNamespace(CXXScopeSpec* SS){
+
+static bool IsInStandardLibraryNamespace(const CXXScopeSpec* SS){
     if(!SS->isValid())
         return false; 
 
@@ -823,24 +824,27 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
   }
 
   // Diagnose standard library includes fix me's
-  if(getLangOpts().CPlusPlus && IsInStandardLibraryNamespace(SS)){
-      NoteCPlusPlusSTDIncludes(II, IILoc, SS);
-  }
+  NoteCPlusPlusSTDIncludes(II->getName(), IILoc, SS);
 }
 
-void Sema::NoteCPlusPlusSTDIncludes(IdentifierInfo *II, SourceLocation IILoc, const CXXScopeSpec* SS){
+void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, const CXXScopeSpec* SS){
+
+    if(!IsInStandardLibraryNamespace(SS))
+        return;
+
     // try to find the header file
     // TODO: maybe use table gen to generate this string switch statement?
-    StringRef IncludeName = llvm::StringSwitch<const char*>(II->getName())
+    StringRef IncludeName = llvm::StringSwitch<StringRef>(SymbolName)
             .Case("stack", "stack")
             .Case("string", "string")
+            .Case("unique_ptr", "memory")
             .Default("");
 
     if(IncludeName.empty())
         return;
 
     Diag(IILoc, diag::note_standard_lib_include_suggestion)
-        << IncludeName << II << SS->getRange();
+        << IncludeName << SymbolName;
 }
 
 /// Determine whether the given result set contains either a type name
