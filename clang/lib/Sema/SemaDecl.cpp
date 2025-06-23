@@ -680,6 +680,9 @@ DeclSpec::TST Sema::isTagName(IdentifierInfo &II, Scope *S) {
 }
 
 static bool IsInStandardLibraryNamespace(const CXXScopeSpec* SS){
+    if(!SS)
+        return false;
+
     if(!SS->isValid())
         return false; 
 
@@ -828,7 +831,6 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
 }
 
 void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, const CXXScopeSpec* SS){
-
     if(!IsInStandardLibraryNamespace(SS))
         return;
 
@@ -838,6 +840,7 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, 
             .Case("stack", "stack")
             .Case("string", "string")
             .Case("unique_ptr", "memory")
+            .Case("unordered_map", "unordered_map")
             .Default("");
 
     if(IncludeName.empty())
