@@ -58,6 +58,7 @@
 #include "clang/Sema/SemaSwift.h"
 #include "clang/Sema/SemaWasm.h"
 #include "clang/Sema/Template.h"
+#include "clang/Tooling/Inclusions/StandardLibrary.h"
 #include "llvm/ADT/STLForwardCompat.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallString.h"
@@ -838,26 +839,17 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, 
     llvm::outs() << "Trying to note the following symbol: " << SymbolName << " in namespace: " << Namespace << "\n";
 #endif
 
-    // try to find the header file
-    // FIXME: need to match namespace as well!
-    // TODO: maybe use table gen to generate this string switch statement?
-    StringRef IncludeName = llvm::StringSwitch<StringRef>(SymbolName)
-            .Case("stack", "stack")
-            .Case("string", "string")
-            .Case("sin", "cmath")
-            .Case("unique_ptr", "memory")
-            .Case("unordered_map", "unordered_map")
-            .Case("cout", "iostream")
-            .Case("getline", "string")
-            .Default("");
+    llvm::StringRef HeaderName =  "";
+  if (auto StdSym = tooling::stdlib::Symbol::named(Namespace, SymbolName, clang::tooling::stdlib::Lang::CXX)){
+      if(auto Header = StdSym->header()){
+          HeaderName = Header->name();
+      }
+  }
 
-    if(IncludeName.empty())
-        return;
-
-    Diag(IILoc, diag::note_standard_lib_include_suggestion)
-        << IncludeName << SymbolName;
+  if(!HeaderName.empty())
+        Diag(IILoc, diag::note_standard_lib_include_suggestion)
+            << HeaderName << (Namespace + SymbolName).str();
 }
-
 
 // FIXME: use the function above instead. We should try and only use one function.
 void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, const CXXScopeSpec* SS){
