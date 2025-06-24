@@ -2660,7 +2660,7 @@ bool Sema::DiagnoseEmptyLookup(Scope *S, CXXScopeSpec &SS, LookupResult &R,
   if (!SS.isEmpty()) {
     Diag(R.getNameLoc(), diag::err_no_member)
         << Name << computeDeclContext(SS, false) << NameRange;
-    NoteCPlusPlusSTDIncludes(Name.getAsString(),R.getNameLoc(), &SS);
+    NoteCPlusPlusSTDIncludes(Name.getAsString(), R.getNameLoc(), &SS);
     return true;
   }
 

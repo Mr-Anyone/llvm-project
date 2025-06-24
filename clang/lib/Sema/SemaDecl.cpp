@@ -680,23 +680,22 @@ DeclSpec::TST Sema::isTagName(IdentifierInfo &II, Scope *S) {
   return DeclSpec::TST_unspecified;
 }
 
-static bool IsInStandardLibraryNamespace(const CXXScopeSpec* SS){
-    if(!SS)
-        return false;
+static bool IsInStandardLibraryNamespace(const CXXScopeSpec *SS) {
+  if (!SS)
+    return false;
 
-    if(!SS->isValid())
-        return false; 
+  if (!SS->isValid())
+    return false;
 
-    NestedNameSpecifier* Specifier = SS->getScopeRep();
-    if(Specifier->getKind() != NestedNameSpecifier::SpecifierKind::Namespace)
-        return false;
+  NestedNameSpecifier *Specifier = SS->getScopeRep();
+  if (Specifier->getKind() != NestedNameSpecifier::SpecifierKind::Namespace)
+    return false;
 
-    // preventing some_type_name::std ... where std is not the first nested name
-    if(Specifier->getPrefix())
-        return false;
+  // preventing some_type_name::std ... where std is not the first nested name
+  if (Specifier->getPrefix())
+    return false;
 
-    return Specifier->getAsNamespace()->getName() == "std";
-
+  return Specifier->getAsNamespace()->getName() == "std";
 }
 
 bool Sema::isMicrosoftMissingTypename(const CXXScopeSpec *SS, Scope *S) {
@@ -831,35 +830,39 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
   NoteCPlusPlusSTDIncludes(II->getName(), IILoc, SS);
 }
 
-
 #define LOG_LOOKUP
 
-void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, StringRef Namespace){
+void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
+                                    StringRef Namespace) {
 #ifdef LOG_LOOKUP
-    llvm::outs() << "Trying to note the following symbol: " << SymbolName << " in namespace: " << Namespace << "\n";
+  llvm::outs() << "Trying to note the following symbol: " << SymbolName
+               << " in namespace: " << Namespace << "\n";
 #endif
 
-    llvm::StringRef HeaderName =  "";
-  if (auto StdSym = tooling::stdlib::Symbol::named(Namespace, SymbolName, clang::tooling::stdlib::Lang::CXX)){
-      if(auto Header = StdSym->header()){
-          HeaderName = Header->name();
-      }
+  llvm::StringRef HeaderName = "";
+  if (auto StdSym = tooling::stdlib::Symbol::named(
+          Namespace, SymbolName, clang::tooling::stdlib::Lang::CXX)) {
+    if (auto Header = StdSym->header()) {
+      HeaderName = Header->name();
+    }
   }
 
-  if(!HeaderName.empty())
-        Diag(IILoc, diag::note_standard_lib_include_suggestion)
-            << HeaderName << (Namespace + SymbolName).str();
+  if (!HeaderName.empty())
+    Diag(IILoc, diag::note_standard_lib_include_suggestion)
+        << HeaderName << (Namespace + SymbolName).str();
 }
 
-// FIXME: use the function above instead. We should try and only use one function.
-void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, const CXXScopeSpec* SS){
-    std::string Namespace = "";
-    llvm::raw_string_ostream Stream (Namespace);
-    if(SS->isValid())
-        SS->getScopeRep()->dump(Stream);
-    Stream.flush();
+// FIXME: use the function above instead. We should try and only use one
+// function.
+void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
+                                    const CXXScopeSpec *SS) {
+  std::string Namespace = "";
+  llvm::raw_string_ostream Stream(Namespace);
+  if (SS->isValid())
+    SS->getScopeRep()->dump(Stream);
+  Stream.flush();
 
-    NoteCPlusPlusSTDIncludes(SymbolName, IILoc, Namespace);
+  NoteCPlusPlusSTDIncludes(SymbolName, IILoc, Namespace);
 }
 
 /// Determine whether the given result set contains either a type name
