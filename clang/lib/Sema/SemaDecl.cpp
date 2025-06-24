@@ -830,17 +830,25 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
   NoteCPlusPlusSTDIncludes(II->getName(), IILoc, SS);
 }
 
+
+#define LOG_LOOKUP
+
 void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, StringRef Namespace){
-    if(Namespace != "std::")
-        return;
+#ifdef LOG_LOOKUP
+    llvm::outs() << "Trying to note the following symbol: " << SymbolName << " in namespace: " << Namespace << "\n";
+#endif
 
     // try to find the header file
+    // FIXME: need to match namespace as well!
     // TODO: maybe use table gen to generate this string switch statement?
     StringRef IncludeName = llvm::StringSwitch<StringRef>(SymbolName)
             .Case("stack", "stack")
             .Case("string", "string")
+            .Case("sin", "cmath")
             .Case("unique_ptr", "memory")
             .Case("unordered_map", "unordered_map")
+            .Case("cout", "iostream")
+            .Case("getline", "string")
             .Default("");
 
     if(IncludeName.empty())
@@ -850,25 +858,16 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, 
         << IncludeName << SymbolName;
 }
 
+
 // FIXME: use the function above instead. We should try and only use one function.
 void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc, const CXXScopeSpec* SS){
-    if(!IsInStandardLibraryNamespace(SS))
-        return;
+    std::string Namespace = "";
+    llvm::raw_string_ostream Stream (Namespace);
+    if(SS->isValid())
+        SS->getScopeRep()->dump(Stream);
+    Stream.flush();
 
-    // try to find the header file
-    // TODO: maybe use table gen to generate this string switch statement?
-    StringRef IncludeName = llvm::StringSwitch<StringRef>(SymbolName)
-            .Case("stack", "stack")
-            .Case("string", "string")
-            .Case("unique_ptr", "memory")
-            .Case("unordered_map", "unordered_map")
-            .Default("");
-
-    if(IncludeName.empty())
-        return;
-
-    Diag(IILoc, diag::note_standard_lib_include_suggestion)
-        << IncludeName << SymbolName;
+    NoteCPlusPlusSTDIncludes(SymbolName, IILoc, Namespace);
 }
 
 /// Determine whether the given result set contains either a type name

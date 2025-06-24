@@ -2666,6 +2666,7 @@ bool Sema::DiagnoseEmptyLookup(Scope *S, CXXScopeSpec &SS, LookupResult &R,
 
   // Give up, we can't recover.
   Diag(R.getNameLoc(), diagnostic) << Name << NameRange;
+  NoteCPlusPlusSTDIncludes(Name.getAsString(), R.getNameLoc(), "");
   return true;
 }
 
