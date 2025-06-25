@@ -840,8 +840,12 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
 #endif
 
   llvm::StringRef HeaderName = "";
+  clang::tooling::stdlib::Lang LangOption = clang::tooling::stdlib::Lang::C; 
+  if(getLangOpts().CPlusPlus)
+      LangOption = clang::tooling::stdlib::Lang::CXX;
+
   if (auto StdSym = tooling::stdlib::Symbol::named(
-          Namespace, SymbolName, clang::tooling::stdlib::Lang::CXX)) {
+          Namespace, SymbolName, LangOption)) {
     if (auto Header = StdSym->header()) {
       HeaderName = Header->name();
     }
@@ -16842,6 +16846,7 @@ NamedDecl *Sema::ImplicitlyDefineFunction(SourceLocation Loc,
   }
 
   Diag(Loc, diag_id) << &II;
+  NoteCPlusPlusSTDIncludes(II.getName(), Loc, "");
   if (Corrected) {
     // If the correction is going to suggest an implicitly defined function,
     // skip the correction as not being a particularly good idea.
