@@ -10,7 +10,7 @@ The entire instruction set is basically self explanatory.
 
 - Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
 ISD::SETLT and ISD::SETULT are the same thing.
-- It seems that two dimensional array doesn't work.
+- Moving a really large 16 bit constant. This requires ISA changes to be done so effectively. 
 
 # TODO 
 

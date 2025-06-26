@@ -293,4 +293,9 @@ let isCodeGenOnly = 1, usesCustomInserter = 1 in {
     def SUB16rr    : Pseudo<(outs GR16:$dst), (ins GR16:$rn, GR16:$rm), 
                             "# SUB RR PSEUDO", 
                             [(set GR16:$dst, (sub GR16:$rn, GR16:$rm))]>;
+
 } // isCodeGenOnly = 1
+
+def MOV16rii    : Pseudo<(outs GR16:$dst), (ins i16imm:$constant), 
+                        "# MOV16 large $constant to $dst (FIXME)", 
+                        [(set GR16:$dst, imm:$constant)]>;
