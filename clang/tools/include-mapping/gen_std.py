@@ -256,7 +256,7 @@ def main():
             (symbol_index_root, "macro.html", None),
         ]
     elif args.symbols == "c":
-        page_root = os.path.join(args.cppreference, "en", "c")
+        page_root = os.path.join(args.cppreference, "w", "c")
         symbol_index_root = page_root
         parse_pages = [(page_root, "index.html", None)]
 

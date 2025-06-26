@@ -145,6 +145,8 @@ static int initialize(Lang Language) {
             .Case("c++17", CPlusPlus17)
             .Case("c++23", CPlusPlus23)
             .Case("c++26", CPlusPlus26)
+            .Case("c99", C99)
+            .Case("c11", C11)
             .Case("unknown", Unknown)
             .Default(Unknown);
 

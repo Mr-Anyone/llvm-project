@@ -134,6 +134,10 @@ def _ParseVersion(tags):
         return "c++23"
     elif "C++26" in version:
         return "c++26"
+    elif "C99" in version:
+        return "c99"
+    elif "C11" in version:
+        return "c11"
 
     next_next = next.next_sibling
     if not next_next:
@@ -153,6 +157,10 @@ def _ParseVersion(tags):
         return "c++23"
     elif "C++26" in version:
         return "c++26"
+    elif "C99" in version:
+        return "c99"
+    elif "C11" in version:
+        return "c11"
 
     return "unknown"
 

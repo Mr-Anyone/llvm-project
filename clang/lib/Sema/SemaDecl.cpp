@@ -875,6 +875,12 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
                   case tooling::stdlib::CPlusPlus26:
                       CPlusPlusVersion = "c++26";
                       break;
+                  case tooling::stdlib::C11:
+                      CPlusPlusVersion = "c11";
+                      break;
+                  case tooling::stdlib::C99:
+                      CPlusPlusVersion = "c99";
+                      break;
                   default:
                       llvm_unreachable("impossible situation");
               }

@@ -40,7 +40,13 @@ enum Version{
     CPlusPlus20,
     CPlusPlus23,
     CPlusPlus26,
-    CPlusPlusEnd
+    CPlusPlusEnd, 
+
+    // c version
+    CStart, 
+    C99,
+    C11, 
+    CEnd
 };
 
 
