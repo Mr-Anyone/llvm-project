@@ -341,6 +341,15 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG &DAG) {
     SDValue Base = Address.getOperand(0);   // base
     SDValue Offset = Address.getOperand(1); // offset
 
+    if(ConstantSDNode* ConstantOffset = dyn_cast<ConstantSDNode>(Offset)){
+        int64_t Offset = ConstantOffset->getSExtValue();
+        assert(Offset % 2 == 0 
+                && "this is a must for the CPEN211 ISA or else it is invalid frontend code");
+        Offset = Offset / 2; // the actual offset
+        return DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16, Base, 
+                DAG.getConstant(Offset, SDLoc(Address), MVT::i16));
+    }
+    
     // edge case one: the add is behind a shift with a known constant offset
     // we may be able to just remove the shift entirely
     if (Offset.getOpcode() == CPEN211ISD::SHL ||
@@ -351,10 +360,21 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG &DAG) {
             DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16,
                         Address.getOperand(0), Offset.getOperand(0));
         return NewOffset;
-      }
+      }else if(ConstantSDNode* Constant = llvm::dyn_cast<ConstantSDNode>(Offset.getOperand(1))){
+          // we have a constant but it is not one!
+          // FIXME: add a test case
+          int64_t ShiftAmount = Constant->getSExtValue() - 1;
+          assert(ShiftAmount > 0 && "it makes no sense other wise!");
+            SDValue NewOffset =
+                DAG.getNode(ISD::ADD, SDLoc(Address), MVT::i16,
+                            Base, 
+                                DAG.getNode(CPEN211ISD::SHL, SDLoc(Address), MVT::i16, 
+                                    Offset.getOperand(0), DAG.getConstant(ShiftAmount, SDLoc(Address), MVT::i16)));
 
-      llvm_unreachable("fix this later please");
+            return NewOffset;
+      }
     }
+
     assert((Offset.getOpcode() != CPEN211ISD::SHL ||
             Offset.getOpcode() != ISD::SRL) &&
            "preventing fall through");
@@ -374,10 +394,7 @@ static SDValue RecalculateAddress(SDValue Address, SelectionDAG &DAG) {
       Address.getOpcode() == ISD::CopyFromReg)
     return Address;
 
-  Address.dump();
-  DAG.viewGraph();
   llvm_unreachable("don't know what to do");
-  // return NewOffset;
 }
 
 SDValue CPEN211TargetLowering::LowerLoad(SDValue Op, SelectionDAG &DAG) const {

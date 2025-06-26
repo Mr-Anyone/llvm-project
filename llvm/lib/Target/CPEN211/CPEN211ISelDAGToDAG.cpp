@@ -282,7 +282,8 @@ bool CPEN211DAGToDAGISel::SelectAddr(SDValue N, SDValue &Base, SDValue &Disp) {
     Disp = CurDAG->getTargetBlockAddress(AM.BlockAddr, MVT::i32, 0,
                                          0 /*AM.SymbolFlags*/);
   } else {
-    assert(AM.Disp % 2 == 0 && "must be divisible by two! all memory location");
+      // The address here maybe not divisible by two because it 
+      // has already been divided by RecalculateAddress in ISelLowering.cpp
     Disp = CurDAG->getSignedTargetConstant(AM.Disp, SDLoc(N), MVT::i16);
   }
 
