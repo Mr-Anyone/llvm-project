@@ -852,7 +852,7 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
           Diag(IILoc, diag::note_standard_lib_include_suggestion)
               << HeaderName << (Namespace + SymbolName).str();
 
-          // noting the c++ version as well
+          // Noting the C/C++ version as well
           if(StdSym->version() != tooling::stdlib::Unknown){
               llvm::StringRef CPlusPlusVersion;
               switch (StdSym->version()) {
