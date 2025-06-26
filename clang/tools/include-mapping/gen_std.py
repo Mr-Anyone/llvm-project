@@ -34,6 +34,7 @@ Usage:
 """
 
 
+import pudb
 import cppreference_parser
 import argparse
 import datetime
@@ -217,16 +218,16 @@ def GetCCompatibilitySymbols(symbol):
     results = []
     if symbol.namespace is not None:
         # avoid printing duplicated entries, for C macros!
-        results.append(cppreference_parser.Symbol(symbol.name, None, [header]))
+        results.append(cppreference_parser.Symbol(symbol.name, None, [header], "unknown"))
     c_header = "<" + header[2:-1] + ".h>"  # <cstdio> => <stdio.h>
-    results.append(cppreference_parser.Symbol(symbol.name, None, [c_header]))
+    results.append(cppreference_parser.Symbol(symbol.name, None, [c_header], "unknown"))
     return results
 
 
 def main():
     args = ParseArg()
     if args.symbols == "cpp":
-        page_root = os.path.join(args.cppreference, "en", "cpp")
+        page_root = os.path.join(args.cppreference, "w", "cpp")
         symbol_index_root = os.path.join(page_root, "symbol_index")
         parse_pages = [
             (page_root, "symbol_index.html", "std::"),
@@ -279,7 +280,10 @@ def main():
                 s.headers.extend(AdditionalHeadersForIOSymbols(s))
                 for header in s.headers:
                     # SYMBOL(unqualified_name, namespace, header)
-                    print("SYMBOL(%s, %s, %s)" % (s.name, s.namespace, header))
+                    if s.version == "unknown":
+                        print("SYMBOL(%s, %s, %s)" % (s.name, s.namespace, header))
+                    else:
+                        print("SYMBOL_VERSION(%s, %s, %s, %s)" % (s.name, s.namespace, header, s.version))
         elif len(symbol.headers) == 0:
             sys.stderr.write("No header found for symbol %s\n" % symbol.name)
         else:

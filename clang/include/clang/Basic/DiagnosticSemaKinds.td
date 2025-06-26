@@ -5980,6 +5980,8 @@ def note_parameter_type : Note<
   "parameter of type %0 is declared here">;
 def note_standard_lib_include_suggestion : Note< 
   "maybe try to include %0; '%1' is defined in %0">;
+def note_standard_lib_version : Note< 
+  "'%0' is a %1 feature">;
 
 // C++11 Variadic Templates
 def err_template_param_pack_default_arg : Error<

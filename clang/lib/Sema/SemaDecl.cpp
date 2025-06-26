@@ -838,22 +838,52 @@ void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
   llvm::outs() << "Trying to note the following symbol: " << SymbolName
                << " in namespace: " << Namespace << "\n";
 #endif
+  using clang::tooling::stdlib::Lang;
 
   llvm::StringRef HeaderName = "";
-  clang::tooling::stdlib::Lang LangOption = clang::tooling::stdlib::Lang::C; 
+  tooling::stdlib::Lang LangOption = tooling::stdlib::Lang::C; 
   if(getLangOpts().CPlusPlus)
       LangOption = clang::tooling::stdlib::Lang::CXX;
 
   if (auto StdSym = tooling::stdlib::Symbol::named(
-          Namespace, SymbolName, LangOption)) {
-    if (auto Header = StdSym->header()) {
-      HeaderName = Header->name();
-    }
-  }
+          Namespace, SymbolName, LangOption)){
+      if(auto Header = StdSym->header()){
+          HeaderName = Header->name();
 
-  if (!HeaderName.empty())
-    Diag(IILoc, diag::note_standard_lib_include_suggestion)
-        << HeaderName << (Namespace + SymbolName).str();
+          Diag(IILoc, diag::note_standard_lib_include_suggestion)
+              << HeaderName << (Namespace + SymbolName).str();
+
+          // noting the c++ version as well
+          if(StdSym->version() != tooling::stdlib::Unknown){
+              llvm::StringRef CPlusPlusVersion;
+              switch (StdSym->version()) {
+                  case tooling::stdlib::CPlusPlus11:
+                      CPlusPlusVersion = "c++11";
+                      break;
+                  case tooling::stdlib::CPlusPlus14:
+                      CPlusPlusVersion = "c++14";
+                      break;
+                  case tooling::stdlib::CPlusPlus17:
+                      CPlusPlusVersion = "c++17";
+                      break;
+                  case tooling::stdlib::CPlusPlus20:
+                      CPlusPlusVersion = "c++20";
+                      break;
+                  case tooling::stdlib::CPlusPlus23:
+                      CPlusPlusVersion = "c++23";
+                      break;
+                  case tooling::stdlib::CPlusPlus26:
+                      CPlusPlusVersion = "c++26";
+                      break;
+                  default:
+                      llvm_unreachable("impossible situation");
+              }
+
+              Diag(IILoc, diag::note_standard_lib_version) 
+                  << (Namespace+SymbolName).str() << CPlusPlusVersion;
+          }
+      }
+  }
 }
 
 // FIXME: use the function above instead. We should try and only use one

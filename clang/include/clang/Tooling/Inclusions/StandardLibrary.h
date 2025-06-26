@@ -29,6 +29,20 @@ class NamespaceDecl;
 class DeclContext;
 namespace tooling {
 namespace stdlib {
+enum Version{
+    Unknown, 
+
+    // c++ versions
+    CPlusPlusStart, 
+    CPlusPlus11,
+    CPlusPlus14,
+    CPlusPlus17,
+    CPlusPlus20,
+    CPlusPlus23,
+    CPlusPlus26,
+    CPlusPlusEnd
+};
+
 
 class Symbol;
 enum class Lang { C = 0, CXX, LastValue = CXX };
@@ -85,6 +99,7 @@ public:
   std::optional<Header> header() const;
   // Some symbols may be provided by multiple headers.
   llvm::SmallVector<Header> headers() const;
+  Version version() const; 
 
 private:
   Symbol(unsigned ID, Lang Language) : ID(ID), Language(Language) {}

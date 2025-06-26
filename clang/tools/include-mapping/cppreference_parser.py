@@ -17,8 +17,12 @@ import signal
 import sys
 
 
+class Placeholder:
+    headers = []
+    version = ""
+
 class Symbol:
-    def __init__(self, name, namespace, headers):
+    def __init__(self, name, namespace, headers, version):
         # unqualifed symbol name, e.g. "move"
         self.name = name
         # namespace of the symbol (with trailing "::"), e.g. "std::", "" (global scope)
@@ -26,6 +30,9 @@ class Symbol:
         self.namespace = namespace
         # a list of corresponding headers
         self.headers = headers
+
+        # c++11, c++14, unknown, ...
+        self.version = version
 
     def __lt__(self, other):
         if self.namespace != other.namespace:
@@ -107,6 +114,49 @@ def _ParseSymbolVariant(caption):
     return None
 
 
+def _ParseVersion(tags):
+    if not tags: 
+        return "unknown"
+    next = tags.next_sibling
+    if not next:
+        return "unknown"
+
+    version = next.get_text()
+    if "C++11" in version:
+        return "c++11"
+    elif "C++14" in version:
+        return "c++14"
+    elif "C++17" in version:
+        return 'c++17'
+    elif "C++20" in version:
+        return "c++20"
+    elif "C++23" in version:
+        return "c++23"
+    elif "C++26" in version:
+        return "c++26"
+
+    next_next = next.next_sibling
+    if not next_next:
+        return "unknown"
+
+    # C++11, C++14, C++17, C++20, C++23, C++26
+    version = next_next.get_text()
+    if "C++11" in version:
+        return "c++11"
+    elif "C++14" in version:
+        return "c++14"
+    elif "C++17" in version:
+        return 'c++17'
+    elif "C++20" in version:
+        return "c++20"
+    elif "C++23" in version:
+        return "c++23"
+    elif "C++26" in version:
+        return "c++26"
+
+    return "unknown"
+
+
 def _ParseIndexPage(index_page_html):
     """Parse index page.
     The index page lists all std symbols and hrefs to their detailed pages
@@ -127,14 +177,17 @@ def _ParseIndexPage(index_page_html):
         caption = symbol_href.next_sibling
         variant = _ParseSymbolVariant(caption)
         symbol_tt = symbol_href.find("tt")
+        version =  _ParseVersion(caption) # parsing the version like c++23, etc
         if symbol_tt:
             symbols.append(
                 (
                     symbol_tt.text.rstrip("<>()"),  # strip any trailing <>()
                     symbol_href["href"],
                     variant,
+                    version
                 )
             )
+    
     return symbols
 
 
@@ -159,7 +212,7 @@ def _GetSymbols(pool, root_dir, index_page_name, namespace, variants_to_accept):
     with open(index_page_path, "r", encoding="utf-8") as f:
         # Read each symbol page in parallel.
         results = []  # (symbol_name, promise of [header...])
-        for symbol_name, symbol_page_path, variant in _ParseIndexPage(f.read()):
+        for symbol_name, symbol_page_path, variant, version in _ParseIndexPage(f.read()):
             # Variant symbols (e.g. the std::locale version of isalpha) add ambiguity.
             # FIXME: use these as a fallback rather than ignoring entirely.
             qualified_symbol_name = (namespace or "") + symbol_name
@@ -171,6 +224,7 @@ def _GetSymbols(pool, root_dir, index_page_name, namespace, variants_to_accept):
                 results.append(
                     (
                         symbol_name,
+                        version,
                         pool.apply_async(
                             _ReadSymbolPage, (path, symbol_name, qualified_symbol_name)
                         ),
@@ -184,12 +238,25 @@ def _GetSymbols(pool, root_dir, index_page_name, namespace, variants_to_accept):
 
         # Build map from symbol name to a set of headers.
         symbol_headers = collections.defaultdict(set)
-        for symbol_name, lazy_headers in results:
-            symbol_headers[symbol_name].update(lazy_headers.get())
+        for symbol_name, version, lazy_headers in results:
+            placeholder = Placeholder()
+            placeholder.version = version
+            placeholder.headers = lazy_headers.get()
+
+            if symbol_headers[symbol_name]:
+                symbol_headers[symbol_name].append(placeholder)
+            else: 
+                symbol_headers[symbol_name] = [placeholder]
 
     symbols = []
-    for name, headers in sorted(symbol_headers.items(), key=lambda t: t[0]):
-        symbols.append(Symbol(name, namespace, list(headers)))
+    for name, headers  in sorted(symbol_headers.items(), key=lambda t: t[0]):
+        final_headers = []
+        for placeholder in headers:
+            for new_name in placeholder.headers:
+                final_headers.append(new_name)
+        # maybe assert cplusplus version?
+
+        symbols.append(Symbol(name, namespace, final_headers,headers[0].version))
     return symbols
 
 

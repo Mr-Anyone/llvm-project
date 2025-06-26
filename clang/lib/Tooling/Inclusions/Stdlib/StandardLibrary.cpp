@@ -24,6 +24,7 @@ namespace {
 // Symbol name -> Symbol::ID, within a namespace.
 using NSSymbolMap = llvm::DenseMap<llvm::StringRef, unsigned>;
 
+
 // A Mapping per language.
 struct SymbolHeaderMapping {
   llvm::StringRef *HeaderNames = nullptr;
@@ -36,6 +37,9 @@ struct SymbolHeaderMapping {
     const char *Data;  // std::vector
     unsigned ScopeLen; // ~~~~~
     unsigned NameLen;  //      ~~~~~~
+    Version CurrentVersion;
+
+    Version version() const {return CurrentVersion;}
     StringRef scope() const { return StringRef(Data, ScopeLen); }
     StringRef name() const { return StringRef(Data + ScopeLen, NameLen); }
     StringRef qualifiedName() const {
@@ -49,180 +53,205 @@ struct SymbolHeaderMapping {
 };
 } // namespace
 static SymbolHeaderMapping
-    *LanguageMappings[static_cast<unsigned>(Lang::LastValue) + 1];
+*LanguageMappings[static_cast<unsigned>(Lang::LastValue) + 1];
 static const SymbolHeaderMapping *getMappingPerLang(Lang L) {
-  return LanguageMappings[static_cast<unsigned>(L)];
+    return LanguageMappings[static_cast<unsigned>(L)];
 }
 
 static int countSymbols(Lang Language) {
-  ArrayRef<const char *> Symbols;
+    ArrayRef<const char *> Symbols;
 #define SYMBOL(Name, NS, Header) #NS #Name,
-  switch (Language) {
-  case Lang::C: {
-    static constexpr const char *CSymbols[] = {
+#define SYMBOL_VERSION(Name, NS, Header, Version) #NS #Name,
+    switch (Language) {
+        case Lang::C: {
+                          static constexpr const char *CSymbols[] = {
 #include "CSpecialSymbolMap.inc"
 #include "CSymbolMap.inc"
-    };
-    Symbols = CSymbols;
-    break;
-  }
-  case Lang::CXX: {
-    static constexpr const char *CXXSymbols[] = {
+                          };
+                          Symbols = CSymbols;
+                          break;
+                      }
+        case Lang::CXX: {
+                            static constexpr const char *CXXSymbols[] = {
 #include "StdSpecialSymbolMap.inc"
 #include "StdSymbolMap.inc"
 #include "StdTsSymbolMap.inc"
-    };
-    Symbols = CXXSymbols;
-    break;
-  }
-  }
+                            };
+                            Symbols = CXXSymbols;
+                            break;
+                        }
+    }
 #undef SYMBOL
-  return llvm::DenseSet<StringRef>(llvm::from_range, Symbols).size();
+#undef SYMBOL_VERSION
+    return llvm::DenseSet<StringRef>(llvm::from_range, Symbols).size();
 }
 
 static int initialize(Lang Language) {
-  SymbolHeaderMapping *Mapping = new SymbolHeaderMapping();
-  LanguageMappings[static_cast<unsigned>(Language)] = Mapping;
+    SymbolHeaderMapping *Mapping = new SymbolHeaderMapping();
+    LanguageMappings[static_cast<unsigned>(Language)] = Mapping;
 
-  unsigned SymCount = countSymbols(Language);
-  Mapping->SymbolCount = SymCount;
-  Mapping->SymbolNames =
-      new std::remove_reference_t<decltype(*Mapping->SymbolNames)>[SymCount];
-  Mapping->SymbolHeaderIDs = new std::remove_reference_t<
-      decltype(*Mapping->SymbolHeaderIDs)>[SymCount];
-  Mapping->NamespaceSymbols =
-      new std::remove_reference_t<decltype(*Mapping->NamespaceSymbols)>;
-  Mapping->HeaderIDs =
-      new std::remove_reference_t<decltype(*Mapping->HeaderIDs)>;
-  auto AddNS = [&](llvm::StringRef NS) -> NSSymbolMap & {
-    auto R = Mapping->NamespaceSymbols->try_emplace(NS, nullptr);
-    if (R.second)
-      R.first->second = new NSSymbolMap();
-    return *R.first->second;
-  };
+    unsigned SymCount = countSymbols(Language);
+    Mapping->SymbolCount = SymCount;
+    Mapping->SymbolNames =
+        new std::remove_reference_t<decltype(*Mapping->SymbolNames)>[SymCount];
+    Mapping->SymbolHeaderIDs = new std::remove_reference_t<
+        decltype(*Mapping->SymbolHeaderIDs)>[SymCount];
+    Mapping->NamespaceSymbols =
+        new std::remove_reference_t<decltype(*Mapping->NamespaceSymbols)>;
+    Mapping->HeaderIDs =
+        new std::remove_reference_t<decltype(*Mapping->HeaderIDs)>;
+    auto AddNS = [&](llvm::StringRef NS) -> NSSymbolMap & {
+        auto R = Mapping->NamespaceSymbols->try_emplace(NS, nullptr);
+        if (R.second)
+            R.first->second = new NSSymbolMap();
+        return *R.first->second;
+    };
 
-  auto AddHeader = [&](llvm::StringRef Header) -> unsigned {
-    return Mapping->HeaderIDs->try_emplace(Header, Mapping->HeaderIDs->size())
-        .first->second;
-  };
+    auto AddHeader = [&](llvm::StringRef Header) -> unsigned {
+        return Mapping->HeaderIDs->try_emplace(Header, Mapping->HeaderIDs->size())
+            .first->second;
+    };
 
-  auto Add = [&, SymIndex(-1)](llvm::StringRef QName, unsigned NSLen,
-                               llvm::StringRef HeaderName) mutable {
-    // Correct "Nonefoo" => foo.
-    // FIXME: get rid of "None" from the generated mapping files.
-    if (QName.take_front(NSLen) == "None") {
-      QName = QName.drop_front(NSLen);
-      NSLen = 0;
-    }
+    auto Add = [&, SymIndex(-1)](llvm::StringRef QName, unsigned NSLen,
+            llvm::StringRef HeaderName, llvm::StringRef Ver) mutable {
+        // Correct "Nonefoo" => foo.
+        // FIXME: get rid of "None" from the generated mapping files.
+        if (QName.take_front(NSLen) == "None") {
+            QName = QName.drop_front(NSLen);
+            NSLen = 0;
+        }
 
-    if (SymIndex > 0) {
-      assert(llvm::none_of(llvm::ArrayRef(Mapping->SymbolNames, SymIndex),
-                           [&QName](const SymbolHeaderMapping::SymbolName &S) {
-                             return S.qualifiedName() == QName;
-                           }) &&
-             "The symbol has been added before, make sure entries in the .inc "
-             "file are grouped by symbol name!");
-    }
-    if (SymIndex < 0 ||
-        Mapping->SymbolNames[SymIndex].qualifiedName() != QName) {
-      // First symbol or new symbol, increment next available index.
-      ++SymIndex;
-    } // Else use the same index.
-    Mapping->SymbolNames[SymIndex] = {
-        QName.data(), NSLen, static_cast<unsigned int>(QName.size() - NSLen)};
-    if (!HeaderName.empty())
-       Mapping->SymbolHeaderIDs[SymIndex].push_back(AddHeader(HeaderName));
+        if (SymIndex > 0) {
+            assert(llvm::none_of(llvm::ArrayRef(Mapping->SymbolNames, SymIndex),
+                        [&QName](const SymbolHeaderMapping::SymbolName &S) {
+                        if(S.qualifiedName() == QName)
+                        llvm::outs()  <<"QName: " << QName  << "\n";
 
-    NSSymbolMap &NSSymbols = AddNS(QName.take_front(NSLen));
-    NSSymbols.try_emplace(QName.drop_front(NSLen), SymIndex);
-  };
+                        return QName == S.qualifiedName();
+                        }) &&
+                    "The symbol has been added before, make sure entries in the .inc "
+                    "file are grouped by symbol name!");
+        }
+        if (SymIndex < 0 ||
+                Mapping->SymbolNames[SymIndex].qualifiedName() != QName) {
+            // First symbol or new symbol, increment next available index.
+            ++SymIndex;
+        } // Else use the same index.
 
-  struct Symbol {
-    const char *QName;
-    unsigned NSLen;
-    const char *HeaderName;
-  };
+
+        Version CurrentVersion = llvm::StringSwitch<Version>(Ver)
+            .Case("c++11", CPlusPlus11)
+            .Case("c++14", CPlusPlus14)
+            .Case("c++17", CPlusPlus17)
+            .Case("c++23", CPlusPlus23)
+            .Case("c++26", CPlusPlus26)
+            .Case("unknown", Unknown)
+            .Default(Unknown);
+
+        Mapping->SymbolNames[SymIndex] = {
+            QName.data(), NSLen, static_cast<unsigned int>(QName.size() - NSLen), CurrentVersion};
+        if (!HeaderName.empty())
+            Mapping->SymbolHeaderIDs[SymIndex].push_back(AddHeader(HeaderName));
+
+        NSSymbolMap &NSSymbols = AddNS(QName.take_front(NSLen));
+        NSSymbols.try_emplace(QName.drop_front(NSLen), SymIndex);
+    };
+
+    struct Symbol {
+        const char *QName;
+        unsigned NSLen;
+        const char *HeaderName;
+        const char *Version = "unknown";
+    };
 #define SYMBOL(Name, NS, Header)                                               \
-  {#NS #Name, static_cast<decltype(Symbol::NSLen)>(StringRef(#NS).size()),     \
-   #Header},
-  switch (Language) {
-  case Lang::C: {
-    static constexpr Symbol CSymbols[] = {
+    {#NS #Name, static_cast<decltype(Symbol::NSLen)>(StringRef(#NS).size()),     \
+#Header},
+#define SYMBOL_VERSION(Name, NS, Header, Version)                              \
+    {#NS #Name, static_cast<decltype(Symbol::NSLen)>(StringRef(#NS).size()),     \
+#Header, #Version},
+    switch (Language) {
+        case Lang::C: {
+                          static constexpr Symbol CSymbols[] = {
 #include "CSpecialSymbolMap.inc"
 #include "CSymbolMap.inc"
-    };
-    for (const Symbol &S : CSymbols)
-      Add(S.QName, S.NSLen, S.HeaderName);
-    break;
-  }
-  case Lang::CXX: {
-    static constexpr Symbol CXXSymbols[] = {
+                          };
+                          for (const Symbol &S : CSymbols)
+                              Add(S.QName, S.NSLen, S.HeaderName, S.Version);
+                          break;
+                      }
+        case Lang::CXX: {
+                            static constexpr Symbol CXXSymbols[] = {
 #include "StdSpecialSymbolMap.inc"
 #include "StdSymbolMap.inc"
 #include "StdTsSymbolMap.inc"
-    };
-    for (const Symbol &S : CXXSymbols)
-      Add(S.QName, S.NSLen, S.HeaderName);
-    break;
-  }
-  }
+                            };
+                            for (const Symbol &S : CXXSymbols)
+                                Add(S.QName, S.NSLen, S.HeaderName, S.Version);
+                            break;
+                        }
+    }
 #undef SYMBOL
 
-  Mapping->HeaderNames = new llvm::StringRef[Mapping->HeaderIDs->size()];
-  for (const auto &E : *Mapping->HeaderIDs)
-    Mapping->HeaderNames[E.second] = E.first;
+    Mapping->HeaderNames = new llvm::StringRef[Mapping->HeaderIDs->size()];
+    for (const auto &E : *Mapping->HeaderIDs)
+        Mapping->HeaderNames[E.second] = E.first;
 
-  return 0;
+    return 0;
 }
 
 static void ensureInitialized() {
-  static int Dummy = []() {
-    for (unsigned L = 0; L <= static_cast<unsigned>(Lang::LastValue); ++L)
-      initialize(static_cast<Lang>(L));
-    return 0;
-  }();
-  (void)Dummy;
+    static int Dummy = []() {
+        for (unsigned L = 0; L <= static_cast<unsigned>(Lang::LastValue); ++L)
+            initialize(static_cast<Lang>(L));
+        return 0;
+    }();
+    (void)Dummy;
 }
 
 std::vector<Header> Header::all(Lang L) {
-  ensureInitialized();
-  std::vector<Header> Result;
-  const auto *Mapping = getMappingPerLang(L);
-  Result.reserve(Mapping->HeaderIDs->size());
-  for (unsigned I = 0, E = Mapping->HeaderIDs->size(); I < E; ++I)
-    Result.push_back(Header(I, L));
-  return Result;
+    ensureInitialized();
+    std::vector<Header> Result;
+    const auto *Mapping = getMappingPerLang(L);
+    Result.reserve(Mapping->HeaderIDs->size());
+    for (unsigned I = 0, E = Mapping->HeaderIDs->size(); I < E; ++I)
+        Result.push_back(Header(I, L));
+    return Result;
 }
 std::optional<Header> Header::named(llvm::StringRef Name, Lang L) {
-  ensureInitialized();
-  const auto *Mapping = getMappingPerLang(L);
-  auto It = Mapping->HeaderIDs->find(Name);
-  if (It == Mapping->HeaderIDs->end())
-    return std::nullopt;
-  return Header(It->second, L);
+    ensureInitialized();
+    const auto *Mapping = getMappingPerLang(L);
+    auto It = Mapping->HeaderIDs->find(Name);
+    if (It == Mapping->HeaderIDs->end())
+        return std::nullopt;
+    return Header(It->second, L);
 }
 llvm::StringRef Header::name() const {
-  return getMappingPerLang(Language)->HeaderNames[ID];
+    return getMappingPerLang(Language)->HeaderNames[ID];
 }
 
 std::vector<Symbol> Symbol::all(Lang L) {
-  ensureInitialized();
-  std::vector<Symbol> Result;
-  const auto *Mapping = getMappingPerLang(L);
-  Result.reserve(Mapping->SymbolCount);
-  for (unsigned I = 0, E = Mapping->SymbolCount; I < E; ++I)
-    Result.push_back(Symbol(I, L));
-  return Result;
+    ensureInitialized();
+    std::vector<Symbol> Result;
+    const auto *Mapping = getMappingPerLang(L);
+    Result.reserve(Mapping->SymbolCount);
+    for (unsigned I = 0, E = Mapping->SymbolCount; I < E; ++I)
+        Result.push_back(Symbol(I, L));
+    return Result;
 }
 llvm::StringRef Symbol::scope() const {
-  return getMappingPerLang(Language)->SymbolNames[ID].scope();
+    return getMappingPerLang(Language)->SymbolNames[ID].scope();
 }
 llvm::StringRef Symbol::name() const {
-  return getMappingPerLang(Language)->SymbolNames[ID].name();
+    return getMappingPerLang(Language)->SymbolNames[ID].name();
 }
 llvm::StringRef Symbol::qualifiedName() const {
-  return getMappingPerLang(Language)->SymbolNames[ID].qualifiedName();
+    return getMappingPerLang(Language)->SymbolNames[ID].qualifiedName();
 }
+
+Version Symbol::version() const{
+    return getMappingPerLang(Language)->SymbolNames[ID].version();
+}
+
 std::optional<Symbol> Symbol::named(llvm::StringRef Scope, llvm::StringRef Name,
                                     Lang L) {
   ensureInitialized();
