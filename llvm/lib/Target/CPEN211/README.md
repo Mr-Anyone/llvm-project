@@ -6,11 +6,16 @@ This is the dead simple backend of CPEN211 ISA:
 
 The entire instruction set is basically self explanatory. 
 
+## Counterintuitive Behaviors
+
+- `long` is 16 bit. Almost everything is 16 bit.
+
 ## Bugs
 
 - Currently, signed and unsigned comparison is just incorrect. This is because we pretend that the
 ISD::SETLT and ISD::SETULT are the same thing.
 - Moving a really large 16 bit constant. This requires ISA changes to be done so effectively. 
+- Char doesn't work, because it is hard coded to be 8 bits.
 
 # TODO 
 
