@@ -48,6 +48,8 @@ General guidance  and necessarily accurate because some llvm instruction gets tr
 
 ## Priority II
 
+These mainly include c++ constructs, and floating points.
+
 - [ ] switch
 - [ ] invoke
 - [ ] callbr
@@ -97,6 +99,8 @@ Argument register are **R0**, and **R1**.
 Return happens at R0.
 
 Additional arguments are passed on the stack in reverse order. 
+
+If the type cannot be fit inside a singe register (i.e. larger than 16 bit), it must be passed by pointer. This include types like `struct {int a; int b} a;`.
 
 ## Example
 
