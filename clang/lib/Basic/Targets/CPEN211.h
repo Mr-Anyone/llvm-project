@@ -28,6 +28,8 @@ class LLVM_LIBRARY_VISIBILITY CPEN211TargetInfo : public TargetInfo {
 public:
   CPEN211TargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple) {
+    BoolWidth = 16;
+    BoolAlign = 16;
     TLSSupported = false;
     IntWidth = 16;
     IntAlign = 16;
