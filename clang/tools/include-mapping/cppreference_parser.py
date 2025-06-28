@@ -122,21 +122,21 @@ def _ParseVersion(tags):
         return "unknown"
 
     version = next.get_text()
-    if "C++11" in version:
+    if "since C++11" in version:
         return "c++11"
-    elif "C++14" in version:
+    elif "since C++14" in version:
         return "c++14"
-    elif "C++17" in version:
+    elif "since C++17" in version:
         return 'c++17'
-    elif "C++20" in version:
+    elif "since C++20" in version:
         return "c++20"
-    elif "C++23" in version:
+    elif "since C++23" in version:
         return "c++23"
-    elif "C++26" in version:
+    elif "since C++26" in version:
         return "c++26"
-    elif "C99" in version:
+    elif "since C99" in version:
         return "c99"
-    elif "C11" in version:
+    elif "since C11" in version:
         return "c11"
 
     next_next = next.next_sibling
@@ -145,21 +145,21 @@ def _ParseVersion(tags):
 
     # C++11, C++14, C++17, C++20, C++23, C++26
     version = next_next.get_text()
-    if "C++11" in version:
+    if "since C++11" in version:
         return "c++11"
-    elif "C++14" in version:
+    elif "since C++14" in version:
         return "c++14"
-    elif "C++17" in version:
+    elif "since C++17" in version:
         return 'c++17'
-    elif "C++20" in version:
+    elif "since C++20" in version:
         return "c++20"
-    elif "C++23" in version:
+    elif "since C++23" in version:
         return "c++23"
-    elif "C++26" in version:
+    elif "since C++26" in version:
         return "c++26"
-    elif "C99" in version:
+    elif "since C99" in version:
         return "c99"
-    elif "C11" in version:
+    elif "since C11" in version:
         return "c11"
 
     return "unknown"

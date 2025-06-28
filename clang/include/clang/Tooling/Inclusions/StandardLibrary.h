@@ -49,6 +49,7 @@ enum Version{
     CEnd
 };
 
+llvm::StringRef GetAsString(Version Ver);
 
 class Symbol;
 enum class Lang { C = 0, CXX, LastValue = CXX };

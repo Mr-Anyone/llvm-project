@@ -2660,13 +2660,16 @@ bool Sema::DiagnoseEmptyLookup(Scope *S, CXXScopeSpec &SS, LookupResult &R,
   if (!SS.isEmpty()) {
     Diag(R.getNameLoc(), diag::err_no_member)
         << Name << computeDeclContext(SS, false) << NameRange;
-    NoteCPlusPlusSTDIncludes(Name.getAsString(), R.getNameLoc(), &SS);
+    NoteStandardIncludes(Name.getAsString(), R.getNameLoc(), &SS);
     return true;
   }
 
   // Give up, we can't recover.
   Diag(R.getNameLoc(), diagnostic) << Name << NameRange;
-  NoteCPlusPlusSTDIncludes(Name.getAsString(), R.getNameLoc(), "");
+
+  // don't note standard include files for OpenCL and Objective C
+  if((getLangOpts().CPlusPlus || getLangOpts().C99) && !getLangOpts().OpenCL && !getLangOpts().ObjC)
+      NoteStandardIncludes(Name.getAsString(), R.getNameLoc(), /*Namespace=*/"");
   return true;
 }
 

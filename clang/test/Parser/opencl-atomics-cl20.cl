@@ -21,8 +21,6 @@ void atomic_types_test(void) {
 // expected-error@-5 {{use of undeclared identifier 'atomic_uint'}}
 // expected-error@-5 {{use of undeclared identifier 'atomic_float'}}
 // expected-error@-5 {{use of undeclared identifier 'atomic_flag'}}
-// expected-note@-6 {{maybe try to include <stdatomic.h>; 'atomic_flag' is defined in <stdatomic.h>}}
-// expected-note@-7 {{'atomic_flag' is a c11 feature}}
 #endif
 
 // Optional types

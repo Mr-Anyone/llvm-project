@@ -680,24 +680,6 @@ DeclSpec::TST Sema::isTagName(IdentifierInfo &II, Scope *S) {
   return DeclSpec::TST_unspecified;
 }
 
-static bool IsInStandardLibraryNamespace(const CXXScopeSpec *SS) {
-  if (!SS)
-    return false;
-
-  if (!SS->isValid())
-    return false;
-
-  NestedNameSpecifier *Specifier = SS->getScopeRep();
-  if (Specifier->getKind() != NestedNameSpecifier::SpecifierKind::Namespace)
-    return false;
-
-  // preventing some_type_name::std ... where std is not the first nested name
-  if (Specifier->getPrefix())
-    return false;
-
-  return Specifier->getAsNamespace()->getName() == "std";
-}
-
 bool Sema::isMicrosoftMissingTypename(const CXXScopeSpec *SS, Scope *S) {
   if (CurContext->isRecord()) {
     if (SS->getScopeRep()->getKind() == NestedNameSpecifier::Super)
@@ -826,84 +808,50 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
            "Invalid scope specifier has already been diagnosed");
   }
 
-  // Diagnose standard library includes fix me's
-  NoteCPlusPlusSTDIncludes(II->getName(), IILoc, SS);
+  // don't note standard include files for OpenCL and Objective C
+  if((getLangOpts().CPlusPlus || getLangOpts().C99) && !getLangOpts().OpenCL && !getLangOpts().ObjC)
+      NoteStandardIncludes(II->getName(), IILoc, SS);
 }
 
 
-void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
-                                    StringRef Namespace) {
-#ifdef LOG_LOOKUP
-  llvm::outs() << "Trying to note the following symbol: " << SymbolName
-               << " in namespace: " << Namespace << "\n";
-#endif
-  using clang::tooling::stdlib::Lang;
+void Sema::NoteStandardIncludes(StringRef SymbolName, SourceLocation IILoc,
+        StringRef Namespace) {
+    using clang::tooling::stdlib::Lang;
 
-  llvm::StringRef HeaderName = "";
-  tooling::stdlib::Lang LangOption = tooling::stdlib::Lang::C; 
-  if(getLangOpts().CPlusPlus)
-      LangOption = clang::tooling::stdlib::Lang::CXX;
+    llvm::StringRef HeaderName = "";
+    tooling::stdlib::Lang LangOption = tooling::stdlib::Lang::C; 
+    if(getLangOpts().CPlusPlus)
+        LangOption = clang::tooling::stdlib::Lang::CXX;
 
-  if (auto StdSym = tooling::stdlib::Symbol::named(
-          Namespace, SymbolName, LangOption)){
-      if(auto Header = StdSym->header()){
-          HeaderName = Header->name();
+    if (auto StdSym = tooling::stdlib::Symbol::named(
+                Namespace, SymbolName, LangOption)){
+        if(auto Header = StdSym->header()){
+            HeaderName = Header->name();
+            Diag(IILoc, diag::note_standard_lib_include_suggestion)
+                << HeaderName << (Namespace + SymbolName).str();
 
-          Diag(IILoc, diag::note_standard_lib_include_suggestion)
-              << HeaderName << (Namespace + SymbolName).str();
+            // Noting the C/C++ version as well
+            if(StdSym->version() != tooling::stdlib::Unknown){
+                llvm::StringRef CPlusPlusVersion = tooling::stdlib::GetAsString(StdSym->version());
 
-          // Noting the C/C++ version as well
-          if(StdSym->version() != tooling::stdlib::Unknown){
-              llvm::StringRef CPlusPlusVersion;
-              switch (StdSym->version()) {
-                  case tooling::stdlib::CPlusPlus11:
-                      CPlusPlusVersion = "c++11";
-                      break;
-                  case tooling::stdlib::CPlusPlus14:
-                      CPlusPlusVersion = "c++14";
-                      break;
-                  case tooling::stdlib::CPlusPlus17:
-                      CPlusPlusVersion = "c++17";
-                      break;
-                  case tooling::stdlib::CPlusPlus20:
-                      CPlusPlusVersion = "c++20";
-                      break;
-                  case tooling::stdlib::CPlusPlus23:
-                      CPlusPlusVersion = "c++23";
-                      break;
-                  case tooling::stdlib::CPlusPlus26:
-                      CPlusPlusVersion = "c++26";
-                      break;
-                  case tooling::stdlib::C99:
-                      CPlusPlusVersion = "c99";
-                      break;
-                  case tooling::stdlib::C11:
-                      CPlusPlusVersion = "c11";
-                      break;
-                  default:
-                      llvm_unreachable("impossible situation");
-              }
-
-              Diag(IILoc, diag::note_standard_lib_version) 
-                  << (Namespace+SymbolName).str() << CPlusPlusVersion;
-          }
-      }
-  }
+                Diag(IILoc, diag::note_standard_lib_version) 
+                    << (Namespace+SymbolName).str() << CPlusPlusVersion;
+            }
+        }
+    }
 }
 
-// FIXME: use the function above instead. We should try and only use one
-// function.
-void Sema::NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
-                                    const CXXScopeSpec *SS) {
-  std::string Namespace = "";
-  if(SS){
-      llvm::raw_string_ostream Stream(Namespace);
-      if (SS->isValid())
-        SS->getScopeRep()->dump(Stream);
-      Stream.flush();
-  }
+void Sema::NoteStandardIncludes(StringRef SymbolName, SourceLocation IILoc,
+        const CXXScopeSpec *SS) {
+    std::string Namespace = "";
+    if(SS){
+        llvm::raw_string_ostream Stream(Namespace);
+        if (SS->isValid())
+            SS->getScopeRep()->dump(Stream);
+        Stream.flush();
+    }
 
-  NoteCPlusPlusSTDIncludes(SymbolName, IILoc, Namespace);
+    NoteStandardIncludes(SymbolName, IILoc, Namespace);
 }
 
 /// Determine whether the given result set contains either a type name
@@ -16883,7 +16831,7 @@ NamedDecl *Sema::ImplicitlyDefineFunction(SourceLocation Loc,
   }
 
   Diag(Loc, diag_id) << &II;
-  NoteCPlusPlusSTDIncludes(II.getName(), Loc, "");
+  NoteStandardIncludes(II.getName(), Loc, "");
   if (Corrected) {
     // If the correction is going to suggest an implicitly defined function,
     // skip the correction as not being a particularly good idea.

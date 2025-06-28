@@ -561,7 +561,7 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
   }
 
   if (FailedNesatedNameBuilding && Tok.getKind() == tok::identifier) {
-    Actions.NoteCPlusPlusSTDIncludes(Tok.getIdentifierInfo()->getName(),
+    Actions.NoteStandardIncludes(Tok.getIdentifierInfo()->getName(),
                                      Tok.getLocation(), FullName);
   }
 

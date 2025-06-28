@@ -195,7 +195,6 @@ void test_atomics_without_scope_device(volatile __generic atomic_int *a_int) {
 
   atomic_exchange(a_int, d);
   // expected-error@-1{{use of undeclared identifier 'atomic_exchange'}}
-  // expected-note@-2 {{maybe try to include <stdatomic.h>; 'atomic_exchange' is defined in <stdatomic.h>}}
 
   atomic_exchange_explicit(a_int, d, memory_order_seq_cst);
   // expected-error@-1{{no matching function for call to 'atomic_exchange_explicit'}}

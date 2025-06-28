@@ -6,7 +6,7 @@
 }
 @end
 
-static const uint32_t Count = 16; // expected-error {{unknown type name 'uint32_t'}} expected-note {{maybe try to include <cstdint>; 'uint32_t' is defined in <cstdint>}}
+static const uint32_t Count = 16; // expected-error {{unknown type name 'uint32_t'}}
 
 struct S0 {
   S0();

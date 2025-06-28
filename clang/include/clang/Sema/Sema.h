@@ -3612,10 +3612,10 @@ public:
                                bool IsTemplateName = false);
 
   /// Tries to recommend missing c++ includes
-  void NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
+  void NoteStandardIncludes(StringRef SymbolName, SourceLocation IILoc,
                                 const CXXScopeSpec *SS);
   // Namespace must be of form "std::something::", a.k.a. ends with ::
-  void NoteCPlusPlusSTDIncludes(StringRef SymbolName, SourceLocation IILoc,
+  void NoteStandardIncludes(StringRef SymbolName, SourceLocation IILoc,
                                 StringRef Namespace);
 
   /// Attempt to behave like MSVC in situations where lookup of an unqualified
