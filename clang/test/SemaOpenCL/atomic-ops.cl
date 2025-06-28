@@ -97,7 +97,7 @@ void memory_checks(atomic_int *Ap, int *p, int val) {
 
   (void)__opencl_atomic_load(Ap, memory_order_relaxed, memory_scope_work_group);
   (void)__opencl_atomic_load(Ap, memory_order_acquire, memory_scope_work_group);
-  (void)__opencl_atomic_load(Ap, memory_order_consume, memory_scope_work_group); // expected-error {{use of undeclared identifier 'memory_order_consume'}}
+  (void)__opencl_atomic_load(Ap, memory_order_consume, memory_scope_work_group); // expected-error {{use of undeclared identifier 'memory_order_consume'}} expected-note {{maybe try to include <stdatomic.h>; 'memory_order_consume' is defined in <stdatomic.h>}} expected-note {{'memory_order_consume' is a c11 feature}}
   (void)__opencl_atomic_load(Ap, memory_order_release, memory_scope_work_group); // expected-warning {{memory order argument to atomic operation is invalid}}
   (void)__opencl_atomic_load(Ap, memory_order_acq_rel, memory_scope_work_group); // expected-warning {{memory order argument to atomic operation is invalid}}
   (void)__opencl_atomic_load(Ap, memory_order_seq_cst, memory_scope_work_group);
