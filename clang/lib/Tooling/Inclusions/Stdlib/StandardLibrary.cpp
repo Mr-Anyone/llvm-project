@@ -143,6 +143,7 @@ static int initialize(Lang Language) {
             .Case("c++11", CPlusPlus11)
             .Case("c++14", CPlusPlus14)
             .Case("c++17", CPlusPlus17)
+            .Case("c++20", CPlusPlus20)
             .Case("c++23", CPlusPlus23)
             .Case("c++26", CPlusPlus26)
             .Case("c99", C99)

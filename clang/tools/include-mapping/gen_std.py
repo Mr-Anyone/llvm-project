@@ -281,9 +281,11 @@ def main():
                 for header in s.headers:
                     # SYMBOL(unqualified_name, namespace, header)
                     if s.version == "unknown":
-                        print("SYMBOL(%s, %s, %s)" % (s.name, s.namespace, header))
-                    else:
-                        print("SYMBOL_VERSION(%s, %s, %s, %s)" % (s.name, s.namespace, header, s.version))
+                        if s.namespace is not None:
+                            print(f"{s.namespace}{s.name}; " + "// expected-error {{no member}} expected-note {{maybe try}}")
+                        #print("SYMBOL(%s, %s, %s)" % (s.name, s.namespace, header))
+                        #print("SYMBOL_VERSION(%s, %s, %s, %s)" % (s.name, s.namespace, header, s.version))
+                    
         elif len(symbol.headers) == 0:
             sys.stderr.write("No header found for symbol %s\n" % symbol.name)
         else:
