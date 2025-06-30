@@ -19,6 +19,8 @@ ISD::SETLT and ISD::SETULT are the same thing.
 
 # TODO 
 
+- [] Fix byVal attribute
+
 ## Instructions
 
 General guidance  and necessarily accurate because some llvm instruction gets transformed differently  into selection DAG, so we don't have ISD::*. One such example is GEP.
