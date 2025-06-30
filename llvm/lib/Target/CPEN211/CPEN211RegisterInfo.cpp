@@ -25,7 +25,7 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "msp430-reg-info"
+#define DEBUG_TYPE "cpen211-reg-info"
 
 #define GET_REGINFO_TARGET_DESC
 #include "CPEN211GenRegisterInfo.inc"
@@ -95,11 +95,15 @@ bool CPEN211RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     Offset += 2; // Skip the saved FP
 
   // Fold imm into offset
-  Offset += MI.getOperand(FIOperandNum + 1).getImm();
   assert(Offset % 2 == 0 && "Offset mus be divisible by two!");
   // TODO (for Vincent): is this even correct?
   Offset = Offset /
            2; // this is because of the weirdness of the CPEN211 memory model
+
+  // The offset have already been corrected in CPENISelLowering.cpp
+  // like STR
+  Offset += MI.getOperand(FIOperandNum + 1).getImm();
+
 
   // We have select AddFrame instruction, so
   // This is the case where we need to calculate the frame index instead!
