@@ -4201,6 +4201,10 @@ static void handleTransparentUnionAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
 
   if (FirstType->isIncompleteType())
     return;
+
+  if(FirstType->isDependentType())
+      return; 
+
   uint64_t FirstSize = S.Context.getTypeSize(FirstType);
   uint64_t FirstAlign = S.Context.getTypeAlign(FirstType);
   for (; Field != FieldEnd; ++Field) {
